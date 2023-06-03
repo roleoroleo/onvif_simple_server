@@ -143,7 +143,7 @@ Brief explanation of some parameters:
 
 ## Credits
 Thanks to:
-- rxi - for the logging libraryhttps://github.com/rxi/log.c
+- rxi - for the logging library https://github.com/rxi/log.c
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
