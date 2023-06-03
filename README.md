@@ -4,7 +4,7 @@
 	</a>
 </p>
 
-onvif_simple_server is a light implementation of an onvif server intended for use in resource-constrained devices.
+onvif_simple_server is a C light implementation of an onvif server intended for use in resource-constrained devices.
 
 So:
 - no gsoap
@@ -22,13 +22,14 @@ The onvif server instead runs as CGI and therefore needs an http server that sup
 ## Table of Contents
 - [Table of Contents](#table-of-contents)
 - [Configuration](#configuration)
+- [Credits](#credits)
 - [License](#license)
 - [Disclaimer](#disclaimer)
 - [Donation](#donation)
 
 ## Build
-Open the Makefile and edit the path to the libtomcrypt library to suit your needs.
-Run make.
+- Open the Makefile and edit the path to the libtomcrypt library to suit your needs.
+- Run make.
 
 ## Configuration
 ### wsd_simple_server
@@ -58,11 +59,13 @@ Usage: wsd_simple_server -i INTERFACE -x XADDR -p PID_FILE [-f] [-d LEVEL]
 | foreground | don't fork | - |
 | debug | debug level from 0 to 5 | - |
 
+%s is replaced runtime with the IP address of the device.
+
 ### onvif_simple_server
 onvif_simple server supports the following options
 
 ```
-Usage: /tmp/sd/yi-hack/www/onvif/onvif_simple_server [-c CONF_FILE] [-d] [-f]
+Usage: onvif_simple_server [-c CONF_FILE] [-d] [-f]
 
         -c CONF_FILE, --conf_file CONF_FILE
                 path of the configuration file
@@ -118,9 +121,11 @@ move_stop=/tmp/sd/yi-hack/bin/ipc_cmd -M stop
 move_preset=/tmp/sd/yi-hack/bin/ipc_cmd -p %t
 ```
 
-You can use 1 or 2 profiles.
+Note:
+- you can use 1 or 2 profiles.
+- %s is replaced runtime with the IP address of the device.
 
-Please pay attention: the order of the lines must be respected. Don't mix them!
+**Please pay attention: the order of the lines must be respected. Don't mix them!**
 
 Brief explanation of some parameters:
 
@@ -132,9 +137,13 @@ Brief explanation of some parameters:
 | url | the url of your streaming service (it is not provided by onvif server) |
 | snapurl | the url of your snapshot service (tipically an http url that provides a jpg image) |
 | ptz | 1 if onvif_simple_server can control PTZ, 0 otherwise |
-| move_* | the binary that move the PTZ controls, this daemon will run it with a system call |
+| move_* | the binary that moves the PTZ controls, this daemon will run it with a system call |
 
 ----
+
+## Credits
+Thanks to:
+- rxi - for the logging library https://github.com/rxi/log.c
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
