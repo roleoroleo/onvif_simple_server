@@ -28,7 +28,7 @@ utils.o: utils.c $(HEADERS)
 	$(CC) -c $< -fPIC -Os $(INCLUDE) -o $@
 
 log.o: log.c $(HEADERS)
-	$(CC) -c $< -fPIC -Os $(INCLUDE) -o $@
+	$(CC) -c $< -fPIC -Os -std=c99 $(INCLUDE) -o $@
 
 onvif_simple_server: $(OBJECTS_O)
 	$(CC) $(OBJECTS_O) $(LIBS_O) -fPIC -Os -o $@

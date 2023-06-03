@@ -480,7 +480,12 @@ int main(int argc, char ** argv)
         exit(EXIT_FAILURE);
     }
     itmp = fread(input, 1, 16 * 1024 * sizeof(char), stdin);
-    realloc(input, itmp * sizeof(char));
+    if (realloc(input, itmp * sizeof(char)) == NULL) {
+        log_fatal("Memory error");
+        free(input);
+        free(conf_file);
+        exit(EXIT_FAILURE);
+    }
     log_debug("Input:\n%s", input);
     log_debug("Url: %s", prog_name);
 

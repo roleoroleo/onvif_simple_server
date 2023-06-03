@@ -163,12 +163,13 @@ int create_pid(char *file_name)
 }
 
 int gen_uuid(char *g_uuid) {
+    int i;
     char v[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
     //3fb17ebc-bc38-4939-bc8b-74f2443281d4
     //8 dash 4 dash 4 dash 4 dash 12
 
     //gen random for all spaces because lazy
-    for(int i = 0; i < UUID_LEN; ++i) {
+    for(i = 0; i < UUID_LEN; ++i) {
         g_uuid[i] = v[rand()%16];
     }
 
