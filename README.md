@@ -4,7 +4,7 @@
 	</a>
 </p>
 
-onvif_simple_server is a light implementation of an onvif server intended for use in resource-constrained devices.
+onvif_simple_server is a C light implementation of an onvif server intended for use in resource-constrained devices.
 
 So:
 - no gsoap
@@ -22,6 +22,7 @@ The onvif server instead runs as CGI and therefore needs an http server that sup
 ## Table of Contents
 - [Table of Contents](#table-of-contents)
 - [Configuration](#configuration)
+- [Credits](#credits)
 - [License](#license)
 - [Disclaimer](#disclaimer)
 - [Donation](#donation)
@@ -139,6 +140,10 @@ Brief explanation of some parameters:
 | move_* | the binary that move the PTZ controls, this daemon will run it with a system call |
 
 ----
+
+## Credits
+Thanks to:
+- rxi - for the logging libraryhttps://github.com/rxi/log.c
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
