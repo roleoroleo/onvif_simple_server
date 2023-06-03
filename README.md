@@ -137,7 +137,7 @@ Brief explanation of some parameters:
 | url | the url of your streaming service (it is not provided by onvif server) |
 | snapurl | the url of your snapshot service (tipically an http url that provides a jpg image) |
 | ptz | 1 if onvif_simple_server can control PTZ, 0 otherwise |
-| move_* | the binary that move the PTZ controls, this daemon will run it with a system call |
+| move_* | the binary that moves the PTZ controls, this daemon will run it with a system call |
 
 ----
 
