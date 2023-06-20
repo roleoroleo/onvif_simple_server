@@ -31,7 +31,6 @@
 #include "device_service.h"
 #include "media_service.h"
 #include "ptz_service.h"
-#include "events_service.h"
 #include "utils.h"
 #include "log.h"
 
@@ -437,8 +436,7 @@ int main(int argc, char ** argv)
         tmp = argv[argc - 1];
         if ((strstr(tmp, "device_service") != NULL) ||
                 (strstr(tmp, "media_service") != NULL) ||
-                (strstr(tmp, "ptz_service") != NULL) ||
-                (strstr(tmp, "events_service") != NULL)) {
+                (strstr(tmp, "ptz_service") != NULL)) {
             tmp = argv[argc - 1];
         } else {
             tmp = argv[0];
@@ -658,8 +656,6 @@ int main(int argc, char ** argv)
             } else {
                 ptz_unsupported(action);
             }
-        } else if (strcasecmp("events_service", prog_name) == 0) {
-            events_unsupported(action);
         }
     } else {
         device_authentication_error();
