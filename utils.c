@@ -261,13 +261,21 @@ char *ltrim(char *s)
     return p;
 }
 
-int rtrim_len(char *s)
+char *rtrim(char *s)
 {
     int iret = strlen(s);
     char* back = s + iret;
-    while(isspace(*--back))
-        iret--;
-    return iret;
+    back--;
+    while (isspace(*back)) {
+        *back = '\0';
+        back--;
+    }
+    return s;
+}
+
+char *trim(char *s)
+{
+    return ltrim(rtrim(s));
 }
 
 int find_action(char *action, int action_size, char *request)
@@ -280,7 +288,6 @@ int find_action(char *action, int action_size, char *request)
     char *sp;
     char raw_action[MAX_LEN];
     char *p = (char *) raw_action;
-    int plen;
 
     memset(raw_action, '\0', sizeof(raw_action));
     sb = strstr(request, "Body");
@@ -300,12 +307,10 @@ int find_action(char *action, int action_size, char *request)
             }
 
             strncpy(p, sl + 1, sf - sl - 1);
-            p = ltrim(p);
+            p = trim(p);
             sp = strstr(p, ":");
             if (sp != NULL) p = sp + 1;
-            plen = rtrim_len(p);
-            p[plen] = '\0';
-            if (plen < action_size - 1) {
+            if (strlen(p) < action_size - 1) {
                 strcpy(action, p);
                 return 0;
             }
