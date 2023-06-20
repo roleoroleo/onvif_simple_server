@@ -277,6 +277,7 @@ int find_action(char *action, int action_size, char *request)
     char *sg;
     char *ss;
     char *sf;
+    char *sp;
     char raw_action[MAX_LEN];
     char *p = (char *) raw_action;
     int plen;
@@ -300,6 +301,8 @@ int find_action(char *action, int action_size, char *request)
 
             strncpy(p, sl + 1, sf - sl - 1);
             p = ltrim(p);
+            sp = strstr(p, ":");
+            if (sp != NULL) p = sp + 1;
             plen = rtrim_len(p);
             p[plen] = '\0';
             if (plen < action_size - 1) {
