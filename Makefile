@@ -1,4 +1,4 @@
-OBJECTS_O = onvif_simple_server.o device_service.o media_service.o ptz_service.o events_service.o utils.o log.o
+OBJECTS_O = onvif_simple_server.o device_service.o media_service.o ptz_service.o utils.o log.o
 OBJECTS_W = wsd_simple_server.o utils.o log.o
 INCLUDE = -I../libtomcrypt/src/headers -ffunction-sections -fdata-sections
 LIBS_O = -Wl,--gc-sections ../libtomcrypt/libtomcrypt.a -lpthread
@@ -19,9 +19,6 @@ media_service.o: media_service.c $(HEADERS)
 	$(CC) -c $< -fPIC -Os $(INCLUDE) -o $@
 
 ptz_service.o: ptz_service.c $(HEADERS)
-	$(CC) -c $< -fPIC -Os $(INCLUDE) -o $@
-
-events_service.o: events_service.c $(HEADERS)
 	$(CC) -c $< -fPIC -Os $(INCLUDE) -o $@
 
 utils.o: utils.c $(HEADERS)
