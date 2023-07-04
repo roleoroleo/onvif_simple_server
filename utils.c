@@ -28,7 +28,12 @@
 #include <sys/reboot.h>
 #include <ctype.h>
 
+#ifdef HAVE_MBEDTLS
+#include <mbedtls/sha1.h>
+#include <mbedtls/base64.h>
+#else
 #include <tomcrypt.h>
+#endif
 
 #include "utils.h"
 #include "log.h"
@@ -513,25 +518,75 @@ int html_escape(char *url, int max_len)
  * @param output The hash
  * @param output_size The size of the buffer containing the hash (>= 20)
  * @param input The input sequence pointer
- * @param inputSize The size of the input sequence
+ * @param input_size The size of the input sequence
  * @return A malloc-allocated pointer to the resulting data. 20 bytes long.
  */
-int hashSHA1(char* input, unsigned long inputSize, char *output, int output_size)
+int hashSHA1(char* input, unsigned long input_size, char *output, int output_size)
 {
     if (output_size < 20)
         return -1;
 
+#ifdef HAVE_MBEDTLS
+    //Initial
+    mbedtls_sha1_context ctx;
+
+    //Initialize a state variable for the hash
+    mbedtls_sha1_init(&ctx);
+    mbedtls_sha1_starts(&ctx);
+    //Process the text - remember you can call process() multiple times
+    mbedtls_sha1_update(&ctx, (const unsigned char*) input, input_size);
+    //Finish the hash calculation
+    mbedtls_sha1_finish(&ctx, output);
+    mbedtls_sha1_free(&ctx);
+#else
     //Initial
     hash_state md;
 
     //Initialize a state variable for the hash
     sha1_init(&md);
     //Process the text - remember you can call process() multiple times
-    sha1_process(&md, (const unsigned char*) input, inputSize);
+    sha1_process(&md, (const unsigned char*) input, input_size);
     //Finish the hash calculation
     sha1_done(&md, output);
+#endif
 
     return 0;
+}
+
+/**
+ * Decode a base64 string
+ * @param output The decoded sequence pointer
+ * @param output_size The size of the buffer/decoded sequence
+ * @param input The input sequence pointer
+ * @param input_size The size of the input sequence
+ */
+void b64_decode(unsigned char *input, unsigned int input_size, unsigned char *output, unsigned long *output_size)
+{
+#ifdef HAVE_MBEDTLS
+    size_t olen;
+    mbedtls_base64_decode(output, *output_size, &olen, input, input_size);
+    *output_size = olen;
+#else
+    base64_decode(input, input_size, output, output_size);
+#endif
+}
+
+/**
+ * Encode a base64 string
+ * @param output The encoded sequence pointer
+ * @param output_size The size of the buffer/encoded sequence
+ * @param input The input sequence pointer
+ * @param input_size The size of the input sequence
+ */
+void b64_encode(unsigned char *input, unsigned int input_size, unsigned char *output, unsigned long *output_size)
+{
+#ifdef HAVE_MBEDTLS
+    size_t olen;
+    mbedtls_base64_encode(output, *output_size, &olen, input, input_size);
+    *output_size = olen;
+#else
+    base64_encode(input, input_size, output, output_size);
+#endif
 }
 
 void *reboot_thread(void *arg)

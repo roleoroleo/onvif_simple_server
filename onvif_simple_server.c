@@ -25,8 +25,6 @@
 #include <limits.h>
 #include <libgen.h>
 
-#include <tomcrypt.h>
-
 #include "onvif_simple_server.h"
 #include "device_service.h"
 #include "media_service.h"
@@ -531,7 +529,7 @@ int main(int argc, char ** argv)
                 memset(security.nonce, '\0', (element_size + 1) * sizeof(char));
                 strncpy(security.nonce, element, element_size);
                 log_info("Security: nonce = %s", security.nonce);
-                base64_decode(security.nonce, strlen(security.nonce), nonce, &nonce_size);
+                b64_decode(security.nonce, strlen(security.nonce), nonce, &nonce_size);
             }
             element = get_element(&element_size, input, "Created");
             if (element != NULL) {
@@ -548,7 +546,7 @@ int main(int argc, char ** argv)
             memcpy(&auth[nonce_size + strlen(security.created)], service_ctx.password, strlen(service_ctx.password));
             auth_size = nonce_size + strlen(security.created) + strlen(service_ctx.password);
             hashSHA1(auth, auth_size, sha1, sha1_size);
-            base64_encode(sha1, sha1_size, digest, &digest_size);
+            b64_encode(sha1, sha1_size, digest, &digest_size);
             log_debug("Calculated digest: %s", digest);
             log_debug("Received digest: %s", security.password);
 

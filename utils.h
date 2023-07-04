@@ -33,6 +33,8 @@ int find_element(char *request, char *name, char *value);
 char *get_element(int *size, char *request, char *name);
 int html_escape(char *url, int max_len);
 int hashSHA1(char* input, unsigned long inputSize, char *output, int output_size);
+void b64_decode(unsigned char *input, unsigned int input_size, unsigned char *output, unsigned long *output_size);
+void b64_encode(unsigned char *input, unsigned int input_size, unsigned char *output, unsigned long *output_size);
 void *reboot_thread(void *arg);
 
 #endif //UTILS_H
