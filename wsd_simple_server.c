@@ -67,6 +67,9 @@ int msg_number;
 char uuid[UUID_LEN + 1];
 char msg_uuid[UUID_LEN + 1];
 
+char model[64];
+char hardware[64];
+
 int daemonize(int flags)
 {
     int maxfd, fd;
@@ -238,11 +241,15 @@ void signal_handler(int signal)
 
 void print_usage(char *progname)
 {
-    fprintf(stderr, "\nUsage: %s -i INTERFACE -x XADDR -p PID_FILE [-f] [-d LEVEL]\n\n", progname);
+    fprintf(stderr, "\nUsage: %s -i INTERFACE -x XADDR [-m MODEL] [-n MANUFACTURER] -p PID_FILE [-f] [-d LEVEL]\n\n", progname);
     fprintf(stderr, "\t-i, --if_name\n");
     fprintf(stderr, "\t\tnetwork interface\n");
     fprintf(stderr, "\t-x, --xaddr\n");
     fprintf(stderr, "\t\tresource address\n");
+    fprintf(stderr, "\t-m, --model\n");
+    fprintf(stderr, "\t\tmodel name\n");
+    fprintf(stderr, "\t-n, --hardware\n");
+    fprintf(stderr, "\t\thardware manufacturer\n");
     fprintf(stderr, "\t-p, --pid_file\n");
     fprintf(stderr, "\t\tpid file\n");
     fprintf(stderr, "\t-f, --foreground\n");
@@ -271,6 +278,8 @@ int main(int argc, char **argv)  {
     if_name = NULL;
     pid_file = NULL;
     xaddr_s = NULL;
+    strcpy(model, "MODEL_NAME");
+    strcpy(hardware, "HARDWARE_MANUFACTURER");
     foreground = 0;
     debug = 5;
 
@@ -280,6 +289,8 @@ int main(int argc, char **argv)  {
             {"if_name",  required_argument, 0, 'i'},
             {"pid_file",  required_argument, 0, 'p'},
             {"xaddr",  required_argument, 0, 'x'},
+            {"model",  required_argument, 0, 'm'},
+            {"hardware",  required_argument, 0, 'n'},
             {"foreground",  no_argument, 0, 'f'},
             {"debug",  required_argument, 0, 'd'},
             {"help",  no_argument, 0, 'h'},
@@ -288,7 +299,7 @@ int main(int argc, char **argv)  {
         /* getopt_long stores the option index here. */
         int option_index = 0;
 
-        c = getopt_long (argc, argv, "i:p:x:fd:h",
+        c = getopt_long (argc, argv, "i:p:x:m:n:fd:h",
                          long_options, &option_index);
 
         /* Detect the end of the options. */
@@ -302,6 +313,24 @@ int main(int argc, char **argv)  {
 
         case 'x':
             xaddr_s = optarg;
+            break;
+
+        case 'm':
+            if (strlen(optarg) < sizeof(model)) {
+                strcpy(model, optarg);
+            } else {
+                print_usage(argv[0]);
+                exit(EXIT_FAILURE);
+            }
+            break;
+
+        case 'n':
+            if (strlen(optarg) < sizeof(hardware)) {
+                strcpy(hardware, optarg);
+            } else {
+                print_usage(argv[0]);
+                exit(EXIT_FAILURE);
+            }
             break;
 
         case 'p':
