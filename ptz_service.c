@@ -27,72 +27,72 @@ extern service_context_t service_ctx;
 
 int ptz_get_service_capabilities()
 {
-    long size = get_file_size("ptz_service_files/GetServiceCapabilities.xml");
+    long size = cat(NULL, "ptz_service_files/GetServiceCapabilities.xml", 0);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("ptz_service_files/GetServiceCapabilities.xml", 0);
+    return cat("stdout", "ptz_service_files/GetServiceCapabilities.xml", 0);
 }
 
 int ptz_get_configurations()
 {
-    long size = get_file_size("ptz_service_files/GetConfigurations.xml");
+    long size = cat(NULL, "ptz_service_files/GetConfigurations.xml", 0);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("ptz_service_files/GetConfigurations.xml", 0);
+    return cat("stdout", "ptz_service_files/GetConfigurations.xml", 0);
 }
 
 int ptz_get_configuration()
 {
-    long size = get_file_size("ptz_service_files/GetConfiguration.xml");
+    long size = cat(NULL, "ptz_service_files/GetConfiguration.xml", 0);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("ptz_service_files/GetConfiguration.xml", 0);
+    return cat("stdout", "ptz_service_files/GetConfiguration.xml", 0);
 }
 
 int ptz_get_configuration_options()
 {
-    long size = get_file_size("ptz_service_files/GetConfigurationOptions.xml");
+    long size = cat(NULL, "ptz_service_files/GetConfigurationOptions.xml", 0);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("ptz_service_files/GetConfigurationOptions.xml", 0);
+    return cat("stdout", "ptz_service_files/GetConfigurationOptions.xml", 0);
 }
 
 int ptz_get_nodes()
 {
-    long size = get_file_size("ptz_service_files/GetNodes.xml");
+    long size = cat(NULL, "ptz_service_files/GetNodes.xml", 0);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("ptz_service_files/GetNodes.xml", 0);
+    return cat("stdout", "ptz_service_files/GetNodes.xml", 0);
 }
 
 int ptz_get_node()
 {
-    long size = get_file_size("ptz_service_files/GetNode.xml");
+    long size = cat(NULL, "ptz_service_files/GetNode.xml", 0);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("ptz_service_files/GetNode.xml", 0);
+    return cat("stdout", "ptz_service_files/GetNode.xml", 0);
 }
 
 int ptz_get_presets()
 {
-    long size = get_file_size("ptz_service_files/GetPresets.xml");
+    long size = cat(NULL, "ptz_service_files/GetPresets.xml", 0);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("ptz_service_files/GetPresets.xml", 0);
+    return cat("stdout", "ptz_service_files/GetPresets.xml", 0);
 }
 
 int ptz_goto_preset(char *input)
@@ -122,19 +122,19 @@ int ptz_goto_preset(char *input)
         str_subst(sys_command, service_ctx.ptz_node.move_preset, "%t", preset);
         system(sys_command);
 
-        long size = get_file_size("ptz_service_files/GotoPreset.xml");
+        long size = cat(NULL, "ptz_service_files/GotoPreset.xml", 0);
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("ptz_service_files/GotoPreset.xml", 0);
+        return cat("stdout", "ptz_service_files/GotoPreset.xml", 0);
     } else {
-        long size = get_file_size("generic_files/Error.xml");
+        long size = cat(NULL, "generic_files/Error.xml", 0);
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("generic_files/Error.xml", 0);
+        return cat("stdout", "generic_files/Error.xml", 0);
     }
 }
 
@@ -145,12 +145,12 @@ int ptz_goto_home_position()
     str_subst(sys_command, service_ctx.ptz_node.move_preset, "%t", "0");
     system(sys_command);
 
-    long size = get_file_size("ptz_service_files/GotoHomePosition.xml");
+    long size = cat(NULL, "ptz_service_files/GotoHomePosition.xml", 0);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("ptz_service_files/GotoHomePosition.xml", 0);
+    return cat("stdout", "ptz_service_files/GotoHomePosition.xml", 0);
 }
 
 int ptz_continuous_move(char *input)
@@ -221,20 +221,20 @@ int ptz_continuous_move(char *input)
     }
 
     if (ret == 0) {
-        long size = get_file_size("ptz_service_files/ContinuousMove.xml");
+        long size = cat(NULL, "ptz_service_files/ContinuousMove.xml", 0);
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("ptz_service_files/ContinuousMove.xml", 0);
+        return cat("stdout", "ptz_service_files/ContinuousMove.xml", 0);
 
     } else {
-        long size = get_file_size("generic_files/Error.xml");
+        long size = cat(NULL, "generic_files/Error.xml", 0);
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("generic_files/Error.xml", 0);
+        return cat("stdout", "generic_files/Error.xml", 0);
     }
 }
 
@@ -317,20 +317,20 @@ int ptz_relative_move(char *input)
     }
 
     if (ret == 0) {
-        long size = get_file_size("ptz_service_files/RelativeMove.xml");
+        long size = cat(NULL, "ptz_service_files/RelativeMove.xml", 0);
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("ptz_service_files/RelativeMove.xml", 0);
+        return cat("stdout", "ptz_service_files/RelativeMove.xml", 0);
 
     } else {
-        long size = get_file_size("generic_files/Error.xml");
+        long size = cat(NULL, "generic_files/Error.xml", 0);
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("generic_files/Error.xml", 0);
+        return cat("stdout", "generic_files/Error.xml", 0);
     }
 }
 
@@ -341,12 +341,12 @@ int ptz_stop()
     sprintf(sys_command, service_ctx.ptz_node.move_stop);
     system(sys_command);
 
-    long size = get_file_size("ptz_service_files/Stop.xml");
+    long size = cat(NULL, "ptz_service_files/Stop.xml", 0);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("ptz_service_files/Stop.xml", 0);
+    return cat("stdout", "ptz_service_files/Stop.xml", 0);
 }
 
 int ptz_get_status()
@@ -359,13 +359,13 @@ int ptz_get_status()
             tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
             tm->tm_hour, tm->tm_min, tm->tm_sec);
 
-    long size = get_file_size("ptz_service_files/GetStatus.xml");
-    size += strlen(utctime) - strlen("%TIME%");
+    long size = cat(NULL, "ptz_service_files/GetStatus.xml", 2,
+            "%TIME%", utctime);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("ptz_service_files/GetStatus.xml", 2,
+    return cat("stdout", "ptz_service_files/GetStatus.xml", 2,
             "%TIME%", utctime);
 }
 
@@ -374,12 +374,12 @@ int ptz_unsupported(char *action)
     char response[MAX_LEN];
     sprintf(response, "%sResponse", action);
 
-    long size = get_file_size("ptz_service_files/Unsupported.xml");
-    size += strlen(response) - strlen("%UNSUPPORTED%");
+    long size = cat(NULL, "ptz_service_files/Unsupported.xml", 2,
+            "%UNSUPPORTED%", response);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("ptz_service_files/Unsupported.xml", 2,
+    return cat("stdout", "ptz_service_files/Unsupported.xml", 2,
             "%UNSUPPORTED%", response);
 }

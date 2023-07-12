@@ -38,12 +38,22 @@
 #include "utils.h"
 #include "log.h"
 
-int cat(char *filename, int num, ...)
+/**
+ * Read a file line by line and send to output after replacing arguments
+ * @param out The output type: "sdout", char *ptr or NULL
+ * @param filename The input file to process
+ * @param num The number of variable arguments
+ * @param ... The argument list to replace: src1, dst1, src2, dst2, etc...
+ */
+long cat(char *out, char *filename, int num, ...)
 {
     va_list valist;
     char new_line[MAX_LEN];
+    char *l;
+    char *ptr = out;
     char *pars, *pare, *par_to_find, *par_to_sub;
     int i;
+    long ret = 0;
 
     FILE* file = fopen(filename, "r");
     if (!file) {
@@ -67,78 +77,42 @@ int cat(char *filename, int num, ...)
                 strcpy(&new_line[pars - line], par_to_sub);
                 strncpy(&new_line[pars + strlen(par_to_sub) - line], pare, line + strlen(line) - pare);
             }
-        }
-        if (new_line[0] == '\0') {
-            fprintf(stdout, "%s", line); 
-        } else {
-            fprintf(stdout, "%s", new_line); 
-        }
-        va_end(valist);
-    }
-    fclose(file);
-
-    return 0;
-}
-
-int scat(char * out, char *filename, int num, ...)
-{
-    va_list valist;
-    char new_line[MAX_LEN];
-    char *ptr = out;
-    char *pars, *pare, *par_to_find, *par_to_sub;
-    int i;
-
-    FILE* file = fopen(filename, "r");
-    if (!file) {
-        log_error("Unable to open file %s\n", filename);
-        return -1;
-    }
-
-    char line[MAX_LEN];
-
-    while (fgets(line, sizeof(line), file)) {
-        va_start(valist, num);
-
-        memset(new_line, '\0', sizeof(new_line));
-        for (i = 0; i < num/2; i++) {
-            par_to_find = va_arg(valist, char *);
-            par_to_sub = va_arg(valist, char *);
-            pars = strstr(line, par_to_find);
-            if (pars != NULL) {
-                pare = pars + strlen(par_to_find);
-                strncpy(new_line, line, pars - line);
-                strcpy(&new_line[pars - line], par_to_sub);
-                strncpy(&new_line[pars - line + strlen(par_to_sub)], pare, line + strlen(line) - pare);
+            if (new_line[0] != '\0') {
+                strcpy(line, new_line);
+                memset(new_line, '\0', sizeof(new_line));
             }
         }
         if (new_line[0] == '\0') {
-            sprintf(ptr, "%s", line);
-            ptr += strlen(line);
+            l = trim(line);
         } else {
-            sprintf(ptr, "%s", new_line);
-            ptr += strlen(new_line);
+            l = trim(new_line);
         }
+
+        if (out != NULL) {
+            if (strcmp("stdout", out) == 0) {
+                if (*l != '<') {
+                    fprintf(stdout, " ");
+                }
+                fprintf(stdout, "%s", l);
+            } else {
+                if (*l != '<') {
+                    sprintf(ptr, " ");
+                    ptr++;
+                }
+                sprintf(ptr, "%s", l);
+                ptr += strlen(l);
+            }
+        }
+        if (*l != '<') {
+            ret++;
+        }
+        ret += strlen(l);
+
         va_end(valist);
     }
     fclose(file);
 
-    return 0;
-}
-
-long get_file_size(char *filename)
-{
-    long sz;
-    FILE *file = fopen(filename, "r");
-    if (!file) {
-        log_error("Unable to open file %s\n", filename);
-        return -1;
-    }
-
-    fseek(file, 0L, SEEK_END);
-    sz = ftell(file);
-    fclose(file);
-
-    return sz;
+    return ret;
 }
 
 int get_ip_address(char *address, char *netmask, char *name)
@@ -258,6 +232,11 @@ int str_subst(char *output, char *request, char *value, char *new_value)
     return ret;
 }
 
+/**
+ * Remove spaces from the left of the string
+ * @param s The input string
+ * @return A pointer to the resulting string
+ */
 char *ltrim(char *s)
 {
     char *p = s;
@@ -266,6 +245,11 @@ char *ltrim(char *s)
     return p;
 }
 
+/**
+ * Remove spaces from the right of the string
+ * @param s The input string
+ * @return A pointer to the resulting string
+ */
 char *rtrim(char *s)
 {
     int iret = strlen(s);
@@ -278,9 +262,54 @@ char *rtrim(char *s)
     return s;
 }
 
+/**
+ * Remove spaces from the left and the right of the string
+ * @param s The input string
+ * @return A pointer to the resulting string
+ */
 char *trim(char *s)
 {
     return ltrim(rtrim(s));
+}
+
+/**
+ * Remove space, tab, CR and LF from the left of the string
+ * @param s The input string
+ * @return A pointer to the resulting string
+ */
+char *ltrim_mf(char *s)
+{
+    char *p = s;
+
+    while((*p == ' ') || (*p == '\t') || (*p == '\n') || (*p == '\r')) p++;
+    return p;
+}
+
+/**
+ * Remove space, tab, CR and LF from the right of the string
+ * @param s The input string
+ * @return A pointer to the resulting string
+ */
+char *rtrim_mf(char *s)
+{
+    int iret = strlen(s);
+    char* back = s + iret;
+    back--;
+    while((*back == ' ') || (*back == '\t') || (*back == '\n') || (*back == '\r')) {
+        *back = '\0';
+        back--;
+    }
+    return s;
+}
+
+/**
+ * Remove space, tab, CR and LF from the left and the right of the string
+ * @param s The input string
+ * @return A pointer to the resulting string
+ */
+char *trim_mf(char *s)
+{
+    return ltrim_mf(rtrim_mf(s));
 }
 
 int find_action(char *action, int action_size, char *request)

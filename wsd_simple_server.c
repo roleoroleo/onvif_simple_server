@@ -201,11 +201,13 @@ void signal_handler(int signal)
     // Send Bye message
     log_info("Sending Bye message.");
     sprintf(template_file, "%s/Bye.xml", TEMPLATE_DIR);
-    size = get_file_size(template_file) + 1;
-    size += strlen(msg_uuid) - strlen("%MSG_UUID%") +
-            strlen(s_tmp) - strlen("%MSG_NUMBER%") +
-            strlen(uuid) - strlen("%UUID%") +
-            strlen(xaddr) - strlen("%ADDRESS%");
+    size = cat(NULL, template_file, 12,
+            "%MSG_UUID%", msg_uuid,
+            "%MSG_NUMBER%", s_tmp,
+            "%UUID%", uuid,
+            "%HARDWARE%", hardware,
+            "%NAME%", model,
+            "%ADDRESS%", xaddr);
 
     message = (char *) malloc(size * sizeof(char));
     if (message == NULL) {
@@ -213,10 +215,12 @@ void signal_handler(int signal)
         exit(EXIT_FAILURE);
     }
 
-    scat(message, template_file, 8,
+    cat(message, template_file, 12,
             "%MSG_UUID%", msg_uuid,
             "%MSG_NUMBER%", s_tmp,
             "%UUID%", uuid,
+            "%HARDWARE%", hardware,
+            "%NAME%", model,
             "%ADDRESS%", xaddr);
 
     if (sendto(sock, message, strlen(message), 0, (struct sockaddr *) &addr_in, sizeof(addr_in)) < 0) {
@@ -430,11 +434,13 @@ int main(int argc, char **argv)  {
     // Send Hello message
     log_info("Sending Hello message.");
     sprintf(template_file, "%s/Hello.xml", TEMPLATE_DIR);
-    size = get_file_size(template_file) + 1;
-    size += strlen(msg_uuid) - strlen("%MSG_UUID%") +
-            strlen(s_tmp) - strlen("%MSG_NUMBER%") +
-            strlen(uuid) - strlen("%UUID%") +
-            strlen(xaddr) - strlen("%ADDRESS%");
+    size = cat(NULL, template_file, 12,
+            "%MSG_UUID%", msg_uuid,
+            "%MSG_NUMBER%", s_tmp,
+            "%UUID%", uuid,
+            "%HARDWARE%", hardware,
+            "%NAME%", model,
+            "%ADDRESS%", xaddr);
 
     message = (char *) malloc(size * sizeof(char));
     if (message == NULL) {
@@ -442,10 +448,12 @@ int main(int argc, char **argv)  {
         exit(EXIT_FAILURE);
     }
 
-    scat(message, template_file, 8,
+    cat(message, template_file, 12,
             "%MSG_UUID%", msg_uuid,
             "%MSG_NUMBER%", s_tmp,
             "%UUID%", uuid,
+            "%HARDWARE%", hardware,
+            "%NAME%", model,
             "%ADDRESS%", xaddr);
 
     addr_in.sin_addr.s_addr = inet_addr(MULTICAST_ADDRESS);
@@ -494,12 +502,14 @@ int main(int argc, char **argv)  {
                 // Send ProbeMatches message
                 log_info("Sending ProbeMatches message.");
                 sprintf(template_file, "%s/ProbeMatches.xml", TEMPLATE_DIR);
-                size = get_file_size(template_file) + 1;
-                size += strlen(msg_uuid) - strlen("%MSG_UUID%") +
-                        strlen(relates_to_uuid) - strlen("%REL_TO_UUID%") +
-                        strlen(s_tmp) - strlen("%MSG_NUMBER%") +
-                        strlen(uuid) - strlen("%UUID%") +
-                        strlen(xaddr) - strlen("%ADDRESS%");
+                size = cat(NULL, template_file, 14,
+                        "%MSG_UUID%", msg_uuid,
+                        "%REL_TO_UUID%", relates_to_uuid,
+                        "%MSG_NUMBER%", s_tmp,
+                        "%UUID%", uuid,
+                        "%HARDWARE%", hardware,
+                        "%NAME%", model,
+                        "%ADDRESS%", xaddr);
 
                 message_loop = (char *) malloc(size * sizeof(char));
                 if (message_loop == NULL) {
@@ -507,11 +517,13 @@ int main(int argc, char **argv)  {
                     continue;
                 }
 
-                scat(message_loop, template_file, 10,
+                cat(message_loop, template_file, 14,
                         "%MSG_UUID%", msg_uuid,
                         "%REL_TO_UUID%", relates_to_uuid,
                         "%MSG_NUMBER%", s_tmp,
                         "%UUID%", uuid,
+                        "%HARDWARE%", hardware,
+                        "%NAME%", model,
                         "%ADDRESS%", xaddr);
 
                 if (sendto(sock, message_loop, strlen(message_loop), 0, (struct sockaddr *) &addr_in, sizeof(addr_in)) < 0) {
