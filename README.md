@@ -13,15 +13,16 @@ So:
 
 The XML parsing features are replaced by some trivial functions and a template based strategy.
 
-The only library used is libtomcrypt, to handle authentication.
+The only library used is libtomcrypt (or mbedtls), to handle authentication.
 
 The web service discovery daemon is a standalone program and must be started with command line options.
 
-The onvif server instead runs as CGI and therefore needs an http server that supports the CGI standard. I use httpd from busybox.
+The onvif server instead runs as CGI and therefore needs an http server that supports the CGI standard (for example httpd from busybox).
 
 ## Table of Contents
 - [Table of Contents](#table-of-contents)
 - [Configuration](#configuration)
+- [Compatibility](#compatibility)
 - [Credits](#credits)
 - [License](#license)
 - [Disclaimer](#disclaimer)
@@ -36,12 +37,16 @@ The onvif server instead runs as CGI and therefore needs an http server that sup
 wsd_simple server supports the following options
 
 ```
-Usage: wsd_simple_server -i INTERFACE -x XADDR -p PID_FILE [-f] [-d LEVEL]
+Usage: wsd_simple_server -i INTERFACE -x XADDR [-m MODEL] [-n MANUFACTURER] -p PID_FILE [-f] [-d LEVEL]
 
         -i, --if_name
                 network interface
         -x, --xaddr
                 resource address
+        -m, --model
+                model name
+        -n, --hardware
+                hardware manufacturer
         -p, --pid_file
                 pid file
         -f, --foreground
@@ -62,7 +67,7 @@ Usage: wsd_simple_server -i INTERFACE -x XADDR -p PID_FILE [-f] [-d LEVEL]
 %s is replaced runtime with the IP address of the device.
 
 ### onvif_simple_server
-onvif_simple server supports the following options
+onvif_simple server supports the following options but you should use them just for debugging purpose
 
 ```
 Usage: onvif_simple_server [-c CONF_FILE] [-d] [-f]
@@ -140,6 +145,13 @@ Brief explanation of some parameters:
 | move_* | the binary that moves the PTZ controls, this daemon will run it with a system call |
 
 ----
+
+## Compatibility
+I tested this program with the following clients:
+- Onvif Device Manager (Windows)
+- Synology Surveillance Station (DSM 6.x and 7.x)
+- Onvifer (Android)
+If you test it with other clients or NVR, please let me know opening a issue.
 
 ## Credits
 Thanks to:
