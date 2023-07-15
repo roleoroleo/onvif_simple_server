@@ -222,11 +222,11 @@ int str_subst(char *output, char *request, char *value, char *new_value)
     if (s != NULL) {
         strncpy(output, request, s - request);
         strcpy(&output[s - request], new_value);
-        strcpy(&output[s - request + strlen(new_value)], s + 2);
+        strcpy(&output[s - request + strlen(new_value)], s + strlen(value));
         ret = 0;
     } else {
-        output[0] = '\0';
-        ret = -1;
+        strcpy(output, request);
+        ret = 0;
     }
 
     return ret;
