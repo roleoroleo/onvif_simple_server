@@ -212,7 +212,7 @@ void signal_handler(int signal)
             "%NAME%", model,
             "%ADDRESS%", xaddr);
 
-    message = (char *) malloc(size * sizeof(char));
+    message = (char *) malloc((size + 1) * sizeof(char));
     if (message == NULL) {
         log_fatal("Malloc error.\n");
         exit(EXIT_FAILURE);
@@ -471,7 +471,7 @@ int main(int argc, char **argv)  {
             "%NAME%", model,
             "%ADDRESS%", xaddr);
 
-    message = (char *) malloc(size * sizeof(char));
+    message = (char *) malloc((size + 1) * sizeof(char));
     if (message == NULL) {
         log_fatal("Malloc error.\n");
         exit(EXIT_FAILURE);
@@ -540,9 +540,10 @@ int main(int argc, char **argv)  {
                         "%NAME%", model,
                         "%ADDRESS%", xaddr);
 
-                message_loop = (char *) malloc(size * sizeof(char));
+                message_loop = (char *) malloc((size + 1) * sizeof(char));
                 if (message_loop == NULL) {
                     log_error("Malloc error.\n");
+                    free(relates_to_uuid);
                     continue;
                 }
 
@@ -558,6 +559,7 @@ int main(int argc, char **argv)  {
                 if (sendto(sock, message_loop, strlen(message_loop), 0, (struct sockaddr *) &addr_in, sizeof(addr_in)) < 0) {
                     log_error("Error sending ProbeMatches message.\n");
                     free(message_loop);
+                    free(relates_to_uuid);
                     continue;
                 }
                 free(message_loop);
