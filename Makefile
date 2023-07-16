@@ -39,7 +39,7 @@ onvif_simple_server: $(OBJECTS_O)
 	$(STRIP) $@
 
 wsd_simple_server: $(OBJECTS_W)
-	$(CC) $(OBJECTS_W) $(LIBS_W) -g -fPIC -Os -o $@
+	$(CC) $(OBJECTS_W) $(LIBS_W) -fPIC -Os -o $@
 	$(STRIP) $@
 
 .PHONY: clean
