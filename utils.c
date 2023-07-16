@@ -357,14 +357,10 @@ int find_action(char *action, int action_size, char *request)
 int find_element(char *request, char *name, char *value)
 {
     char *node_s, *node_e;
-    char *sl_name;
-
-    sl_name = (char *) malloc((strlen(name) + 2) * sizeof(char));
-    sprintf(sl_name, "/%s", name);
 
     node_s = strstr(request, name);
     if (node_s != NULL) {
-        node_e = strstr(node_s, sl_name);
+        node_e = strstr(node_s + 1, name);
         if (node_e != NULL) {
             node_e[0] = '\0';
             if (strstr(node_s, value) != NULL) {
