@@ -354,6 +354,13 @@ int find_action(char *action, int action_size, char *request)
     return -1;
 }
 
+/**
+ * Find element in xml string equal to value
+ * @param request The string containing the xml
+ * @param name The name of the element
+ * @param value The value of the element
+ * @return 0 if the element is found, -1 otherwise
+ */
 int find_element(char *request, char *name, char *value)
 {
     char *node_s, *node_e;
@@ -363,11 +370,11 @@ int find_element(char *request, char *name, char *value)
         node_e = strstr(node_s + 1, name);
         if (node_e != NULL) {
             node_e[0] = '\0';
-            if (strstr(node_s, value) != NULL) {
-                node_e[0] = '/';
+            if (strstr(node_s + 1, value) != NULL) {
+                node_e[0] = name[0];
                 return 0;
             }
-            node_e[0] = '/';
+            node_e[0] = name[0];
         }
     }
 
