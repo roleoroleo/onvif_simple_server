@@ -166,7 +166,7 @@ int ptz_continuous_move(char *input)
     if (sv != NULL) {
         sp = strstr(sv, "PanTilt");
         if (sp != NULL) {
-            sx = strstr(sp, "x");
+            sx = strstr(sp, "x=");
             if (sx != NULL) {
                 sq = strstr(sx, "\"");
                 if (sq != NULL) {
@@ -174,7 +174,7 @@ int ptz_continuous_move(char *input)
                     sqx = strstr(x, "\"");
                 }
             }
-            sy = strstr(sp, "y");
+            sy = strstr(sp, "y=");
             if (sy != NULL) {
                 sq = strstr(sy, "\"");
                 if (sq != NULL) {
@@ -251,7 +251,7 @@ int ptz_relative_move(char *input)
     if (sv != NULL) {
         sp = strstr(sv, "PanTilt");
         if (sp != NULL) {
-            sx = strstr(sp, "x");
+            sx = strstr(sp, "x=");
             if (sx != NULL) {
                 sq = strstr(sx, "\"");
                 if (sq != NULL) {
@@ -259,7 +259,7 @@ int ptz_relative_move(char *input)
                     sqx = strstr(x, "\"");
                 }
             }
-            sy = strstr(sp, "y");
+            sy = strstr(sp, "y=");
             if (sy != NULL) {
                 sq = strstr(sy, "\"");
                 if (sq != NULL) {
