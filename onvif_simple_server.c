@@ -34,6 +34,7 @@
 
 #define DEFAULT_CONF_FILE "/etc/onvif_simple_server.conf"
 #define DEFAULT_LOG_FILE "/var/log/onvif_simple_server.log"
+#define DEBUG_FILE "/tmp/onvif_simple_server.debug"
 
 service_context_t service_ctx;
 
@@ -254,6 +255,29 @@ int processing_conf_file(char *file)
     }
 }
 
+int check_debug_file(char *file_name)
+{
+    FILE *f;
+    int debug_value = -1;
+    char debug_buffer[4];
+
+    f = fopen(file_name, "r");
+    if (f == NULL)
+        return -1;
+
+    if (fgets(debug_buffer, 4, f) == NULL) {
+        fclose(f);
+        return -1;
+    }
+    fclose(f);
+
+    if (sscanf(debug_buffer, "%d", &debug_value) != 1) {
+        return -1;
+    }
+
+    return debug_value;
+}
+
 void print_conf_help()
 {
     fprintf(stderr, "\nCreate a configuration file with the following parameters:\n\n");
@@ -449,6 +473,9 @@ int main(int argc, char ** argv)
         free(conf_file);
         exit(EXIT_SUCCESS);
     }
+
+    int debug2 = check_debug_file(DEBUG_FILE);
+    if (debug2 != -1) debug = debug2 - 5;
 
     log_add_fp(fLog, debug);
     log_set_level(debug);
