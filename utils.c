@@ -294,6 +294,8 @@ char *rtrim_mf(char *s)
 {
     int iret = strlen(s);
     char* back = s + iret;
+
+    if (iret == 0) return s;
     back--;
     while((*back == ' ') || (*back == '\t') || (*back == '\n') || (*back == '\r')) {
         *back = '\0';
