@@ -250,6 +250,15 @@ int processing_conf_file(char *file)
         } else if (strcasecmp(param, "move_preset") == 0) {
             service_ctx.ptz_node.move_preset = (char *) malloc(strlen(value) + 1);
             strcpy(service_ctx.ptz_node.move_preset, value);
+        } else if (strcasecmp(param, "set_preset") == 0) {
+            service_ctx.ptz_node.set_preset = (char *) malloc(strlen(value) + 1);
+            strcpy(service_ctx.ptz_node.set_preset, value);
+        } else if (strcasecmp(param, "set_home_position") == 0) {
+            service_ctx.ptz_node.set_home_position = (char *) malloc(strlen(value) + 1);
+            strcpy(service_ctx.ptz_node.set_home_position, value);
+        } else if (strcasecmp(param, "remove_preset") == 0) {
+            service_ctx.ptz_node.remove_preset = (char *) malloc(strlen(value) + 1);
+            strcpy(service_ctx.ptz_node.remove_preset, value);
         } else {
             log_warn("Unrecognized option: %s", line);
         }
@@ -342,6 +351,9 @@ void print_conf_help()
     fprintf(stderr, "\tmove_down=/tmp/sd/yi-hack/bin/ipc_cmd -m down\n");
     fprintf(stderr, "\tmove_stop=/tmp/sd/yi-hack/bin/ipc_cmd -M stop\n");
     fprintf(stderr, "\tmove_preset=/tmp/sd/yi-hack/bin/ipc_cmd -p %%t\n");
+    fprintf(stderr, "\tset_preset=/tmp/sd/yi-hack/bin/ipc_cmd -P %%t\n");
+    fprintf(stderr, "\tset_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -H\n");
+    fprintf(stderr, "\tremove_preset=/tmp/sd/yi-hack/bin/ipc_cmd -R %%t\n");
 }
 
 void print_usage(char *progname)
@@ -680,6 +692,12 @@ int main(int argc, char ** argv)
                 ptz_stop();
             } else if (strcasecmp(method, "GetStatus") == 0) {
                 ptz_get_status();
+            } else if (strcasecmp(method, "SetPreset") == 0) {
+                ptz_set_preset();
+            } else if (strcasecmp(method, "SetHomePosition") == 0) {
+                ptz_set_home_position();
+            } else if (strcasecmp(method, "RemovePreset") == 0) {
+                ptz_remove_preset();
             } else {
                 ptz_unsupported(method);
             }
@@ -723,6 +741,9 @@ int main(int argc, char ** argv)
     free(service_ctx.ptz_node.move_down);
     free(service_ctx.ptz_node.move_stop);
     free(service_ctx.ptz_node.move_preset);
+    free(service_ctx.ptz_node.set_preset);
+    free(service_ctx.ptz_node.set_home_position);
+    free(service_ctx.ptz_node.remove_preset);
 
     free(conf_file);
 

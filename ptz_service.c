@@ -323,6 +323,55 @@ int ptz_get_status()
             "%TIME%", utctime);
 }
 
+int ptz_set_preset()
+{
+    char sys_command[MAX_LEN];
+    const char *preset_name;
+
+    preset_name = get_element("PresetName", "Body");
+    str_subst(sys_command, service_ctx.ptz_node.set_preset, "%t", (char *) preset_name);
+    system(sys_command);
+
+    long size = cat(NULL, "ptz_service_files/SetPreset.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "ptz_service_files/SetPreset.xml", 0);
+}
+
+int ptz_set_home_position()
+{
+    char sys_command[MAX_LEN];
+
+    strcpy(sys_command, service_ctx.ptz_node.set_home_position);
+    system(sys_command);
+
+    long size = cat(NULL, "ptz_service_files/SetHomePosition.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "ptz_service_files/SetHomePosition.xml", 0);
+}
+
+int ptz_remove_preset()
+{
+    char sys_command[MAX_LEN];
+    const char *preset_token;
+
+    preset_token = get_element("PresetToken", "Body");
+    str_subst(sys_command, service_ctx.ptz_node.remove_preset, "%t", (char *) preset_token);
+    system(sys_command);
+
+    long size = cat(NULL, "ptz_service_files/RemovePreset.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "ptz_service_files/RemovePreset.xml", 0);
+}
+
 int ptz_unsupported(const char *method)
 {
     send_fault();

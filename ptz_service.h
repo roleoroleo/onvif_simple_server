@@ -30,6 +30,9 @@ int ptz_continuous_move();
 int ptz_relative_move();
 int ptz_stop();
 int ptz_get_status();
+int ptz_set_preset();
+int ptz_set_home_position();
+int ptz_remove_preset();
 
 int ptz_unsupported(const char *method);
 
