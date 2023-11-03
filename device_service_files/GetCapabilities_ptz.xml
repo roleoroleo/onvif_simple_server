@@ -30,9 +30,9 @@
                     <tt:XAddr>%DEVICE_SERVICE_ADDRESS%</tt:XAddr>
                     <tt:Network/>
                     <tt:System>
-                        <tt:DiscoveryResolve>false</tt:DiscoveryResolve>
-                        <tt:DiscoveryBye>false</tt:DiscoveryBye>
-                        <tt:RemoteDiscovery>false</tt:RemoteDiscovery>
+                        <tt:DiscoveryResolve>true</tt:DiscoveryResolve>
+                        <tt:DiscoveryBye>true</tt:DiscoveryBye>
+                        <tt:RemoteDiscovery>true</tt:RemoteDiscovery>
                         <tt:SystemBackup>false</tt:SystemBackup>
                         <tt:SystemLogging>false</tt:SystemLogging>
                         <tt:FirmwareUpgrade>false</tt:FirmwareUpgrade>
