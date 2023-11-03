@@ -11,9 +11,9 @@ So:
 - no libxml
 
 
-The XML parsing features are replaced by some trivial functions and a template based strategy.
+The XML parsing features are replaced by a wrapper that uses ezxml library and a template based strategy.
 
-The only library used is libtomcrypt (or mbedtls), to handle authentication.
+About security, you can choose between libtomcrypt or mbedtls, to handle authentication.
 
 The web service discovery daemon is a standalone program and must be started with command line options.
 
@@ -157,6 +157,7 @@ If you test it with other clients or NVR, please let me know opening a issue.
 ## Credits
 Thanks to:
 - rxi - for the logging library https://github.com/rxi/log.c
+- Aaron Voisine - for ezxml library https://ezxml.sourceforge.net/
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)

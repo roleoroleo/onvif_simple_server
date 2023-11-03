@@ -17,7 +17,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "media_service.h"
 #include "utils.h"
+#include "log.h"
+#include "ezxml_wrapper.h"
 #include "onvif_simple_server.h"
 
 extern service_context_t service_ctx;
@@ -260,12 +263,13 @@ int media_get_profile(char *input)
 {
     char stmp_vsc_w[16], stmp_vsc_h[16];
     char stmp_w[16], stmp_h[16];
+    const char *profile_token = get_element("ProfileToken", "Body");
 
     if (((service_ctx.profiles_num == 1) &&
             (strcasecmp(service_ctx.profiles[0].name, "Profile_0") == 0) &&
-            (find_element(input, "ProfileToken", "Profile_0") == 0)) ||
+            (strcasecmp(profile_token, "Profile_0") == 0)) ||
             ((service_ctx.profiles_num == 2) &&
-            (find_element(input, "ProfileToken", "Profile_0") == 0))) {
+            (strcasecmp(profile_token, "Profile_0") == 0))) {
 
         sprintf(stmp_vsc_w, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_vsc_h, "%d", service_ctx.profiles[0].height);
@@ -288,7 +292,7 @@ int media_get_profile(char *input)
 
     } else if ((service_ctx.profiles_num == 1) &&
             (strcasecmp(service_ctx.profiles[0].name, "Profile_1") == 0) &&
-            (find_element(input, "ProfileToken", "Profile_1") == 0)) {
+            (strcasecmp(profile_token, "Profile_1") == 0)) {
 
         sprintf(stmp_vsc_w, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_vsc_h, "%d", service_ctx.profiles[0].height);
@@ -310,7 +314,7 @@ int media_get_profile(char *input)
                 "%HEIGHT%", stmp_h);
 
     } else if ((service_ctx.profiles_num == 2) &&
-            (find_element(input, "ProfileToken", "Profile_1") == 0)) {
+            (strcasecmp(profile_token, "Profile_1") == 0)) {
 
         sprintf(stmp_vsc_w, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_vsc_h, "%d", service_ctx.profiles[0].height);
@@ -408,12 +412,13 @@ int media_get_video_encoder_configuration(char *input)
 {
     char stmp_w_l[16], stmp_h_l[16];
     char stmp_w_h[16], stmp_h_h[16];
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
 
     if (((service_ctx.profiles_num == 1) &&
             (strcasecmp(service_ctx.profiles[0].name, "Profile_0") == 0) &&
-            (find_element(input, "ConfigurationToken", "Profile_0") == 0)) ||
+            (strcasecmp(configuration_token, "Profile_0_VideoEncoderToken") == 0)) ||
             ((service_ctx.profiles_num == 2) &&
-            (find_element(input, "ConfigurationToken", "Profile_0") == 0))) {
+            (strcasecmp(configuration_token, "Profile_0_VideoEncoderToken") == 0))) {
 
         sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
@@ -430,7 +435,7 @@ int media_get_video_encoder_configuration(char *input)
 
     } else if ((service_ctx.profiles_num == 1) &&
             (strcasecmp(service_ctx.profiles[0].name, "Profile_1") == 0) &&
-            (find_element(input, "ConfigurationToken", "Profile_1") == 0)) {
+            (strcasecmp(configuration_token, "Profile_1_VideoEncoderToken") == 0)) {
 
         sprintf(stmp_w_l, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h_l, "%d", service_ctx.profiles[0].height);
@@ -446,7 +451,7 @@ int media_get_video_encoder_configuration(char *input)
                 "%HEIGHT_LOW%", stmp_h_l);
 
     } else if ((service_ctx.profiles_num == 2) &&
-            (find_element(input, "ConfigurationToken", "Profile_1") == 0)) {
+            (strcasecmp(configuration_token, "Profile_1_VideoEncoderToken") == 0)) {
 
         sprintf(stmp_w_l, "%d", service_ctx.profiles[1].width);
         sprintf(stmp_h_l, "%d", service_ctx.profiles[1].height);
@@ -474,12 +479,13 @@ int media_get_compatible_video_encoder_configurations(char *input)
 {
     char stmp_w_l[16], stmp_h_l[16];
     char stmp_w_h[16], stmp_h_h[16];
+    const char *profile_token = get_element("ProfileToken", "Body");
 
     if (((service_ctx.profiles_num == 1) &&
             (strcasecmp(service_ctx.profiles[0].name, "Profile_0") == 0) &&
-            (find_element(input, "ProfileToken", "Profile_0") == 0)) ||
+            (strcasecmp(profile_token, "Profile_0") == 0)) ||
             ((service_ctx.profiles_num == 2) &&
-            (find_element(input, "ProfileToken", "Profile_0") == 0))) {
+            (strcasecmp(profile_token, "Profile_0") == 0))) {
 
         sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
@@ -496,7 +502,7 @@ int media_get_compatible_video_encoder_configurations(char *input)
 
     } else if ((service_ctx.profiles_num == 1) &&
         (strcasecmp(service_ctx.profiles[0].name, "Profile_1") == 0) &&
-        (find_element(input, "ProfileToken", "Profile_1") == 0)) {
+        (strcasecmp(profile_token, "Profile_1") == 0)) {
 
         sprintf(stmp_w_l, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h_l, "%d", service_ctx.profiles[0].height);
@@ -512,7 +518,7 @@ int media_get_compatible_video_encoder_configurations(char *input)
                 "%HEIGHT_LOW%", stmp_h_l);
 
     } else if ((service_ctx.profiles_num == 2) &&
-            (find_element(input, "ProfileToken", "Profile_1") == 0)) {
+            (strcasecmp(profile_token, "Profile_1") == 0)) {
 
         sprintf(stmp_w_l, "%d", service_ctx.profiles[1].width);
         sprintf(stmp_h_l, "%d", service_ctx.profiles[1].height);
@@ -541,12 +547,13 @@ int media_get_video_encoder_configuration_options(char *input)
 {
     char stmp_w_l[16], stmp_h_l[16];
     char stmp_w_h[16], stmp_h_h[16];
+    const char *profile_token = get_element("ProfileToken", "Body");
 
     if (((service_ctx.profiles_num == 1) &&
             (strcasecmp(service_ctx.profiles[0].name, "Profile_0") == 0) &&
-            (find_element(input, "ConfigurationToken", "Profile_0") == 0)) ||
+            (strcasecmp(profile_token, "Profile_0") == 0)) ||
             ((service_ctx.profiles_num == 2) &&
-            (find_element(input, "ConfigurationToken", "Profile_0") == 0))) {
+            (strcasecmp(profile_token, "Profile_0") == 0))) {
 
         sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
@@ -565,7 +572,7 @@ int media_get_video_encoder_configuration_options(char *input)
 
     } else if ((service_ctx.profiles_num == 1) &&
         (strcasecmp(service_ctx.profiles[0].name, "Profile_1") == 0) &&
-        (find_element(input, "ConfigurationToken", "Profile_1") == 0)) {
+        (strcasecmp(profile_token, "Profile_1") == 0)) {
 
         sprintf(stmp_w_l, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h_l, "%d", service_ctx.profiles[0].height);
@@ -583,7 +590,7 @@ int media_get_video_encoder_configuration_options(char *input)
                 "%PROFILE%", "Main");
 
     } else if ((service_ctx.profiles_num == 2) &&
-            (find_element(input, "ConfigurationToken", "Profile_1") == 0)) {
+            (strcasecmp(profile_token, "Profile_1") == 0)) {
 
         sprintf(stmp_w_l, "%d", service_ctx.profiles[1].width);
         sprintf(stmp_h_l, "%d", service_ctx.profiles[1].height);
@@ -617,6 +624,7 @@ int media_get_snapshot_uri(char *input)
     char netmask[16];
     char *s;
     char line[MAX_LEN];
+    const char *profile_token = get_element("ProfileToken", "Body");
 
     memset(line, '\0', sizeof(line));
 
@@ -624,9 +632,9 @@ int media_get_snapshot_uri(char *input)
 
     if (((service_ctx.profiles_num == 1) &&
             (strcasecmp(service_ctx.profiles[0].name, "Profile_0") == 0) &&
-            (find_element(input, "ProfileToken", "Profile_0") == 0)) ||
+            (strcasecmp(profile_token, "Profile_0") == 0)) ||
             ((service_ctx.profiles_num == 2) &&
-            (find_element(input, "ProfileToken", "Profile_0") == 0))) {
+            (strcasecmp(profile_token, "Profile_0") == 0))) {
 
         if (str_subst(line, service_ctx.profiles[0].snapurl, "%s", address) < 0) {
             strcpy(line, service_ctx.profiles[0].snapurl);
@@ -645,7 +653,7 @@ int media_get_snapshot_uri(char *input)
 
     } else if ((service_ctx.profiles_num == 1) &&
             (strcasecmp(service_ctx.profiles[0].name, "Profile_1") == 0) &&
-            (find_element(input, "ProfileToken", "Profile_1") == 0)) {
+            (strcasecmp(profile_token, "Profile_1") == 0)) {
 
         if (str_subst(line, service_ctx.profiles[0].snapurl, "%s", address) < 0) {
             strcpy(line, service_ctx.profiles[0].snapurl);
@@ -663,7 +671,7 @@ int media_get_snapshot_uri(char *input)
                     "%URI%", line);
 
     } else if ((service_ctx.profiles_num == 2) &&
-            (find_element(input, "ProfileToken", "Profile_1") == 0)) {
+            (strcasecmp(profile_token, "Profile_1") == 0)) {
 
         if (str_subst(line, service_ctx.profiles[1].snapurl, "%s", address) < 0) {
             strcpy(line, service_ctx.profiles[1].snapurl);
@@ -696,6 +704,7 @@ int media_get_stream_uri(char *input)
     char netmask[16];
     char *s;
     char line[MAX_LEN];
+    const char *profile_token = get_element("ProfileToken", "Body");
 
     memset(line, '\0', sizeof(line));
 
@@ -703,9 +712,9 @@ int media_get_stream_uri(char *input)
 
     if (((service_ctx.profiles_num == 1) &&
             (strcasecmp(service_ctx.profiles[0].name, "Profile_0") == 0) &&
-            (find_element(input, "ProfileToken", "Profile_0") == 0)) ||
+            (strcasecmp(profile_token, "Profile_0") == 0)) ||
             ((service_ctx.profiles_num == 2) &&
-            (find_element(input, "ProfileToken", "Profile_0") == 0))) {
+            (strcasecmp(profile_token, "Profile_0") == 0))) {
 
         if (str_subst(line, service_ctx.profiles[0].url, "%s", address) < 0) {
             strcpy(line, service_ctx.profiles[0].url);
@@ -724,7 +733,7 @@ int media_get_stream_uri(char *input)
 
     } else if ((service_ctx.profiles_num == 1) &&
             (strcasecmp(service_ctx.profiles[0].name, "Profile_1") == 0) &&
-            (find_element(input, "ProfileToken", "Profile_1") == 0)) {
+            (strcasecmp(profile_token, "Profile_1") == 0)) {
 
         if (str_subst(line, service_ctx.profiles[0].url, "%s", address) < 0) {
             strcpy(line, service_ctx.profiles[0].url);
@@ -742,7 +751,7 @@ int media_get_stream_uri(char *input)
                     "%URI%", line);
 
     } else if ((service_ctx.profiles_num == 2) &&
-            (find_element(input, "ProfileToken", "Profile_1") == 0)) {
+            (strcasecmp(profile_token, "Profile_1") == 0)) {
 
         if (str_subst(line, service_ctx.profiles[1].url, "%s", address) < 0) {
             strcpy(line, service_ctx.profiles[1].url);
@@ -769,10 +778,10 @@ int media_get_stream_uri(char *input)
     }
 }
 
-int media_unsupported(char *action)
+int media_unsupported(const char *method)
 {
     char response[MAX_LEN];
-    sprintf(response, "%sResponse", action);
+    sprintf(response, "%sResponse", method);
 
     long size = cat(NULL, "media_service_files/Unsupported.xml", 2,
             "%UNSUPPORTED%", response);

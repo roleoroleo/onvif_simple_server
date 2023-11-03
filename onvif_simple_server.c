@@ -29,6 +29,7 @@
 #include "device_service.h"
 #include "media_service.h"
 #include "ptz_service.h"
+#include "ezxml_wrapper.h"
 #include "utils.h"
 #include "log.h"
 
@@ -362,10 +363,9 @@ int main(int argc, char ** argv)
     int errno;
     char *endptr;
     int c, ret, i, itmp;
-    char buf[MAX_LEN];
     char *conf_file;
     char *prog_name;
-    char *action;
+    const char *method;
     username_token_t security;
     int auth_error = 0;
 
@@ -496,14 +496,15 @@ int main(int argc, char ** argv)
     }
     log_info("Completed.");
 
+    int input_size;
     char *input = (char *) malloc (16 * 1024 * sizeof(char));
     if (input == NULL) {
         log_fatal("Memory error");
         free(conf_file);
         exit(EXIT_FAILURE);
     }
-    itmp = fread(input, 1, 16 * 1024 * sizeof(char), stdin);
-    if (realloc(input, itmp * sizeof(char)) == NULL) {
+    input_size = fread(input, 1, 16 * 1024 * sizeof(char), stdin);
+    if (realloc(input, input_size * sizeof(char)) == NULL) {
         log_fatal("Memory error");
         free(input);
         free(conf_file);
@@ -512,20 +513,21 @@ int main(int argc, char ** argv)
     log_debug("Input:\n%s", input);
     log_debug("Url: %s", prog_name);
 
-    if (find_action(buf, MAX_LEN, input) < 0) {
+    init_xml(input, input_size);
+    method = get_method(1);
+    if (method == NULL) {
         log_fatal("XML parsing error");
+        close_xml();
         free(conf_file);
         exit(EXIT_FAILURE);
     }
-    action = (char *) malloc((strlen(buf) + 1) * sizeof(char));
-    strcpy(action, buf);
 
-    log_debug("Action: %s", action);
+    log_debug("Method: %s", method);
 
     if (service_ctx.user != NULL) {
         if ((strstr(input, "Header") != NULL) && (strstr(input, "Security") != NULL) && (strstr(input, "UsernameToken") != NULL)) {
             int element_size;
-            char *element;
+            const char *element;
             unsigned long nonce_size = 128;
             unsigned long auth_size = 128;
             unsigned long sha1_size = 20;
@@ -536,21 +538,21 @@ int main(int argc, char ** argv)
             char digest[128];
 
             security.enable = 1;
-            element = get_element(&element_size, input, "Username");
+            element = get_element("Username", "Header");
             if (element != NULL) {
                 security.username = (char *) malloc((element_size + 1) * sizeof(char));
                 memset(security.username, '\0', (element_size + 1) * sizeof(char));
                 strncpy(security.username, element, element_size);
                 log_info("Security: username = %s", security.username);
             }
-            element = get_element(&element_size, input, "Password");
+            element = get_element("Password", "Header");
             if (element != NULL) {
                 security.password = (char *) malloc((element_size + 1) * sizeof(char));
                 memset(security.password, '\0', (element_size + 1) * sizeof(char));
                 strncpy(security.password, element, element_size);
                 log_info("Security: password = %s", security.password);
             }
-            element = get_element(&element_size, input, "Nonce");
+            element = get_element("Nonce", "Header");
             if (element != NULL) {
                 security.nonce = (char *) malloc((element_size + 1) * sizeof(char));
                 memset(security.nonce, '\0', (element_size + 1) * sizeof(char));
@@ -558,7 +560,7 @@ int main(int argc, char ** argv)
                 log_info("Security: nonce = %s", security.nonce);
                 b64_decode(security.nonce, strlen(security.nonce), nonce, &nonce_size);
             }
-            element = get_element(&element_size, input, "Created");
+            element = get_element("Created", "Header");
             if (element != NULL) {
                 security.created = (char *) malloc((element_size + 1) * sizeof(char));
                 memset(security.created, '\0', (element_size + 1) * sizeof(char));
@@ -589,97 +591,97 @@ int main(int argc, char ** argv)
         security.enable = 0;
     }
 
-    if ((strcmp("GetSystemDateAndTime", action) == 0) || (strcmp("GetUsers", action) == 0)) {
+    if ((strcmp("GetSystemDateAndTime", method) == 0) || (strcmp("GetUsers", method) == 0)) {
         auth_error = 0;
     }
 
     if (auth_error == 0) {
 
         if (strcasecmp("device_service", prog_name) == 0) {
-            if (strcasecmp(action, "GetServices") == 0) {
+            if (strcasecmp(method, "GetServices") == 0) {
                 device_get_services(input);
-            } else if (strcasecmp(action, "GetServiceCapabilities") == 0) {
+            } else if (strcasecmp(method, "GetServiceCapabilities") == 0) {
                 device_get_service_capabilities();
-            } else if (strcasecmp(action, "GetDeviceInformation") == 0) {
+            } else if (strcasecmp(method, "GetDeviceInformation") == 0) {
                 device_get_device_information();
-            } else if (strcasecmp(action, "GetSystemDateAndTime") == 0) {
+            } else if (strcasecmp(method, "GetSystemDateAndTime") == 0) {
                 device_get_system_date_and_time();
-            } else if (strcasecmp(action, "SystemReboot") == 0) {
+            } else if (strcasecmp(method, "SystemReboot") == 0) {
                 device_system_reboot();
-            } else if (strcasecmp(action, "GetScopes") == 0) {
+            } else if (strcasecmp(method, "GetScopes") == 0) {
                 device_get_scopes();
-            } else if (strcasecmp(action, "GetUsers") == 0) {
+            } else if (strcasecmp(method, "GetUsers") == 0) {
                 device_get_users();
-            } else if (strcasecmp(action, "GetWsdlUrl") == 0) {
+            } else if (strcasecmp(method, "GetWsdlUrl") == 0) {
                 device_get_wsdl_url();
-            } else if (strcasecmp(action, "GetCapabilities") == 0) {
+            } else if (strcasecmp(method, "GetCapabilities") == 0) {
                 device_get_capabilities(input);
-            } else if (strcasecmp(action, "GetNetworkInterfaces") == 0) {
+            } else if (strcasecmp(method, "GetNetworkInterfaces") == 0) {
                 device_get_network_interfaces();
             } else {
-                device_unsupported(action);
+                device_unsupported(method);
             }
         } else if (strcasecmp("media_service", prog_name) == 0) {
-            if (strcasecmp(action, "GetServiceCapabilities") == 0) {
+            if (strcasecmp(method, "GetServiceCapabilities") == 0) {
                 media_get_service_capabilities();
-            } else if (strcasecmp(action, "GetVideoSources") == 0) {
+            } else if (strcasecmp(method, "GetVideoSources") == 0) {
                 media_get_video_sources();
-            } else if (strcasecmp(action, "GetVideoSourceConfigurations") == 0) {
+            } else if (strcasecmp(method, "GetVideoSourceConfigurations") == 0) {
                 media_get_video_source_configurations();
-            } else if (strcasecmp(action, "GetVideoSourceConfiguration") == 0) {
+            } else if (strcasecmp(method, "GetVideoSourceConfiguration") == 0) {
                 media_get_video_source_configuration();
-            } else if (strcasecmp(action, "GetCompatibleVideoSourceConfigurations") == 0) {
+            } else if (strcasecmp(method, "GetCompatibleVideoSourceConfigurations") == 0) {
                 media_get_compatible_video_source_configurations();
-            } else if (strcasecmp(action, "GetVideoSourceConfigurationOptions") == 0) {
+            } else if (strcasecmp(method, "GetVideoSourceConfigurationOptions") == 0) {
                 media_get_video_source_configuration_options();
-            } else if (strcasecmp(action, "GetProfiles") == 0) {
+            } else if (strcasecmp(method, "GetProfiles") == 0) {
                 media_get_profiles();
-            } else if (strcasecmp(action, "GetProfile") == 0) {
+            } else if (strcasecmp(method, "GetProfile") == 0) {
                 media_get_profile(input);
-            } else if (strcasecmp(action, "GetVideoEncoderConfigurations") == 0) {
+            } else if (strcasecmp(method, "GetVideoEncoderConfigurations") == 0) {
                 media_get_video_encoder_configurations();
-            } else if (strcasecmp(action, "GetVideoEncoderConfiguration") == 0) {
+            } else if (strcasecmp(method, "GetVideoEncoderConfiguration") == 0) {
                 media_get_video_encoder_configuration(input);
-            } else if (strcasecmp(action, "GetCompatibleVideoEncoderConfigurations") == 0) {
+            } else if (strcasecmp(method, "GetCompatibleVideoEncoderConfigurations") == 0) {
                 media_get_compatible_video_encoder_configurations(input);
-            } else if (strcasecmp(action, "GetVideoEncoderConfigurationOptions") == 0) {
+            } else if (strcasecmp(method, "GetVideoEncoderConfigurationOptions") == 0) {
                 media_get_video_encoder_configuration_options(input);
-            } else if (strcasecmp(action, "GetSnapshotUri") == 0) {
+            } else if (strcasecmp(method, "GetSnapshotUri") == 0) {
                 media_get_snapshot_uri(input);
-            } else if (strcasecmp(action, "GetStreamUri") == 0) {
+            } else if (strcasecmp(method, "GetStreamUri") == 0) {
                 media_get_stream_uri(input);
             } else {
-                media_unsupported(action);
+                media_unsupported(method);
             }
         } else if (strcasecmp("ptz_service", prog_name) == 0) {
-            if (strcasecmp(action, "GetServiceCapabilities") == 0) {
+            if (strcasecmp(method, "GetServiceCapabilities") == 0) {
                 ptz_get_service_capabilities();
-            } else if (strcasecmp(action, "GetConfigurations") == 0) {
+            } else if (strcasecmp(method, "GetConfigurations") == 0) {
                 ptz_get_configurations();
-            } else if (strcasecmp(action, "GetConfiguration") == 0) {
+            } else if (strcasecmp(method, "GetConfiguration") == 0) {
                 ptz_get_configuration();
-            } else if (strcasecmp(action, "GetConfigurationOptions") == 0) {
+            } else if (strcasecmp(method, "GetConfigurationOptions") == 0) {
                 ptz_get_configuration_options();
-            } else if (strcasecmp(action, "GetNodes") == 0) {
+            } else if (strcasecmp(method, "GetNodes") == 0) {
                 ptz_get_nodes();
-            } else if (strcasecmp(action, "GetNode") == 0) {
+            } else if (strcasecmp(method, "GetNode") == 0) {
                 ptz_get_node();
-            } else if (strcasecmp(action, "GetPresets") == 0) {
+            } else if (strcasecmp(method, "GetPresets") == 0) {
                 ptz_get_presets();
-            } else if (strcasecmp(action, "GotoPreset") == 0) {
+            } else if (strcasecmp(method, "GotoPreset") == 0) {
                 ptz_goto_preset(input);
-            } else if (strcasecmp(action, "GotoHomePosition") == 0) {
+            } else if (strcasecmp(method, "GotoHomePosition") == 0) {
                 ptz_goto_home_position();
-            } else if (strcasecmp(action, "ContinuousMove") == 0) {
+            } else if (strcasecmp(method, "ContinuousMove") == 0) {
                 ptz_continuous_move(input);
-            } else if (strcasecmp(action, "RelativeMove") == 0) {
+            } else if (strcasecmp(method, "RelativeMove") == 0) {
                 ptz_relative_move(input);
-            } else if (strcasecmp(action, "Stop") == 0) {
+            } else if (strcasecmp(method, "Stop") == 0) {
                 ptz_stop();
-            } else if (strcasecmp(action, "GetStatus") == 0) {
+            } else if (strcasecmp(method, "GetStatus") == 0) {
                 ptz_get_status();
             } else {
-                ptz_unsupported(action);
+                ptz_unsupported(method);
             }
         }
     } else {
@@ -693,6 +695,7 @@ int main(int argc, char ** argv)
         free(security.created);
     }
 
+    close_xml();
     free(action);
     free(input);
 

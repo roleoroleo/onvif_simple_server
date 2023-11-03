@@ -14,21 +14,16 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DEVICE_SERVICE_H
-#define DEVICE_SERVICE_H
+#ifndef EZXML_WRAPPER_H
+#define EZXML_WRAPPER_H
 
-int device_get_services(char *input);
-int device_get_service_capabilities();
-int device_get_device_information();
-int device_get_system_date_and_time();
-int device_system_reboot();
-int device_get_scopes();
-int device_get_users();
-int device_get_wsdl_url();
-int device_get_capabilities(char *request);
-int device_get_network_interfaces();
+#include "ezxml/ezxml.h"
 
-int device_unsupported(const char *method);
-int device_authentication_error();
+int init_xml(char *buffer, int buffer_size);
+void close_xml();
+const char *get_method(int skip_prefix);
+const char *get_element(char *name, char *first_node);
+ezxml_t get_element_ptr(ezxml_t start_from, char *name, char *first_node);
+const char *get_attribute(ezxml_t node, char *name);
 
-#endif //DEVICE_SERVICE_H
+#endif //EZXML_WRAPPER_H

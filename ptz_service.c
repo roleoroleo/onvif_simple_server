@@ -20,7 +20,10 @@
 #include <unistd.h>
 #include <time.h>
 
+#include "ptz_service.h"
 #include "utils.h"
+#include "log.h"
+#include "ezxml_wrapper.h"
 #include "onvif_simple_server.h"
 
 extern service_context_t service_ctx;
@@ -97,29 +100,13 @@ int ptz_get_presets()
 
 int ptz_goto_preset(char *input)
 {
-    char preset[2];
+    const char *preset;
     char sys_command[MAX_LEN];
 
-    if (find_element(input, "PresetToken", "0") == 0) {
-        sprintf(preset, "0");
-    } else if (find_element(input, "PresetToken", "1") == 0) {
-        sprintf(preset, "1");
-    } else if (find_element(input, "PresetToken", "2") == 0) {
-        sprintf(preset, "2");
-    } else if (find_element(input, "PresetToken", "3") == 0) {
-        sprintf(preset, "3");
-    } else if (find_element(input, "PresetToken", "4") == 0) {
-        sprintf(preset, "4");
-    } else if (find_element(input, "PresetToken", "5") == 0) {
-        sprintf(preset, "5");
-    } else if (find_element(input, "PresetToken", "6") == 0) {
-        sprintf(preset, "6");
-    } else if (find_element(input, "PresetToken", "7") == 0) {
-        sprintf(preset, "7");
-    }
+    preset = get_element("PresetToken", "Body");
 
-    if (preset >= 0) {
-        str_subst(sys_command, service_ctx.ptz_node.move_preset, "%t", preset);
+    if ((preset[0] >= '0') && (preset[0] < '8')) {
+        str_subst(sys_command, service_ctx.ptz_node.move_preset, "%t", (char *) preset);
         system(sys_command);
 
         long size = cat(NULL, "ptz_service_files/GotoPreset.xml", 0);
@@ -155,42 +142,28 @@ int ptz_goto_home_position()
 
 int ptz_continuous_move(char *input)
 {
-    char *sv, *sp, *sz, *sx, *sy, *sq;
-    char *sqx = NULL, *sqy = NULL;
-    char *x = NULL, *y = NULL;
+    const char *x = NULL;
+    const char *y = NULL;
+    const char *z = NULL;
     double dx, dy;
     char sys_command[MAX_LEN];
     int ret = -1;
+    ezxml_t node;
 
-    sv = strstr(input, "Velocity");
-    if (sv != NULL) {
-        sp = strstr(sv, "PanTilt");
-        if (sp != NULL) {
-            sx = strstr(sp, "x=");
-            if (sx != NULL) {
-                sq = strstr(sx, "\"");
-                if (sq != NULL) {
-                    x = sq + 1;
-                    sqx = strstr(x, "\"");
-                }
-            }
-            sy = strstr(sp, "y=");
-            if (sy != NULL) {
-                sq = strstr(sy, "\"");
-                if (sq != NULL) {
-                    y = sq + 1;
-                    sqy = strstr(y, "\"");
-                }
-            }
+    node = get_element_ptr(NULL, "Velocity", "Body");
+    if (node != NULL) {
+        node = get_element_ptr(node, "PanTilt", "Body");
+        if (node != NULL) {
+            x = get_attribute(node, "x");
+            y = get_attribute(node, "y");
         }
-        sz = strstr(sv, "Zoom");
-        if (sz != NULL) ret = 0;
-
+        node = get_element_ptr(node, "Zoom", "Body");
+        if (node != NULL) {
+            z = get_attribute(node, "x");
+        }
     }
 
-    if ((sqx != NULL) && (x != NULL)) {
-
-        sqx = '\0';
+    if (x != NULL) {
         dx = atof(x);
 
         if (dx > 0.0) {
@@ -204,9 +177,7 @@ int ptz_continuous_move(char *input)
         }
     }
 
-    if ((sqy != NULL) && (y != NULL)) {
-
-        sqy = '\0';
+    if (y != NULL) {
         dy = atof(y);
 
         if (dy > 0.0) {
@@ -218,6 +189,10 @@ int ptz_continuous_move(char *input)
             system(sys_command);
             ret = 0;
         }
+    }
+
+    if (z != NULL) {
+        ret = 0;
     }
 
     if (ret == 0) {
@@ -240,41 +215,28 @@ int ptz_continuous_move(char *input)
 
 int ptz_relative_move(char *input)
 {
-    char *sv, *sp, *sz, *sx, *sy, *sq;
-    char *sqx, *sqy;
-    char *x = NULL, *y = NULL;
+    char const *x = NULL;
+    char const *y = NULL;
+    char const *z = NULL;
     double dx, dy;
     char sys_command[MAX_LEN];
     int ret = -1;
+    ezxml_t node;
 
-    sv = strstr(input, "Translation");
-    if (sv != NULL) {
-        sp = strstr(sv, "PanTilt");
-        if (sp != NULL) {
-            sx = strstr(sp, "x=");
-            if (sx != NULL) {
-                sq = strstr(sx, "\"");
-                if (sq != NULL) {
-                    x = sq + 1;
-                    sqx = strstr(x, "\"");
-                }
-            }
-            sy = strstr(sp, "y=");
-            if (sy != NULL) {
-                sq = strstr(sy, "\"");
-                if (sq != NULL) {
-                    y = sq + 1;
-                    sqy = strstr(y, "\"");
-                }
-            }
+    node = get_element_ptr(NULL, "Translation", "Body");
+    if (node != NULL) {
+        node = get_element_ptr(node, "PanTilt", "Body");
+        if (node != NULL) {
+            x = get_attribute(node, "x");
+            y = get_attribute(node, "y");
         }
-        sz = strstr(sv, "Zoom");
-        if (sz != NULL) ret = 0;
+        node = get_element_ptr(node, "Zoom", "Body");
+        if (node != NULL) {
+            z = get_attribute(node, "x");
+        }
     }
 
-    if ((sqx != NULL) && (x != NULL)) {
-
-        sqx = '\0';
+    if (x != NULL) {
         dx = atof(x);
 
         if (dx > 0.0) {
@@ -294,9 +256,7 @@ int ptz_relative_move(char *input)
         }
     }
 
-    if ((sqy != NULL) && (y != NULL)) {
-
-        sqy = '\0';
+    if (y != NULL) {
         dy = atof(y);
 
         if (dy > 0.0) {
@@ -314,6 +274,11 @@ int ptz_relative_move(char *input)
             system(sys_command);
             ret = 0;
         }
+    }
+
+    if (z != NULL) {
+        // Do nothing
+        ret = 0;
     }
 
     if (ret == 0) {
@@ -369,10 +334,10 @@ int ptz_get_status()
             "%TIME%", utctime);
 }
 
-int ptz_unsupported(char *action)
+int ptz_unsupported(const char *method)
 {
     char response[MAX_LEN];
-    sprintf(response, "%sResponse", action);
+    sprintf(response, "%sResponse", method);
 
     long size = cat(NULL, "ptz_service_files/Unsupported.xml", 2,
             "%UNSUPPORTED%", response);

@@ -31,6 +31,7 @@
 
 #include "utils.h"
 #include "log.h"
+#include "ezxml_wrapper.h"
 
 #define MULTICAST_ADDRESS "239.255.255.250"
 #define PORT 3702
@@ -508,8 +509,7 @@ int main(int argc, char **argv)  {
             // Check if the message is a response
             if ((strstr(recv_buffer, TYPE) != NULL) && (strstr(recv_buffer, "XAddrs") == NULL)) {
 
-                char *sm, *relates_to_uuid;
-                int sm_size;
+                const char *relates_to_uuid;
 
                 log_debug("%s", recv_buffer);
 
@@ -519,14 +519,13 @@ int main(int argc, char **argv)  {
                 gen_uuid(msg_uuid);
                 relates_to_uuid = NULL;
 
-                sm = get_element(&sm_size, recv_buffer, "MessageID");
-                if (sm == NULL) {
+                init_xml(recv_buffer, strlen(recv_buffer));
+                relates_to_uuid = get_element("MessageID", "Header");
+                if (relates_to_uuid == NULL) {
                     log_error("Cannot find MessageID.\n");
                     continue;
                 }
-                relates_to_uuid = (char *) malloc((sm_size + 1) * sizeof(char));
-                strncpy(relates_to_uuid, sm, sm_size);
-                relates_to_uuid[sm_size] = '\0';
+                close_xml();
 
                 // Send ProbeMatches message
                 log_info("Sending ProbeMatches message.");
@@ -543,7 +542,6 @@ int main(int argc, char **argv)  {
                 message_loop = (char *) malloc((size + 1) * sizeof(char));
                 if (message_loop == NULL) {
                     log_error("Malloc error.\n");
-                    free(relates_to_uuid);
                     continue;
                 }
 
@@ -559,11 +557,9 @@ int main(int argc, char **argv)  {
                 if (sendto(sock, message_loop, strlen(message_loop), 0, (struct sockaddr *) &addr_in, sizeof(addr_in)) < 0) {
                     log_error("Error sending ProbeMatches message.\n");
                     free(message_loop);
-                    free(relates_to_uuid);
                     continue;
                 }
                 free(message_loop);
-                free(relates_to_uuid);
                 log_info("Sent.");
             }
         }

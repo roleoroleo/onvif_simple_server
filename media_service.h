@@ -32,6 +32,6 @@ int media_get_video_encoder_configuration_options(char *input);
 int media_get_snapshot_uri(char *input);
 int media_get_stream_uri(char *input);
 
-int media_unsupported(char *action);
+int media_unsupported(const char *method);
 
 #endif //MEDIA_SERVICE_H

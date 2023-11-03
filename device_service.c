@@ -22,6 +22,8 @@
 #include <pthread.h>
 
 #include "utils.h"
+#include "log.h"
+#include "ezxml_wrapper.h"
 #include "onvif_simple_server.h"
 
 extern service_context_t service_ctx;
@@ -36,6 +38,7 @@ int device_get_services(char *input)
     char media_service_address[MAX_LEN];
     char ptz_service_address[MAX_LEN];
     char port[8];
+    const char *cap;
 
     port[0] = '\0';
     if (service_ctx.port != 80)
@@ -44,7 +47,8 @@ int device_get_services(char *input)
     sprintf(media_service_address, "http://%s%s/onvif/media_service", address, port);
     sprintf(ptz_service_address, "http://%s%s/onvif/ptz_service", address, port);
 
-    if (find_element(input, "IncludeCapability", "true") == 0) {
+    cap = get_element("IncludeCapability", "Body");
+    if ((cap != NULL) && (strcasecmp(cap, "true")) == 0) {
         if (service_ctx.ptz_node.enable == 0) {
             long size = cat(NULL, "device_service_files/GetServices_with_capabilities_no_ptz.xml", 4,
                     "%DEVICE_SERVICE_ADDRESS%", device_service_address,
@@ -134,9 +138,9 @@ int device_get_system_date_and_time()
     time_t timestamp = time(NULL);
     struct tm *tm = gmtime(&timestamp);
 
-    char false[] = "false";
-    char true[] = "true";
-    char *dst = false;
+    char isfalse[] = "false";
+    char istrue[] = "true";
+    char *dst = isfalse;
     char hour[3];
     char minute[3];
     char second[3];
@@ -144,7 +148,7 @@ int device_get_system_date_and_time()
     char month[3];
     char day[3];
 
-    if (tm->tm_isdst) dst = true;
+    if (tm->tm_isdst) dst = istrue;
     sprintf(hour, "%d", tm->tm_hour);
     sprintf(minute, "%d", tm->tm_min);
     sprintf(second, "%d", tm->tm_sec);
@@ -252,12 +256,15 @@ int device_get_capabilities(char *request)
     char ptz_service_address[MAX_LEN];
     char port[8];
     int icategory;
+    const char *category;
 
-    if (find_element(request, "Category", "Device") == 0) {
+    category = get_element("Category", "Body");
+    if (category != NULL) {
+        if (strcasecmp(category, "Device") == 0) {
             icategory = 1;
-    } else if (find_element(request, "Category", "Media") == 0) {
+        } else if (strcasecmp(category, "Media") == 0) {
             icategory = 2;
-    } else if (find_element(request, "Category", "PTZ") == 0) {
+        } else if (strcasecmp(category, "PTZ") == 0) {
             icategory = 4;
     } else {
         icategory = 7;
@@ -359,10 +366,10 @@ int device_get_network_interfaces()
             "%NETMASK%", sprefix_len);
 }
 
-int device_unsupported(char *action)
+int device_unsupported(const char *method)
 {
     char response[MAX_LEN];
-    sprintf(response, "%sResponse", action);
+    sprintf(response, "%sResponse", method);
 
     long size = cat(NULL, "device_service_files/Unsupported.xml", 2,
             "%UNSUPPORTED%", response);

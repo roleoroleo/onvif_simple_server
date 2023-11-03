@@ -31,6 +31,6 @@ int ptz_relative_move();
 int ptz_stop();
 int ptz_get_status();
 
-int ptz_unsupported(char *action);
+int ptz_unsupported(const char *method);
 
 #endif //PTZ_SERVICE_H
