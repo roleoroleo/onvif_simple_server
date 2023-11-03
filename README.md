@@ -124,11 +124,16 @@ move_up=/tmp/sd/yi-hack/bin/ipc_cmd -m up
 move_down=/tmp/sd/yi-hack/bin/ipc_cmd -m down
 move_stop=/tmp/sd/yi-hack/bin/ipc_cmd -M stop
 move_preset=/tmp/sd/yi-hack/bin/ipc_cmd -p %t
+set_preset=/tmp/sd/yi-hack/bin/ipc_cmd -P %t
+set_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -H
+remove_preset=/tmp/sd/yi-hack/bin/ipc_cmd -R %t
 ```
 
 Note:
 - you can use 1 or 2 profiles.
+- ipc_cmd is just an example of a local binary that handles ptz, use the specific program of your cam
 - %s is replaced runtime with the IP address of the device.
+- %t is replaced runtime with the preset token
 
 **Please pay attention: the order of the lines must be respected. Don't mix them!**
 
@@ -142,7 +147,7 @@ Brief explanation of some parameters:
 | url | the url of your streaming service (it is not provided by onvif server) |
 | snapurl | the url of your snapshot service (tipically an http url that provides a jpg image) |
 | ptz | 1 if onvif_simple_server can control PTZ, 0 otherwise |
-| move_* | the binary that moves the PTZ controls, this daemon will run it with a system call |
+| move_* | the binary that moves the PTZ controls, onvif_simple_server will run it with a system call |
 
 ----
 
