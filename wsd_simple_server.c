@@ -40,7 +40,6 @@
 #define DEFAULT_LOG_FILE "/var/log/wsd_simple_server.log"
 #define TEMPLATE_DIR "/etc/wsd_simple_server"
 
-#define UUID_LEN 36
 #define RECV_BUFFER_LEN 4096
 
 #define BD_NO_CHDIR          01
@@ -162,32 +161,6 @@ int create_pid(char *file_name)
         return -2;
     }
     fclose(f);
-
-    return 0;
-}
-
-int gen_uuid(char *g_uuid) {
-    int i;
-    char v[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-    //3fb17ebc-bc38-4939-bc8b-74f2443281d4
-    //8 dash 4 dash 4 dash 4 dash 12
-
-    //gen random for all spaces because lazy
-    for(i = 0; i < UUID_LEN; ++i) {
-        g_uuid[i] = v[rand()%16];
-    }
-
-    //put dashes in place
-    g_uuid[8] = '-';
-    g_uuid[13] = '-';
-    g_uuid[18] = '-';
-    g_uuid[23] = '-';
-
-    //put 4 in place
-    g_uuid[14] = '4';
-
-    //needs end byte
-    g_uuid[36] = '\0';
 
     return 0;
 }

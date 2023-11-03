@@ -490,6 +490,102 @@ void b64_encode(unsigned char *input, unsigned int input_size, unsigned char *ou
 #endif
 }
 
+int interval2sec(const char *interval)
+{
+    int num, ret;
+
+    if (sscanf(interval, "PT%dX", &num) == 1) {
+        switch (interval[strlen(interval) - 1]) {
+            case 's':
+            case 'S':
+                ret = num;
+                break;
+            case 'm':
+            case 'M':
+                ret = num * 60;
+                break;
+            case 'h':
+            case 'H':
+                ret = num * 3600;
+                break;
+            default:
+                ret = 0;
+        }
+    } else {
+        ret = 0;
+    }
+
+    return ret;
+}
+
+int to_iso_date(char *iso_date, int size, time_t timestamp)
+{
+    struct tm my_tm;
+    gmtime_r(&timestamp, &my_tm);
+
+    if (size < 21) return -1;
+
+    sprintf(iso_date, "%04d-%02d-%02dT%02d:%02d:%02dZ",
+            my_tm.tm_year + 1900, my_tm.tm_mon + 1, my_tm.tm_mday,
+            my_tm.tm_hour, my_tm.tm_min, my_tm.tm_sec);
+
+    return 0;
+}
+
+int gen_uuid(char *g_uuid)
+{
+    int i;
+    char v[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+    //3fb17ebc-bc38-4939-bc8b-74f2443281d4
+    //8 dash 4 dash 4 dash 4 dash 12
+
+    //gen random for all spaces because lazy
+    for(i = 0; i < UUID_LEN; ++i) {
+        g_uuid[i] = v[rand()%16];
+    }
+
+
+    //put dashes in place
+    g_uuid[8] = '-';
+    g_uuid[13] = '-';
+    g_uuid[18] = '-';
+    g_uuid[23] = '-';
+
+
+    //put 4 in place
+    g_uuid[14] = '4';
+
+
+    //needs end byte
+    g_uuid[36] = '\0';
+
+    return 0;
+}
+
+int get_from_query_string(char **ret, int *ret_size, char *par)
+{
+    char *query_string = getenv("QUERY_STRING");
+    char *query = strdup(query_string);
+    char *tokens = query;
+    char *p = query;
+
+    while ((p = strsep (&tokens, "&\n"))) {
+        char *var = strtok (p, "=");
+        char *val = NULL;
+
+        if (var && (val = strtok (NULL, "="))) {
+            if (strcasecmp(par, var) == 0) {
+                *ret = query_string + (val - query);
+                *ret_size = strlen(val);
+                return 0;
+            }
+        }
+    }
+    free (query);
+
+    return -1;
+}
+
 void *reboot_thread(void *arg)
 {
     sync();
