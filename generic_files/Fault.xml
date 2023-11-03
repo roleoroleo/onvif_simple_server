@@ -1,0 +1,25 @@
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope"
+              xmlns:wsa5="http://www.w3.org/2005/08/addressing"
+              xmlns:ter="http://www.onvif.org/ver10/error">
+    <SOAP-ENV:Header>
+        <wsa5:MessageID>"urn:uuid:%UUID%"</wsa5:MessageID>
+        <wsa5:ReplyTo SOAP-ENV:mustUnderstand="true">
+            <wsa5:Address>%ADDRESS%</wsa5:Address>
+        </wsa5:ReplyTo>
+        <wsa5:To SOAP-ENV:mustUnderstand="true">%SERVICE%</wsa5:To>
+        <wsa5:Action SOAP-ENV:mustUnderstand="true">http://www.w3.org/2005/08/addressing/soap/fault"</wsa5:Action>
+    </SOAP-ENV:Header>
+    <SOAP-ENV:Body>
+        <SOAP-ENV:Fault>
+            <SOAP-ENV:Code>
+                <SOAP-ENV:Value>SOAP-ENV:Receiver</SOAP-ENV:Value>
+                <SOAP-ENV:Subcode>
+                    <SOAP-ENV:Value>ter:ActionNotSupported</SOAP-ENV:Value>
+                </SOAP-ENV:Subcode>
+            </SOAP-ENV:Code>
+            <SOAP-ENV:Reason>
+                <SOAP-ENV:Text xml:lang="en">Action Not Implemented</SOAP-ENV:Text>
+            </SOAP-ENV:Reason>
+        </SOAP-ENV:Fault>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>

@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "media_service.h"
+#include "fault.h"
 #include "utils.h"
 #include "log.h"
 #include "ezxml_wrapper.h"
@@ -35,12 +36,8 @@ int media_get_service_capabilities()
 
         return cat("stdout", "media_service_files/GetServiceCapabilities.xml", 0);
     } else {
-        long size = cat(NULL, "generic_files/Error.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "generic_files/Error.xml", 0);
+        send_fault();
+        return -1;
     }
 }
 
@@ -63,12 +60,8 @@ int media_get_video_sources()
                 "%WIDTH%", stmp_w,
                 "%HEIGHT%", stmp_h);
     } else {
-        long size = cat(NULL, "generic_files/Error.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "generic_files/Error.xml", 0);
+        send_fault();
+        return -1;
     }
 }
 
@@ -91,12 +84,8 @@ int media_get_video_source_configurations()
                 "%WIDTH%", stmp_w,
                 "%HEIGHT%", stmp_h);
     } else {
-        long size = cat(NULL, "generic_files/Error.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "generic_files/Error.xml", 0);
+        send_fault();
+        return -1;
     }
 }
 
@@ -119,12 +108,8 @@ int media_get_video_source_configuration()
                 "%WIDTH%", stmp_w,
                 "%HEIGHT%", stmp_h);
     } else {
-        long size = cat(NULL, "generic_files/Error.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "generic_files/Error.xml", 0);
+        send_fault();
+        return -1;
     }
 }
 
@@ -147,12 +132,8 @@ int media_get_compatible_video_source_configurations()
                 "%WIDTH%", stmp_w,
                 "%HEIGHT%", stmp_h);
     } else {
-        long size = cat(NULL, "generic_files/Error.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "generic_files/Error.xml", 0);
+        send_fault();
+        return -1;
     }
 }
 
@@ -175,12 +156,8 @@ int media_get_video_source_configuration_options()
                 "%WIDTH%", stmp_w,
                 "%HEIGHT%", stmp_h);
     } else {
-        long size = cat(NULL, "generic_files/Error.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "generic_files/Error.xml", 0);
+        send_fault();
+        return -1;
     }
 }
 
@@ -250,12 +227,8 @@ int media_get_profiles()
                     "%VEC_WIDTH_LOW%", stmp_w_l,
                     "%VEC_HEIGHT_LOW%", stmp_h_l);
     } else {
-        long size = cat(NULL, "generic_files/Error.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "generic_files/Error.xml", 0);
+        send_fault();
+        return -1;
     }
 }
 
@@ -336,12 +309,8 @@ int media_get_profile(char *input)
                 "%HEIGHT%", stmp_h);
 
     } else {
-        long size = cat(NULL, "generic_files/Error.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "generic_files/Error.xml", 0);
+        send_fault();
+        return -1;
     }
 }
 
@@ -399,12 +368,8 @@ int media_get_video_encoder_configurations()
                     "%WIDTH_LOW%", stmp_w_l,
                     "%HEIGHT_LOW%", stmp_h_l);
     } else {
-        long size = cat(NULL, "generic_files/Error.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "generic_files/Error.xml", 0);
+        send_fault();
+        return -1;
     }
 }
 
@@ -466,12 +431,8 @@ int media_get_video_encoder_configuration(char *input)
                     "%WIDTH_LOW%", stmp_w_l,
                     "%HEIGHT_LOW%", stmp_h_l);
     } else {
-        long size = cat(NULL, "generic_files/Error.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "generic_files/Error.xml", 0);
+        send_fault();
+        return -1;
     }
 }
 
@@ -534,12 +495,8 @@ int media_get_compatible_video_encoder_configurations(char *input)
                 "%HEIGHT_LOW%", stmp_h_l);
 
     } else {
-        long size = cat(NULL, "generic_files/Error.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "generic_files/Error.xml", 0);
+        send_fault();
+        return -1;
     }
 }
 
@@ -608,12 +565,8 @@ int media_get_video_encoder_configuration_options(char *input)
                 "%PROFILE%", "Main");
 
     } else {
-        long size = cat(NULL, "generic_files/Error.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "generic_files/Error.xml", 0);
+        send_fault();
+        return -1;
     }
 
 }
@@ -689,12 +642,8 @@ int media_get_snapshot_uri(char *input)
                     "%URI%", line);
 
     } else {
-        long size = cat(NULL, "generic_files/Error.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "generic_files/Error.xml", 0);
+        send_fault();
+        return -1;
     }
 }
 
@@ -769,26 +718,13 @@ int media_get_stream_uri(char *input)
                     "%URI%", line);
 
     } else {
-        long size = cat(NULL, "generic_files/Error.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "generic_files/Error.xml", 0);
+        send_fault();
+        return -1;
     }
 }
 
 int media_unsupported(const char *method)
 {
-    char response[MAX_LEN];
-    sprintf(response, "%sResponse", method);
-
-    long size = cat(NULL, "media_service_files/Unsupported.xml", 2,
-            "%UNSUPPORTED%", response);
-
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-    return cat("stdout", "media_service_files/Unsupported.xml", 2,
-            "%UNSUPPORTED%", response);
+    send_fault();
+    return -1;
 }

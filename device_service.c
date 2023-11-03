@@ -21,6 +21,8 @@
 #include <unistd.h>
 #include <pthread.h>
 
+#include "device_service.h"
+#include "fault.h"
 #include "utils.h"
 #include "log.h"
 #include "ezxml_wrapper.h"
@@ -368,17 +370,8 @@ int device_get_network_interfaces()
 
 int device_unsupported(const char *method)
 {
-    char response[MAX_LEN];
-    sprintf(response, "%sResponse", method);
-
-    long size = cat(NULL, "device_service_files/Unsupported.xml", 2,
-            "%UNSUPPORTED%", response);
-
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-    return cat("stdout", "device_service_files/Unsupported.xml", 2,
-            "%UNSUPPORTED%", response);
+    send_fault();
+    return -1;
 }
 
 int device_authentication_error()

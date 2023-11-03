@@ -21,6 +21,7 @@
 #include <time.h>
 
 #include "ptz_service.h"
+#include "fault.h"
 #include "utils.h"
 #include "log.h"
 #include "ezxml_wrapper.h"
@@ -116,12 +117,8 @@ int ptz_goto_preset(char *input)
 
         return cat("stdout", "ptz_service_files/GotoPreset.xml", 0);
     } else {
-        long size = cat(NULL, "generic_files/Error.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "generic_files/Error.xml", 0);
+        send_fault();
+        return -1;
     }
 }
 
@@ -204,12 +201,8 @@ int ptz_continuous_move(char *input)
         return cat("stdout", "ptz_service_files/ContinuousMove.xml", 0);
 
     } else {
-        long size = cat(NULL, "generic_files/Error.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "generic_files/Error.xml", 0);
+        send_fault();
+        return -1;
     }
 }
 
@@ -290,12 +283,8 @@ int ptz_relative_move(char *input)
         return cat("stdout", "ptz_service_files/RelativeMove.xml", 0);
 
     } else {
-        long size = cat(NULL, "generic_files/Error.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "generic_files/Error.xml", 0);
+        send_fault();
+        return -1;
     }
 }
 
@@ -336,15 +325,6 @@ int ptz_get_status()
 
 int ptz_unsupported(const char *method)
 {
-    char response[MAX_LEN];
-    sprintf(response, "%sResponse", method);
-
-    long size = cat(NULL, "ptz_service_files/Unsupported.xml", 2,
-            "%UNSUPPORTED%", response);
-
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-    return cat("stdout", "ptz_service_files/Unsupported.xml", 2,
-            "%UNSUPPORTED%", response);
+    send_fault();
+    return -1;
 }
