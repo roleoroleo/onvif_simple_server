@@ -519,10 +519,12 @@ int main(int argc, char ** argv)
     log_info("Processing configuration file %s...", conf_file);
     if (processing_conf_file(conf_file) == -1) {
         log_fatal("Unable to find configuration file %s", conf_file);
+        fclose(fLog);
         free(conf_file);
         exit(EXIT_FAILURE);
     } else if (processing_conf_file(conf_file) < -1) {
         log_fatal("Wrong syntax in configuration file %s", conf_file);
+        fclose(fLog);
         free(conf_file);
         exit(EXIT_FAILURE);
     }
@@ -532,6 +534,7 @@ int main(int argc, char ** argv)
     char *input = (char *) malloc (16 * 1024 * sizeof(char));
     if (input == NULL) {
         log_fatal("Memory error");
+        fclose(fLog);
         free(conf_file);
         exit(EXIT_FAILURE);
     }
@@ -539,6 +542,7 @@ int main(int argc, char ** argv)
     if (realloc(input, input_size * sizeof(char)) == NULL) {
         log_fatal("Memory error");
         free(input);
+        fclose(fLog);
         free(conf_file);
         exit(EXIT_FAILURE);
     }
@@ -550,6 +554,8 @@ int main(int argc, char ** argv)
     if (method == NULL) {
         log_fatal("XML parsing error");
         close_xml();
+        free(input);
+        fclose(fLog);
         free(conf_file);
         exit(EXIT_FAILURE);
     }
@@ -726,7 +732,6 @@ int main(int argc, char ** argv)
     }
 
     close_xml();
-    free(action);
     free(input);
 
     free(service_ctx.user);
