@@ -532,7 +532,24 @@ int media_get_video_encoder_configuration_options(char *input)
     char stmp_w_h[16], stmp_h_h[16];
     const char *profile_token = get_element("ProfileToken", "Body");
 
-    if (((service_ctx.profiles_num == 1) &&
+    if (profile_token == NULL) {
+
+        sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
+        sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
+        long size = cat(NULL, "media_service_files/GetVideoEncoderConfigurationOptions.xml", 6,
+                "%WIDTH%", stmp_w_h,
+                "%HEIGHT%", stmp_h_h,
+                "%PROFILE%", "High");
+
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+        return cat("stdout", "media_service_files/GetVideoEncoderConfigurationOptions.xml", 6,
+                "%WIDTH%", stmp_w_h,
+                "%HEIGHT%", stmp_h_h,
+                "%PROFILE%", "High");
+
+    } else if (((service_ctx.profiles_num == 1) &&
             (strcasecmp(service_ctx.profiles[0].name, "Profile_0") == 0) &&
             (strcasecmp(profile_token, "Profile_0") == 0)) ||
             ((service_ctx.profiles_num == 2) &&
