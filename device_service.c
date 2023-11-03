@@ -268,6 +268,7 @@ int device_get_capabilities(char *request)
             icategory = 2;
         } else if (strcasecmp(category, "PTZ") == 0) {
             icategory = 4;
+        }
     } else {
         icategory = 7;
     }
