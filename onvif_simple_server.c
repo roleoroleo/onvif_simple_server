@@ -573,30 +573,22 @@ int main(int argc, char ** argv)
             element = get_element("Username", "Header");
             if (element != NULL) {
                 security.username = (char *) malloc((element_size + 1) * sizeof(char));
-                memset(security.username, '\0', (element_size + 1) * sizeof(char));
-                strncpy(security.username, element, element_size);
                 log_info("Security: username = %s", security.username);
             }
             element = get_element("Password", "Header");
             if (element != NULL) {
                 security.password = (char *) malloc((element_size + 1) * sizeof(char));
-                memset(security.password, '\0', (element_size + 1) * sizeof(char));
-                strncpy(security.password, element, element_size);
                 log_info("Security: password = %s", security.password);
             }
             element = get_element("Nonce", "Header");
             if (element != NULL) {
                 security.nonce = (char *) malloc((element_size + 1) * sizeof(char));
-                memset(security.nonce, '\0', (element_size + 1) * sizeof(char));
-                strncpy(security.nonce, element, element_size);
                 log_info("Security: nonce = %s", security.nonce);
                 b64_decode(security.nonce, strlen(security.nonce), nonce, &nonce_size);
             }
             element = get_element("Created", "Header");
             if (element != NULL) {
                 security.created = (char *) malloc((element_size + 1) * sizeof(char));
-                memset(security.created, '\0', (element_size + 1) * sizeof(char));
-                strncpy(security.created, element, element_size);
                 log_info("Security: created = %s", security.created);
             }
 
