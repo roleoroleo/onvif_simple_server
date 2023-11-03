@@ -68,19 +68,23 @@ int media_get_video_sources()
 int media_get_video_source_configurations()
 {
     // Get the video source configuration from the 1st profile
-    char stmp_w[16], stmp_h[16];
+    char profiles_num[2], stmp_w[16], stmp_h[16];
 
-    if (service_ctx.profiles_num > 0) {
+    sprintf(profiles_num, "%d", service_ctx.profiles_num);
+
+    if ((service_ctx.profiles_num > 0) && (service_ctx.profiles_num <= 2)) {
         sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
-        long size = cat(NULL, "media_service_files/GetVideoSourceConfigurations.xml", 4,
+        long size = cat(NULL, "media_service_files/GetVideoSourceConfigurations.xml", 6,
+                "%PROFILES_NUM%", profiles_num,
                 "%WIDTH%", stmp_w,
                 "%HEIGHT%", stmp_h);
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("stdout", "media_service_files/GetVideoSourceConfigurations.xml", 4,
+        return cat("stdout", "media_service_files/GetVideoSourceConfigurations.xml", 6,
+                "%PROFILES_NUM%", profiles_num,
                 "%WIDTH%", stmp_w,
                 "%HEIGHT%", stmp_h);
     } else {
@@ -92,19 +96,23 @@ int media_get_video_source_configurations()
 int media_get_video_source_configuration()
 {
     // Get the video source configuration from the 1st profile
-    char stmp_w[16], stmp_h[16];
+    char profiles_num[2], stmp_w[16], stmp_h[16];
 
-    if (service_ctx.profiles_num > 0) {
+    sprintf(profiles_num, "%d", service_ctx.profiles_num);
+
+    if ((service_ctx.profiles_num > 0) && (service_ctx.profiles_num <= 2)) {
         sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
-        long size = cat(NULL, "media_service_files/GetVideoSourceConfiguration.xml", 4,
+        long size = cat(NULL, "media_service_files/GetVideoSourceConfiguration.xml", 6,
+                "%PROFILES_NUM%", profiles_num,
                 "%WIDTH%", stmp_w,
                 "%HEIGHT%", stmp_h);
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("stdout", "media_service_files/GetVideoSourceConfiguration.xml", 4,
+        return cat("stdout", "media_service_files/GetVideoSourceConfiguration.xml", 6,
+                "%PROFILES_NUM%", profiles_num,
                 "%WIDTH%", stmp_w,
                 "%HEIGHT%", stmp_h);
     } else {
@@ -163,14 +171,18 @@ int media_get_video_source_configuration_options()
 
 int media_get_profiles()
 {
+    char profiles_num[2];
     char stmp_w_l[16], stmp_h_l[16];
     char stmp_w_h[16], stmp_h_h[16];
+
+    sprintf(profiles_num, "%d", service_ctx.profiles_num);
 
     if (service_ctx.profiles_num == 1) {
         if (strcasecmp(service_ctx.profiles[0].name, "Profile_0") == 0) {
             sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
             sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
-            long size = cat(NULL, "media_service_files/GetProfiles_high.xml", 8,
+            long size = cat(NULL, "media_service_files/GetProfiles_high.xml", 10,
+                    "%PROFILES_NUM%", profiles_num,
                     "%VSC_WIDTH%", stmp_w_h,
                     "%VSC_HEIGHT%", stmp_h_h,
                     "%VEC_WIDTH_HIGH%", stmp_w_h,
@@ -179,7 +191,8 @@ int media_get_profiles()
             fprintf(stdout, "Content-type: application/soap+xml\r\n");
             fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-            return cat("stdout", "media_service_files/GetProfiles_high.xml", 8,
+            return cat("stdout", "media_service_files/GetProfiles_high.xml", 10,
+                    "%PROFILES_NUM%", profiles_num,
                     "%VSC_WIDTH%", stmp_w_h,
                     "%VSC_HEIGHT%", stmp_h_h,
                     "%VEC_WIDTH_HIGH%", stmp_w_h,
@@ -188,7 +201,8 @@ int media_get_profiles()
         } else if (strcasecmp(service_ctx.profiles[0].name, "Profile_1") == 0) {
             sprintf(stmp_w_l, "%d", service_ctx.profiles[0].width);
             sprintf(stmp_h_l, "%d", service_ctx.profiles[0].height);
-            long size = cat(NULL, "media_service_files/GetProfiles_low.xml", 8,
+            long size = cat(NULL, "media_service_files/GetProfiles_low.xml", 10,
+                    "%PROFILES_NUM%", profiles_num,
                     "%VSC_WIDTH%", stmp_w_l,
                     "%VSC_HEIGHT%", stmp_h_l,
                     "%VEC_WIDTH_LOW%", stmp_w_l,
@@ -197,7 +211,8 @@ int media_get_profiles()
             fprintf(stdout, "Content-type: application/soap+xml\r\n");
             fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-            return cat("stdout", "media_service_files/GetProfiles_low.xml", 8,
+            return cat("stdout", "media_service_files/GetProfiles_low.xml", 10,
+                    "%PROFILES_NUM%", profiles_num,
                     "%VSC_WIDTH%", stmp_w_l,
                     "%VSC_HEIGHT%", stmp_h_l,
                     "%VEC_WIDTH_LOW%", stmp_w_l,
@@ -208,7 +223,8 @@ int media_get_profiles()
         sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
         sprintf(stmp_w_l, "%d", service_ctx.profiles[1].width);
         sprintf(stmp_h_l, "%d", service_ctx.profiles[1].height);
-        long size = cat(NULL, "media_service_files/GetProfiles_both.xml", 12,
+        long size = cat(NULL, "media_service_files/GetProfiles_both.xml", 14,
+                    "%PROFILES_NUM%", profiles_num,
                     "%VSC_WIDTH%", stmp_w_h,
                     "%VSC_HEIGHT%", stmp_h_h,
                     "%VEC_WIDTH_HIGH%", stmp_w_h,
@@ -219,7 +235,8 @@ int media_get_profiles()
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("stdout", "media_service_files/GetProfiles_both.xml", 12,
+        return cat("stdout", "media_service_files/GetProfiles_both.xml", 14,
+                    "%PROFILES_NUM%", profiles_num,
                     "%VSC_WIDTH%", stmp_w_h,
                     "%VSC_HEIGHT%", stmp_h_h,
                     "%VEC_WIDTH_HIGH%", stmp_w_h,
@@ -234,9 +251,12 @@ int media_get_profiles()
 
 int media_get_profile(char *input)
 {
+    char profiles_num[2];
     char stmp_vsc_w[16], stmp_vsc_h[16];
     char stmp_w[16], stmp_h[16];
     const char *profile_token = get_element("ProfileToken", "Body");
+
+    sprintf(profiles_num, "%d", service_ctx.profiles_num);
 
     if (((service_ctx.profiles_num == 1) &&
             (strcasecmp(service_ctx.profiles[0].name, "Profile_0") == 0) &&
@@ -248,7 +268,8 @@ int media_get_profile(char *input)
         sprintf(stmp_vsc_h, "%d", service_ctx.profiles[0].height);
         sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
-        long size = cat(NULL, "media_service_files/GetProfile_high.xml", 8,
+        long size = cat(NULL, "media_service_files/GetProfile_high.xml", 10,
+                "%PROFILES_NUM%", profiles_num,
                 "%VSC_WIDTH%", stmp_vsc_w,
                 "%VSC_HEIGHT%", stmp_vsc_h,
                 "%WIDTH%", stmp_w,
@@ -257,7 +278,8 @@ int media_get_profile(char *input)
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("stdout", "media_service_files/GetProfile_high.xml", 8,
+        return cat("stdout", "media_service_files/GetProfile_high.xml", 10,
+                "%PROFILES_NUM%", profiles_num,
                 "%VSC_WIDTH%", stmp_vsc_w,
                 "%VSC_HEIGHT%", stmp_vsc_h,
                 "%WIDTH%", stmp_w,
@@ -271,7 +293,8 @@ int media_get_profile(char *input)
         sprintf(stmp_vsc_h, "%d", service_ctx.profiles[0].height);
         sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
-        long size = cat(NULL, "media_service_files/GetProfile_low.xml", 8,
+        long size = cat(NULL, "media_service_files/GetProfile_low.xml", 10,
+                "%PROFILES_NUM%", profiles_num,
                 "%VSC_WIDTH%", stmp_vsc_w,
                 "%VSC_HEIGHT%", stmp_vsc_h,
                 "%WIDTH%", stmp_w,
@@ -280,7 +303,8 @@ int media_get_profile(char *input)
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("stdout", "media_service_files/GetProfile_low.xml", 8,
+        return cat("stdout", "media_service_files/GetProfile_low.xml", 10,
+                "%PROFILES_NUM%", profiles_num,
                 "%VSC_WIDTH%", stmp_vsc_w,
                 "%VSC_HEIGHT%", stmp_vsc_h,
                 "%WIDTH%", stmp_w,
@@ -293,7 +317,8 @@ int media_get_profile(char *input)
         sprintf(stmp_vsc_h, "%d", service_ctx.profiles[0].height);
         sprintf(stmp_w, "%d", service_ctx.profiles[1].width);
         sprintf(stmp_h, "%d", service_ctx.profiles[1].height);
-        long size = cat(NULL, "media_service_files/GetProfile_low.xml", 8,
+        long size = cat(NULL, "media_service_files/GetProfile_low.xml", 10,
+                "%PROFILES_NUM%", profiles_num,
                 "%VSC_WIDTH%", stmp_vsc_w,
                 "%VSC_HEIGHT%", stmp_vsc_h,
                 "%WIDTH%", stmp_w,
@@ -302,7 +327,8 @@ int media_get_profile(char *input)
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("stdout", "media_service_files/GetProfile_low.xml", 8,
+        return cat("stdout", "media_service_files/GetProfile_low.xml", 10,
+                "%PROFILES_NUM%", profiles_num,
                 "%VSC_WIDTH%", stmp_vsc_w,
                 "%VSC_HEIGHT%", stmp_vsc_h,
                 "%WIDTH%", stmp_w,

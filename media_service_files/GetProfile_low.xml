@@ -26,7 +26,7 @@
                 <tt:Name>Profile_1</tt:Name>
                 <tt:VideoSourceConfiguration token="VideoSourceConfigToken">
                     <tt:Name>VideoSourceConfig</tt:Name>
-                    <tt:UseCount>1</tt:UseCount>
+                    <tt:UseCount>%PROFILES_NUM%</tt:UseCount>
                     <tt:SourceToken>VideoSourceToken</tt:SourceToken>
                     <tt:Bounds x="0"
                                y="0"
