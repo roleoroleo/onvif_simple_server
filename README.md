@@ -1,15 +1,10 @@
 <p align="center">
-	<a target="_blank" href="https://github.com/roleoroleo/onvif_simple_server_e/releases">
-		<img src="https://img.shields.io/github/downloads/roleoroleo/onvif_simple_server_e/total.svg" alt="Releases Downloads">
+	<a target="_blank" href="https://github.com/roleoroleo/onvif_simple_server/releases">
+		<img src="https://img.shields.io/github/downloads/roleoroleo/onvif_simple_server/total.svg" alt="Releases Downloads">
 	</a>
 </p>
 
-This repo is a clone of "https://github.com/roleoroleo/onvif_simple_server" where I added event handling via Basic Notification Interface.
-
-I created a new repo because event handling is strictly related to the hardware: this code is less generic than the previous one.
-However, I tried to create a simple and standard interface, simply using files.
-
-onvif_simple_server_e is a C light implementation of an onvif server with events intended for use in resource-constrained devices.
+onvif_simple_server_e is a C light implementation of an onvif server intended for use in resource-constrained devices.
 
 So:
 - no gsoap
