@@ -268,6 +268,11 @@ int device_get_capabilities(char *request)
             icategory = 2;
         } else if (strcasecmp(category, "PTZ") == 0) {
             icategory = 4;
+        } else if (strcasecmp(category, "All") == 0) {
+            icategory = 7;
+        } else {
+            send_fault();
+            return -1;
         }
     } else {
         icategory = 7;
