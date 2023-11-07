@@ -3,15 +3,18 @@
 OBJECTS_O = onvif_simple_server.o device_service.o media_service.o ptz_service.o fault.o conf.o utils.o log.o ezxml_wrapper.o ezxml/ezxml.o
 OBJECTS_W = wsd_simple_server.o utils.o log.o ezxml_wrapper.o ezxml/ezxml.o
 ifdef HAVE_MBEDTLS
-INCLUDE = -DHAVE_MBEDTLS -I../mbedtls/include -ffunction-sections -fdata-sections
-LIBS_O = -Wl,--gc-sections ../mbedtls/library/libmbedcrypto.a -lpthread
+INCLUDE = -DHAVE_MBEDTLS -I../mbedtls/include -ffunction-sections -fdata-sections -lrt
+LIBS_O = -Wl,--gc-sections ../mbedtls/library/libmbedcrypto.a -lpthread -lrt
 else
-INCLUDE = -I../libtomcrypt/src/headers -ffunction-sections -fdata-sections
-LIBS_O = -Wl,--gc-sections ../libtomcrypt/libtomcrypt.a -lpthread
+INCLUDE = -I../libtomcrypt/src/headers -ffunction-sections -fdata-sections -lrt
+LIBS_O = -Wl,--gc-sections ../libtomcrypt/libtomcrypt.a -lpthread -lrt
 endif
 LIBS_W = -Wl,--gc-sections
 
 all: onvif_simple_server wsd_simple_server
+
+log.o: log.c $(HEADERS)
+	$(CC) -c $< -std=c99 -fPIC -Os $(INCLUDE) -o $@
 
 %.o: %.c $(HEADERS)
 	$(CC) -c $< -fPIC -Os $(INCLUDE) -o $@
