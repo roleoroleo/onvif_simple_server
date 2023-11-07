@@ -69,6 +69,12 @@
                         <tt:RELToken>false</tt:RELToken>
                     </tt:Security>
                 </tt:Device>
+                <tt:Events>
+                    <tt:XAddr>%EVENTS_SERVICE_ADDRESS%</tt:XAddr>
+                    <tt:WSSubscriptionPolicySupport>true</tt:WSSubscriptionPolicySupport>
+                    <tt:WSPullPointSupport>false</tt:WSPullPointSupport>
+                    <tt:WSPausableSubscriptionManagerInterfaceSupport>false</tt:WSPausableSubscriptionManagerInterfaceSupport>
+                </tt:Events>
                 <tt:Media>
                     <tt:XAddr>%MEDIA_SERVICE_ADDRESS%</tt:XAddr>
                     <tt:StreamingCapabilities>

@@ -24,6 +24,22 @@
 
 #define UUID_LEN 36
 
+#define MAX_SUBSCRIPTIONS 8
+#define CONSUMER_REFERENCE_MAX_SIZE 256
+
+typedef struct {
+    char reference[CONSUMER_REFERENCE_MAX_SIZE];
+    int used;
+    time_t expire;
+} subscription_t;
+
+typedef struct {
+    subscription_t items[MAX_SUBSCRIPTIONS];
+    int need_sync;
+} subscriptions_t;
+
+void *create_shared_memory(int create);
+void destroy_shared_memory(void *shared_area, int destroy_all);
 long cat(char *out, char *filename, int num, ...);
 int get_ip_address(char *address, char *netmask, char *name);
 int get_mac_address(char *address, char *name);

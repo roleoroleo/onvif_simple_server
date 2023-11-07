@@ -1,0 +1,26 @@
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope">
+    <SOAP-ENV:Header xmlns:wsa="http://www.w3.org/2005/08/addressing">
+        <wsa:MessageID>"urn:uuid:%UUID%"</wsa:MessageID>
+        <wsa:ReplyTo SOAP-ENV:mustUnderstand="true">
+            <wsa:Address>%ADDRESS%</wsa:Address>
+        </wsa:ReplyTo>
+        <wsa:To SOAP-ENV:mustUnderstand="true">%SERVICE%</wsa:To>
+        <wsa:Action SOAP-ENV:mustUnderstand="true">http://www.w3.org/2005/08/addressing/soap/fault"</wsa:Action>
+    </SOAP-ENV:Header>
+    <SOAP-ENV:Body>
+        <SOAP-ENV:Fault>
+            <SOAP-ENV:Code>
+                <SOAP-ENV:Value>SOAP-ENV:Sender</SOAP-ENV:Value>
+                <SOAP-ENV:Subcode>
+                    <SOAP-ENV:Value>ter:InvalidArgVal</SOAP-ENV:Value>
+                    <SOAP-ENV:Subcode>
+                        <SOAP-ENV:Value>ter:InvalidMessageContentExpression</SOAP-ENV:Value>
+                    </SOAP-ENV:Subcode>
+                </SOAP-ENV:Subcode>
+            </SOAP-ENV:Code>
+            <SOAP-ENV:Reason>
+                <SOAP-ENV:Text xml:lang="en"/>
+            </SOAP-ENV:Reason>
+        </SOAP-ENV:Fault>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>

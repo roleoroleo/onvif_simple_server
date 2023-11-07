@@ -58,6 +58,8 @@ int process_conf_file(char *file)
     service_ctx.scopes = NULL;
     service_ctx.scopes_num = 0;
     service_ctx.ptz_node.enable = 0;
+    service_ctx.events = NULL;
+    service_ctx.events_num = 0;
 
     while(fgets(line, MAX_LEN, fF)) {
         char *first = line;
@@ -228,6 +230,29 @@ int process_conf_file(char *file)
             service_ctx.ptz_node.remove_preset = (char *) malloc(strlen(value) + 1);
             strcpy(service_ctx.ptz_node.remove_preset, value);
 
+        //Events Profile for ONVIF Events Service
+        } else if ((strcasecmp(param, "events") == 0) && (strcasecmp(value, "1") == 0)) {
+            service_ctx.events_enable = 1;
+        } else if ((strcasecmp(param, "topic") == 0) && (service_ctx.events_enable == 1)) {
+            service_ctx.events_num++;
+            service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
+            service_ctx.events[service_ctx.events_num - 1].topic = NULL;
+            service_ctx.events[service_ctx.events_num - 1].source_name = NULL;
+            service_ctx.events[service_ctx.events_num - 1].source_value = NULL;
+            service_ctx.events[service_ctx.events_num - 1].input_file = NULL;
+            service_ctx.events[service_ctx.events_num - 1].is_on = 0;
+            service_ctx.events[service_ctx.events_num - 1].topic = (char *) malloc(strlen(value) + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].topic, value);
+        } else if ((strcasecmp(param, "source_name") == 0) && (service_ctx.events_enable == 1)) {
+            service_ctx.events[service_ctx.events_num - 1].source_name = (char *) malloc(strlen(value) + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].source_name, value);
+        } else if ((strcasecmp(param, "source_value") == 0) && (service_ctx.events_enable == 1)) {
+            service_ctx.events[service_ctx.events_num - 1].source_value = (char *) malloc(strlen(value) + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].source_value, value);
+        } else if ((strcasecmp(param, "input_file") == 0) && (service_ctx.events_enable == 1)) {
+            service_ctx.events[service_ctx.events_num - 1].input_file = (char *) malloc(strlen(value) + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].input_file, value);
+
         } else {
             log_warn("Unrecognized option: %s", line);
         }
@@ -237,6 +262,15 @@ int process_conf_file(char *file)
 void free_conf_file()
 {
     int i;
+
+    if (service_ctx.events_enable == 1) {
+        for (i = service_ctx.events_num - 1; i >= 0; i--) {
+            if (service_ctx.events[i].input_file != NULL) free(service_ctx.events[i].input_file);
+            if (service_ctx.events[i].source_value != NULL) free(service_ctx.events[i].source_value);
+            if (service_ctx.events[i].source_name != NULL) free(service_ctx.events[i].source_name);
+            if (service_ctx.events[i].topic != NULL) free(service_ctx.events[i].topic);
+        }
+    }
 
     if (service_ctx.ptz_node.enable == 1) {
         if (service_ctx.ptz_node.remove_preset != NULL) free(service_ctx.ptz_node.remove_preset);
@@ -262,6 +296,7 @@ void free_conf_file()
     }
     if (service_ctx.scopes != NULL) free(service_ctx.scopes);
 
+    if (service_ctx.events != NULL) free(service_ctx.events);
     if (service_ctx.ifs != NULL) free(service_ctx.ifs);
     if (service_ctx.hardware_id != NULL) free(service_ctx.hardware_id);
     if (service_ctx.serial_num != NULL) free(service_ctx.serial_num);
@@ -338,4 +373,37 @@ void print_conf_help()
     fprintf(stderr, "\tset_preset=/tmp/sd/yi-hack/bin/ipc_cmd -P %%t\n");
     fprintf(stderr, "\tset_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -H\n");
     fprintf(stderr, "\tremove_preset=/tmp/sd/yi-hack/bin/ipc_cmd -R %%t\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "\t#EVENTS\n");
+    fprintf(stderr, "\tevents=1\n");
+    fprintf(stderr, "\t#Event 0\n");
+    fprintf(stderr, "\ttopic=tns1:VideoSource/MotionAlarm\n");
+    fprintf(stderr, "\tsource_name=VideoSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_value=VideoSourceToken\n");
+    fprintf(stderr, "\tinput_file=/tmp/motion_alarm\n");
+    fprintf(stderr, "\t#Event 1\n");
+    fprintf(stderr, "\ttopic=tns1:RuleEngine/MyRuleDetector/PeopleDetect\n");
+    fprintf(stderr, "\tsource_name=VideoSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_value=VideoSourceToken\n");
+    fprintf(stderr, "\tinput_file=/tmp/human_detection\n");
+    fprintf(stderr, "\t#Event 2\n");
+    fprintf(stderr, "\ttopic=tns1:RuleEngine/MyRuleDetector/VehicleDetect\n");
+    fprintf(stderr, "\tsource_name=VideoSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_value=VideoSourceToken\n");
+    fprintf(stderr, "\tinput_file=/tmp/vehicle_detection\n");
+    fprintf(stderr, "\t#Event 3\n");
+    fprintf(stderr, "\ttopic=tns1:RuleEngine/MyRuleDetector/DogCatDetect\n");
+    fprintf(stderr, "\tsource_name=VideoSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_value=VideoSourceToken\n");
+    fprintf(stderr, "\tinput_file=/tmp/animal_detection\n");
+    fprintf(stderr, "\t#Event 4\n");
+    fprintf(stderr, "\ttopic=tns1:RuleEngine/MyRuleDetector/BabyCryingDetect\n");
+    fprintf(stderr, "\tsource_name=VideoSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_value=VideoSourceToken\n");
+    fprintf(stderr, "\tinput_file=/tmp/baby_crying\n");
+    fprintf(stderr, "\t#Event 5\n");
+    fprintf(stderr, "\ttopic=tns1:AudioAnalytics/Audio/DetectedSound\n");
+    fprintf(stderr, "\tsource_name=AudioAnalyticsConfigurationToken\n");
+    fprintf(stderr, "\tsource_value=AudioAnalyticsToken\n");
+    fprintf(stderr, "\tinput_file=/tmp/sound_detection\n");
 }

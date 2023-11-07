@@ -61,6 +61,14 @@ typedef struct {
 } ptz_node_t;
 
 typedef struct {
+    char *topic;
+    char *source_name;
+    char *source_value;
+    char *input_file;
+    int is_on;
+} event_t;
+
+typedef struct {
     int   port;
     char *user;
     char *password;
@@ -81,6 +89,9 @@ typedef struct {
     int scopes_num;
 
     ptz_node_t ptz_node;
+    event_t *events;
+    int events_enable;
+    int events_num;
 } service_context_t;
 
 // returns 0 on success -1 on error

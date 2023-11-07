@@ -1,10 +1,15 @@
 <p align="center">
-	<a target="_blank" href="https://github.com/roleoroleo/onvif_simple_server/releases">
-		<img src="https://img.shields.io/github/downloads/roleoroleo/onvif_simple_server/total.svg" alt="Releases Downloads">
+	<a target="_blank" href="https://github.com/roleoroleo/onvif_simple_server_e/releases">
+		<img src="https://img.shields.io/github/downloads/roleoroleo/onvif_simple_server_e/total.svg" alt="Releases Downloads">
 	</a>
 </p>
 
-onvif_simple_server is a C light implementation of an onvif server intended for use in resource-constrained devices.
+This repo is a clone of "https://github.com/roleoroleo/onvif_simple_server" where I added event handling via Basic Notification Interface.
+
+I created a new repo because event handling is strictly related to the hardware: this code is less generic than the previous one.
+However, I tried to create a simple and standard interface, simply using files.
+
+onvif_simple_server_e is a C light implementation of an onvif server with events intended for use in resource-constrained devices.
 
 So:
 - no gsoap
@@ -15,7 +20,7 @@ The XML parsing features are replaced by a wrapper that uses ezxml library and a
 
 About security, you can choose between libtomcrypt or mbedtls, to handle authentication.
 
-The web service discovery daemon is a standalone program and must be started with command line options.
+The web service discovery daemon and the notify server daemon are standalone programs and must be started with command line options.
 
 The onvif server instead runs as CGI and therefore needs an http server that supports the CGI standard (for example httpd from busybox).
 
@@ -54,6 +59,7 @@ Usage: onvif_simple_server [-c CONF_FILE] [-d] [-f]
 | debug | debug level from 0 to 5 | - |
 | conf_help | print the help to create a configuration file | - |
 
+The configuration file is shared between various programs.
 Below an example of the configuration file for a cam:
 ```
 model=Yi Hack
@@ -94,13 +100,47 @@ move_preset=/tmp/sd/yi-hack/bin/ipc_cmd -p %t
 set_preset=/tmp/sd/yi-hack/bin/ipc_cmd -P %t
 set_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -H
 remove_preset=/tmp/sd/yi-hack/bin/ipc_cmd -R %t
+
+#EVENTS
+events=1
+#Event 0
+topic=tns1:VideoSource/MotionAlarm
+source_name=VideoSourceConfigurationToken
+source_value=VideoSourceToken
+input_file=/tmp/motion_alarm
+#Event 1
+topic=tns1:RuleEngine/MyRuleDetector/PeopleDetect
+source_name=VideoSourceConfigurationToken
+source_value=VideoSourceToken
+input_file=/tmp/human_detection
+#Event 2
+topic=tns1:RuleEngine/MyRuleDetector/VehicleDetect
+source_name=VideoSourceConfigurationToken
+source_value=VideoSourceToken
+input_file=/tmp/vehicle_detection
+#Event 3
+topic=tns1:RuleEngine/MyRuleDetector/DogCatDetect
+source_name=VideoSourceConfigurationToken
+source_value=VideoSourceToken
+input_file=/tmp/animal_detection
+#Event 4
+topic=tns1:RuleEngine/MyRuleDetector/BabyCryingDetect
+source_name=VideoSourceConfigurationToken
+source_value=VideoSourceToken
+input_file=/tmp/baby_crying
+#Event 5
+topic=tns1:AudioAnalytics/Audio/DetectedSound
+source_name=AudioAnalyticsConfigurationToken
+source_value=AudioAnalyticsToken
+input_file=/tmp/sound_detection
 ```
 
 Note:
 - you can use 1 or 2 profiles.
 - ipc_cmd is just an example of a local binary that handles ptz, use the specific program of your cam
-- %s is replaced runtime with the IP address of the device.
+- %s is replaced runtime with the IP address of the device
 - %t is replaced runtime with the preset token
+- use the same folder for the input files of the events
 
 **Please pay attention: the order of the lines must be respected. Don't mix them!**
 
@@ -115,6 +155,11 @@ Brief explanation of some parameters:
 | snapurl | the url of your snapshot service (tipically an http url that provides a jpg image) |
 | ptz | 1 if onvif_simple_server can control PTZ, 0 otherwise |
 | move_* | the binary that moves the PTZ controls, onvif_simple_server will run it with a system call |
+| events | 1 if you want to enable events handling |
+| topic | the topic of the event |
+| source_name | the source name inside the Notify message |
+| source_value | the source value inside the Notify message |
+| input_file | the file created when the event is fired |
 
 ### wsd_simple_server
 wsd_simple server supports the following options
@@ -148,6 +193,37 @@ Usage: wsd_simple_server -i INTERFACE -x XADDR [-m MODEL] [-n MANUFACTURER] -p P
 | debug | debug level from 0 to 5 | - |
 
 %s is replaced runtime with the IP address of the device.
+
+### onvif_notify_server
+onvif_notify_server checks the files related to the events and sends the notify message when an event is fired.
+- When the file is created a new notify message with state "true" is sent to all subscribers.
+- When the file is deleted a new notify message with state "false" is sent to all subscribers.
+- When a Synchronization Point is requested from an onvif client, a new Notify message with the current state is sent to all subscribers.
+
+The process can use inotify interface if supported from the device, otherwise it can use the standard "access" function.
+
+onvif_notify_server supports the following options but you should use them just for debugging purpose
+
+```
+Usage: onvif_notify_server [-p PID_FILE] [-q NUM] [-f] [-d LEVEL]
+
+        -c CONF_FILE, --conf_file CONF_FILE
+                path of the configuration file
+        -p PID_FILE, --pid_file PID_FILE
+                pid file
+        -f, --foreground
+                don't daemonize
+        -d LEVEL, --debug LEVEL
+                enable debug with LEVEL = 0..5 (default 0 = log fatal errors)
+        -h, --help
+                print this help
+```
+| Option | Description | Default |
+| --- | --- | --- |
+| conf_file | the path of the file containing the configuration | /etc/onvif_simple_server.conf |
+| pid_file | the path of the pid file if you want to change it | /var/run/onvif_notify_server.pid |
+| foreground | don't fork | - |
+| debug | debug level from 0 to 5 | 0 |
 
 ## Compatibility
 I tested this program with the following clients:

@@ -29,6 +29,7 @@
 #include "device_service.h"
 #include "media_service.h"
 #include "ptz_service.h"
+#include "events_service.h"
 #include "ezxml_wrapper.h"
 #include "conf.h"
 #include "utils.h"
@@ -231,7 +232,8 @@ int main(int argc, char ** argv)
         tmp = argv[argc - 1];
         if ((strstr(tmp, "device_service") != NULL) ||
                 (strstr(tmp, "media_service") != NULL) ||
-                (strstr(tmp, "ptz_service") != NULL)) {
+                (strstr(tmp, "ptz_service") != NULL) ||
+                (strstr(tmp, "events_service") != NULL)) {
             tmp = argv[argc - 1];
         } else {
             tmp = argv[0];
@@ -460,6 +462,22 @@ int main(int argc, char ** argv)
                 ptz_remove_preset();
             } else {
                 ptz_unsupported(method);
+            }
+        } else if (strcasecmp("events_service", prog_name) == 0) {
+            if (strcasecmp(method, "GetServiceCapabilities") == 0) {
+                events_get_service_capabilities();
+            } else if (strcasecmp(method, "Subscribe") == 0) {
+                events_subscribe(input);
+            } else if (strcasecmp(method, "Renew") == 0) {
+                events_renew(input);
+            } else if (strcasecmp(method, "Unsubscribe") == 0) {
+                events_unsubscribe();
+            } else if (strcasecmp(method, "GetEventProperties") == 0) {
+                events_get_event_properties();
+            } else if (strcasecmp(method, "SetSynchronizationPoint") == 0) {
+                events_set_synchronization_point();
+            } else {
+                events_unsupported(method);
             }
         }
     } else {

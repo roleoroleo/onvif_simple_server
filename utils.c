@@ -28,6 +28,11 @@
 #include <sys/reboot.h>
 #include <ctype.h>
 
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/types.h>
+
 #ifdef HAVE_MBEDTLS
 #include <mbedtls/sha1.h>
 #include <mbedtls/base64.h>
@@ -37,6 +42,84 @@
 
 #include "utils.h"
 #include "log.h"
+
+#define SHMOBJ_PATH "/onvif_subscription"
+
+void *create_shared_memory(int create) {
+    int shmfd, rc;
+    int shared_seg_size = sizeof(subscriptions_t);
+    char *shared_area;      /* the pointer to the shared segment */
+
+    /* creating the shared memory object.
+    int shm_open(const char *name, int oflag, mode_t mode);
+    oflags:
+       O_CREAT    Create the shared memory object if it does not  exist.
+       O_RDWR     Open the object for read-write access.
+       O_RDONLY   Open the object for read access.
+       O_EXCL     If  O_CREAT  was  also specified, and a shared memory object
+                  with the given name already exists, return  an  error.   The
+                  check  for  the existence of the object, and its creation if
+                  it does not exist, are performed atomically.
+       O_TRUNC    If the shared memory object already exists, truncate  it  to
+                  zero bytes.
+    mode:
+       S_IRWXU    file owner has read, write and execute permission.
+       S_IRWXG    group has read, write and execute permission.
+       S_IRWXO    others have read, write and execute permission.
+       S_IROTH    others have read permission.
+
+    A new shared memory object  initially  has  zero  length.
+    The size of the object can be set using ftruncate(2).
+    Return Value: On successful completion  shm_open()  returns  a  new
+               nonnegative file  descriptor referring to the shared memory object.
+               On failure,  shm_open()  returns -1.
+    */
+    if (create) {
+        shmfd = shm_open(SHMOBJ_PATH, O_CREAT | O_EXCL | O_RDWR, S_IRWXU | S_IRWXG);
+    } else {
+        shmfd = shm_open(SHMOBJ_PATH, O_RDWR, S_IRWXU | S_IRWXG);
+    }
+    if (shmfd < 0) {
+        log_error("shm_open() failed");
+        return NULL;
+    }
+    log_debug("Created shared memory object %s", SHMOBJ_PATH);
+
+    /* adjusting mapped file size (make room for the whole segment to map) */
+    rc = ftruncate(shmfd, shared_seg_size);
+    if (rc != 0) {
+        log_error("ftruncate() failed");
+        return NULL;
+    }
+
+    /* requesting the shared segment */    
+    shared_area = (char *)mmap(NULL, shared_seg_size, PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0);
+    if (shared_area == MAP_FAILED /* is ((void*)-1) */ ) {
+        log_error("mmap() failed");
+        return NULL;
+    }
+    log_debug("Shared memory segment allocated correctly (%d bytes) at address %p", shared_seg_size, shared_area);
+
+    return shared_area;
+}
+
+void destroy_shared_memory(void *shared_area, int destroy_all)
+{
+    int shared_seg_size = sizeof(subscriptions_t);
+
+    if (munmap(shared_area, shared_seg_size) != 0) {
+        log_error("munmap() failed");
+        return;
+    }
+
+    if (destroy_all) {
+        if (shm_unlink(SHMOBJ_PATH) != 0) {
+            log_error("shm_unlink() failed");
+            return;
+        }
+    }
+    log_debug("Shared memory segment deallocated correctly");
+}
 
 /**
  * Read a file line by line and send to output after replacing arguments
@@ -88,7 +171,7 @@ long cat(char *out, char *filename, int num, ...)
             l = trim(new_line);
         }
 
-        if (out != NULL) {
+        if ((out != NULL) && (*l != '\0')) {
             if (strcmp("stdout", out) == 0) {
                 if (*l != '<') {
                     fprintf(stdout, " ");
@@ -103,11 +186,10 @@ long cat(char *out, char *filename, int num, ...)
                 ptr += strlen(l);
             }
         }
-        if (*l != '<') {
+        if ((*l != '\0') && (*l != '<')) {
             ret++;
         }
         ret += strlen(l);
-
         va_end(valist);
     }
     fclose(file);
