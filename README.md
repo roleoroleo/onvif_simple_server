@@ -33,39 +33,6 @@ The onvif server instead runs as CGI and therefore needs an http server that sup
 - Run make.
 
 ## Configuration
-### wsd_simple_server
-wsd_simple server supports the following options
-
-```
-Usage: wsd_simple_server -i INTERFACE -x XADDR [-m MODEL] [-n MANUFACTURER] -p PID_FILE [-f] [-d LEVEL]
-
-        -i, --if_name
-                network interface
-        -x, --xaddr
-                resource address
-        -m, --model
-                model name
-        -n, --hardware
-                hardware manufacturer
-        -p, --pid_file
-                pid file
-        -f, --foreground
-                don't daemonize
-        -d LEVEL, --debug LEVEL
-                enable debug with LEVEL = 0..5 (default 0 = log fatal errors)
-        -h, --help
-                print this help
-```
-| Option | Description | Example |
-| --- | --- | --- |
-| if_name | the network interface that the device binds | eth0 |
-| xaddr | the resource address associated to the onvif server |  http://%s/onvif/device_service |
-| pid_file | is the pid file created by the daemon | /var/run/wsd_simple_server.pid |
-| foreground | don't fork | - |
-| debug | debug level from 0 to 5 | - |
-
-%s is replaced runtime with the IP address of the device.
-
 ### onvif_simple_server
 onvif_simple server supports the following options but you should use them just for debugging purpose
 
@@ -87,7 +54,7 @@ Usage: onvif_simple_server [-c CONF_FILE] [-d] [-f]
 | debug | debug level from 0 to 5 | - |
 | conf_help | print the help to create a configuration file | - |
 
-Below an example of a configuration file for a cam:
+Below an example of the configuration file for a cam:
 ```
 model=Yi Hack
 manufacturer=Yi
@@ -144,7 +111,38 @@ Brief explanation of some parameters:
 | ptz | 1 if onvif_simple_server can control PTZ, 0 otherwise |
 | move_* | the binary that moves the PTZ controls, this daemon will run it with a system call |
 
-----
+### wsd_simple_server
+wsd_simple server supports the following options
+
+```
+Usage: wsd_simple_server -i INTERFACE -x XADDR [-m MODEL] [-n MANUFACTURER] -p PID_FILE [-f] [-d LEVEL]
+
+        -i, --if_name
+                network interface
+        -x, --xaddr
+                resource address
+        -m, --model
+                model name
+        -n, --hardware
+                hardware manufacturer
+        -p, --pid_file
+                pid file
+        -f, --foreground
+                don't daemonize
+        -d LEVEL, --debug LEVEL
+                enable debug with LEVEL = 0..5 (default 0 = log fatal errors)
+        -h, --help
+                print this help
+```
+| Option | Description | Example |
+| --- | --- | --- |
+| if_name | the network interface that the device binds | eth0 |
+| xaddr | the resource address associated to the onvif server |  http://%s/onvif/device_service |
+| pid_file | is the pid file created by the daemon | /var/run/wsd_simple_server.pid |
+| foreground | don't fork | - |
+| debug | debug level from 0 to 5 | - |
+
+%s is replaced runtime with the IP address of the device.
 
 ## Compatibility
 I tested this program with the following clients:
