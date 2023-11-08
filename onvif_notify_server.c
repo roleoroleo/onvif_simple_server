@@ -305,7 +305,8 @@ int handle_events(int fd, char *dir)
     char buf[4096]__attribute__ ((aligned(__alignof__(struct inotify_event))));
     const struct inotify_event *event;
     ssize_t len;
-    int i, alarm_index;
+    int i, j;
+    int sub_count = 0;
     char input_file[1024], value[8];
     time_t now;
     char *ptr;
@@ -335,27 +336,26 @@ int handle_events(int fd, char *dir)
             /* Print event type. */
             if (((event->mask & IN_CREATE) || (event->mask & IN_DELETE)) && ((event->mask & IN_ISDIR) == 0) && (event->len)) {
                 sprintf(input_file, "%s/%s", dir, event->name);
-                if (event->mask & IN_CREATE)
+                if (event->mask & IN_CREATE) {
                     strcpy(value, "true");
-                else if (event->mask & IN_DELETE)
-                    strcpy(value, "true");
+                    log_debug("File %s created", input_file);
+                } else if (event->mask & IN_DELETE) {
+                    strcpy(value, "false");
+                    log_debug("File %s deleted", input_file);
+                }
 
-                alarm_index = -1;
                 for (i = 0; i < service_ctx.events_num; i++) {
                     if (strcmp(service_ctx.events[i].input_file, input_file) == 0) {
-                        alarm_index = i;
-                        break;
-                    }
-
-                    if (alarm_index != -1) {
                         now = time(NULL);
-                        for(i = 0; i < MAX_SUBSCRIPTIONS; i++) {
-                            if (subscriptions->items[i].used == 1) {
+                        for(j = 0; i < MAX_SUBSCRIPTIONS; j++) {
+                            if (subscriptions->items[j].used == 1) {
                                 // Check if subscription is expired
-                                if (now > subscriptions->items[i].expire) continue;
-                                send_notify(subscriptions->items[i].reference, alarm_index, "Changed", value);
+                                if (now > subscriptions->items[j].expire) continue;
+                                sub_count++;
+                                send_notify(subscriptions->items[j].reference, i, "Changed", value);
                             }
                         }
+                        log_debug("%d subscriptions for %s file", sub_count, service_ctx.events[i].input_file);
                     }
                 }
             }
