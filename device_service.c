@@ -409,11 +409,11 @@ int device_unsupported(const char *method)
 
 int device_authentication_error()
 {
-    long size = cat(NULL, "device_service_files/AuthenticationError.xml", 0);
+    long size = cat(NULL, "generic_files/AuthenticationError.xml", 0);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Status: 400 Bad request\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("stdout", "device_service_files/AuthenticationError.xml", 0);
+    return cat("stdout", "generic_files/AuthenticationError.xml", 0);
 }
