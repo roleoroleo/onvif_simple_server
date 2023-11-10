@@ -25,10 +25,10 @@
 
 typedef struct {
     int enable;
-    char *username;
-    char *password;
-    char *nonce;
-    char *created;
+    const char *username;
+    const char *password;
+    const char *nonce;
+    const char *created;
     int  type;
 } username_token_t;
 

@@ -293,6 +293,7 @@ int main(int argc, char ** argv)
     log_debug("Input:\n%s", input);
     log_debug("Url: %s", prog_name);
 
+    // Warning: init_xml changes the input string
     init_xml(input, input_size);
     method = get_method(1);
     if (method == NULL) {
@@ -307,9 +308,7 @@ int main(int argc, char ** argv)
     log_debug("Method: %s", method);
 
     if (service_ctx.user != NULL) {
-        if ((strstr(input, "Header") != NULL) && (strstr(input, "Security") != NULL) && (strstr(input, "UsernameToken") != NULL)) {
-            int element_size;
-            const char *element;
+        if ((get_element("Security", "Header") != NULL) && (get_element("UsernameToken", "Header") != NULL)) {
             unsigned long nonce_size = 128;
             unsigned long auth_size = 128;
             unsigned long sha1_size = 20;
@@ -320,50 +319,61 @@ int main(int argc, char ** argv)
             char digest[128];
 
             security.enable = 1;
-            element = get_element("Username", "Header");
-            if (element != NULL) {
-                security.username = (char *) malloc((element_size + 1) * sizeof(char));
+            security.username = get_element("Username", "Header");
+            if (security.username != NULL) {
                 log_debug("Security: username = %s", security.username);
-            }
-            element = get_element("Password", "Header");
-            if (element != NULL) {
-                security.password = (char *) malloc((element_size + 1) * sizeof(char));
-                log_debug("Security: password = %s", security.password);
-            }
-            element = get_element("Nonce", "Header");
-            if (element != NULL) {
-                security.nonce = (char *) malloc((element_size + 1) * sizeof(char));
-                log_debug("Security: nonce = %s", security.nonce);
-                b64_decode(security.nonce, strlen(security.nonce), nonce, &nonce_size);
-            }
-            element = get_element("Created", "Header");
-            if (element != NULL) {
-                security.created = (char *) malloc((element_size + 1) * sizeof(char));
-                log_debug("Security: created = %s", security.created);
-            }
-
-            // Calculate digest and check the password
-            // Digest = B64ENCODE( SHA1( B64DECODE( Nonce ) + Date + Password ) )
-            memcpy(auth, nonce, nonce_size);
-            memcpy(&auth[nonce_size], security.created, strlen(security.created));
-            memcpy(&auth[nonce_size + strlen(security.created)], service_ctx.password, strlen(service_ctx.password));
-            auth_size = nonce_size + strlen(security.created) + strlen(service_ctx.password);
-            hashSHA1(auth, auth_size, sha1, sha1_size);
-            b64_encode(sha1, sha1_size, digest, &digest_size);
-            log_debug("Calculated digest: %s", digest);
-            log_debug("Received digest: %s", security.password);
-
-            if ((strcmp(service_ctx.user, security.username) != 0) ||
-                    (strcmp(security.password, digest) != 0)) {
-
+            } else {
                 auth_error = 1;
             }
+            security.password = get_element("Password", "Header");
+            if (security.password != NULL) {
+                log_debug("Security: password = %s", security.password);
+            } else {
+                auth_error = 2;
+            }
+            security.nonce = get_element("Nonce", "Header");
+            if (security.nonce != NULL) {
+                log_debug("Security: nonce = %s", security.nonce);
+                b64_decode((unsigned char *) security.nonce, strlen(security.nonce), nonce, &nonce_size);
+            } else {
+                auth_error = 3;
+            }
+            security.created = get_element("Created", "Header");
+            if (security.created != NULL) {
+                log_debug("Security: created = %s", security.created);
+            } else {
+                auth_error = 4;
+            }
+
+            if (auth_error == 0) {
+                // Calculate digest and check the password
+                // Digest = B64ENCODE( SHA1( B64DECODE( Nonce ) + Date + Password ) )
+                memcpy(auth, nonce, nonce_size);
+                memcpy(&auth[nonce_size], security.created, strlen(security.created));
+                memcpy(&auth[nonce_size + strlen(security.created)], service_ctx.password, strlen(service_ctx.password));
+                auth_size = nonce_size + strlen(security.created) + strlen(service_ctx.password);
+                hashSHA1(auth, auth_size, sha1, sha1_size);
+                b64_encode(sha1, sha1_size, digest, &digest_size);
+                log_debug("Calculated digest: %s", digest);
+                log_debug("Received digest: %s", security.password);
+
+                if ((strcmp(service_ctx.user, security.username) != 0) ||
+                        (strcmp(security.password, digest) != 0)) {
+
+                    auth_error = 10;
+                }
+            }
         } else {
-            auth_error = 1;
+            auth_error = 11;
         }
     } else {
         security.enable = 0;
     }
+
+    if ((security.enable == 0) && (auth_error == 0))
+        log_info("Authentication ok");
+    else
+        log_info("Authentication error");
 
     if ((strcmp("GetSystemDateAndTime", method) == 0) || (strcmp("GetUsers", method) == 0)) {
         auth_error = 0;
@@ -482,13 +492,6 @@ int main(int argc, char ** argv)
         }
     } else {
         device_authentication_error();
-    }
-
-    if (security.enable == 1) {
-        free(security.username);
-        free(security.password);
-        free(security.nonce);
-        free(security.created);
     }
 
     close_xml();
