@@ -17,7 +17,7 @@
 #ifndef DEVICE_SERVICE_H
 #define DEVICE_SERVICE_H
 
-int device_get_services(char *input);
+int device_get_services();
 int device_get_service_capabilities();
 int device_get_device_information();
 int device_get_system_date_and_time();
@@ -25,7 +25,7 @@ int device_system_reboot();
 int device_get_scopes();
 int device_get_users();
 int device_get_wsdl_url();
-int device_get_capabilities(char *request);
+int device_get_capabilities();
 int device_get_network_interfaces();
 
 int device_unsupported(const char *method);

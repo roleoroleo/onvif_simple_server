@@ -41,7 +41,7 @@ int events_get_service_capabilities()
     return cat("stdout", "events_service_files/GetServiceCapabilities.xml", 0);
 }
 
-int events_subscribe(char *input)
+int events_subscribe()
 {
     const char *address;
     const char *element;
@@ -151,7 +151,7 @@ int events_subscribe(char *input)
         "%TERMINATION_TIME%", iso_str_2);
 }
 
-int events_renew(char *input)
+int events_renew()
 {
     const char *tt;
     char msg_uuid[UUID_LEN + 1];

@@ -30,7 +30,7 @@
 
 extern service_context_t service_ctx;
 
-int device_get_services(char *input)
+int device_get_services()
 {
     char address[16];
     char netmask[16];
@@ -257,7 +257,7 @@ int device_get_wsdl_url()
     return cat("stdout", "device_service_files/GetWsdlUrl.xml", 0);
 }
 
-int device_get_capabilities(char *request)
+int device_get_capabilities()
 {
     char address[16];
     char netmask[16];

@@ -373,7 +373,7 @@ int main(int argc, char ** argv)
 
         if (strcasecmp("device_service", prog_name) == 0) {
             if (strcasecmp(method, "GetServices") == 0) {
-                device_get_services(input);
+                device_get_services();
             } else if (strcasecmp(method, "GetServiceCapabilities") == 0) {
                 device_get_service_capabilities();
             } else if (strcasecmp(method, "GetDeviceInformation") == 0) {
@@ -389,7 +389,7 @@ int main(int argc, char ** argv)
             } else if (strcasecmp(method, "GetWsdlUrl") == 0) {
                 device_get_wsdl_url();
             } else if (strcasecmp(method, "GetCapabilities") == 0) {
-                device_get_capabilities(input);
+                device_get_capabilities();
             } else if (strcasecmp(method, "GetNetworkInterfaces") == 0) {
                 device_get_network_interfaces();
             } else {
@@ -411,19 +411,19 @@ int main(int argc, char ** argv)
             } else if (strcasecmp(method, "GetProfiles") == 0) {
                 media_get_profiles();
             } else if (strcasecmp(method, "GetProfile") == 0) {
-                media_get_profile(input);
+                media_get_profile();
             } else if (strcasecmp(method, "GetVideoEncoderConfigurations") == 0) {
                 media_get_video_encoder_configurations();
             } else if (strcasecmp(method, "GetVideoEncoderConfiguration") == 0) {
-                media_get_video_encoder_configuration(input);
+                media_get_video_encoder_configuration();
             } else if (strcasecmp(method, "GetCompatibleVideoEncoderConfigurations") == 0) {
-                media_get_compatible_video_encoder_configurations(input);
+                media_get_compatible_video_encoder_configurations();
             } else if (strcasecmp(method, "GetVideoEncoderConfigurationOptions") == 0) {
-                media_get_video_encoder_configuration_options(input);
+                media_get_video_encoder_configuration_options();
             } else if (strcasecmp(method, "GetSnapshotUri") == 0) {
-                media_get_snapshot_uri(input);
+                media_get_snapshot_uri();
             } else if (strcasecmp(method, "GetStreamUri") == 0) {
-                media_get_stream_uri(input);
+                media_get_stream_uri();
             } else {
                 media_unsupported(method);
             }
@@ -443,13 +443,13 @@ int main(int argc, char ** argv)
             } else if (strcasecmp(method, "GetPresets") == 0) {
                 ptz_get_presets();
             } else if (strcasecmp(method, "GotoPreset") == 0) {
-                ptz_goto_preset(input);
+                ptz_goto_preset();
             } else if (strcasecmp(method, "GotoHomePosition") == 0) {
                 ptz_goto_home_position();
             } else if (strcasecmp(method, "ContinuousMove") == 0) {
-                ptz_continuous_move(input);
+                ptz_continuous_move();
             } else if (strcasecmp(method, "RelativeMove") == 0) {
-                ptz_relative_move(input);
+                ptz_relative_move();
             } else if (strcasecmp(method, "Stop") == 0) {
                 ptz_stop();
             } else if (strcasecmp(method, "GetStatus") == 0) {
@@ -467,9 +467,9 @@ int main(int argc, char ** argv)
             if (strcasecmp(method, "GetServiceCapabilities") == 0) {
                 events_get_service_capabilities();
             } else if (strcasecmp(method, "Subscribe") == 0) {
-                events_subscribe(input);
+                events_subscribe();
             } else if (strcasecmp(method, "Renew") == 0) {
-                events_renew(input);
+                events_renew();
             } else if (strcasecmp(method, "Unsubscribe") == 0) {
                 events_unsubscribe();
             } else if (strcasecmp(method, "GetEventProperties") == 0) {

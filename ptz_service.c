@@ -99,7 +99,7 @@ int ptz_get_presets()
     return cat("stdout", "ptz_service_files/GetPresets.xml", 0);
 }
 
-int ptz_goto_preset(char *input)
+int ptz_goto_preset()
 {
     const char *preset;
     char sys_command[MAX_LEN];
@@ -137,7 +137,7 @@ int ptz_goto_home_position()
     return cat("stdout", "ptz_service_files/GotoHomePosition.xml", 0);
 }
 
-int ptz_continuous_move(char *input)
+int ptz_continuous_move()
 {
     const char *x = NULL;
     const char *y = NULL;
@@ -206,7 +206,7 @@ int ptz_continuous_move(char *input)
     }
 }
 
-int ptz_relative_move(char *input)
+int ptz_relative_move()
 {
     char const *x = NULL;
     char const *y = NULL;

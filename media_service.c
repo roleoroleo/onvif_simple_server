@@ -249,7 +249,7 @@ int media_get_profiles()
     }
 }
 
-int media_get_profile(char *input)
+int media_get_profile()
 {
     char profiles_num[2];
     char stmp_vsc_w[16], stmp_vsc_h[16];
@@ -399,7 +399,7 @@ int media_get_video_encoder_configurations()
     }
 }
 
-int media_get_video_encoder_configuration(char *input)
+int media_get_video_encoder_configuration()
 {
     char stmp_w_l[16], stmp_h_l[16];
     char stmp_w_h[16], stmp_h_h[16];
@@ -462,7 +462,7 @@ int media_get_video_encoder_configuration(char *input)
     }
 }
 
-int media_get_compatible_video_encoder_configurations(char *input)
+int media_get_compatible_video_encoder_configurations()
 {
     char stmp_w_l[16], stmp_h_l[16];
     char stmp_w_h[16], stmp_h_h[16];
@@ -526,7 +526,7 @@ int media_get_compatible_video_encoder_configurations(char *input)
     }
 }
 
-int media_get_video_encoder_configuration_options(char *input)
+int media_get_video_encoder_configuration_options()
 {
     char stmp_w_l[16], stmp_h_l[16];
     char stmp_w_h[16], stmp_h_h[16];
@@ -614,7 +614,7 @@ int media_get_video_encoder_configuration_options(char *input)
 
 }
 
-int media_get_snapshot_uri(char *input)
+int media_get_snapshot_uri()
 {
     char address[16];
     char netmask[16];
@@ -690,7 +690,7 @@ int media_get_snapshot_uri(char *input)
     }
 }
 
-int media_get_stream_uri(char *input)
+int media_get_stream_uri()
 {
     char address[16];
     char netmask[16];

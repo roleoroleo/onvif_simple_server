@@ -24,7 +24,7 @@ int ptz_get_configuration_options();
 int ptz_get_nodes();
 int ptz_get_node();
 int ptz_get_presets();
-int ptz_goto_preset(char *input);
+int ptz_goto_preset();
 int ptz_goto_home_position();
 int ptz_continuous_move();
 int ptz_relative_move();

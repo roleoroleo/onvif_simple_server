@@ -24,13 +24,13 @@ int media_get_video_source_configuration();
 int media_get_compatible_video_source_configurations();
 int media_get_video_source_configuration_options();
 int media_get_profiles();
-int media_get_profile(char *input);
+int media_get_profile();
 int media_get_video_encoder_configurations();
-int media_get_video_encoder_configuration(char *input);
-int media_get_compatible_video_encoder_configurations(char *input);
-int media_get_video_encoder_configuration_options(char *input);
-int media_get_snapshot_uri(char *input);
-int media_get_stream_uri(char *input);
+int media_get_video_encoder_configuration();
+int media_get_compatible_video_encoder_configurations();
+int media_get_video_encoder_configuration_options();
+int media_get_snapshot_uri();
+int media_get_stream_uri();
 
 int media_unsupported(const char *method);
 

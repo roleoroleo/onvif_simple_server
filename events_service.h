@@ -18,7 +18,7 @@
 #define EVENTS_SERVICE_H
 
 int events_get_service_capabilities();
-int events_subscribe(char *input);
+int events_subscribe();
 int events_renew();
 int events_unsubscribe();
 int events_get_event_properties();
