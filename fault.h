@@ -14,10 +14,10 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EVENTS_SERVICE_H
-#define EVENTS_SERVICE_H
+#ifndef FAULT_H
+#define FAULT_H
 
 int send_fault();
 int authentication_error();
 
-#endif //EVENTS_SERVICE_H
+#endif //FAULT_H
