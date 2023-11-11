@@ -30,6 +30,7 @@
 #include "media_service.h"
 #include "ptz_service.h"
 #include "events_service.h"
+#include "fault.h"
 #include "ezxml_wrapper.h"
 #include "conf.h"
 #include "utils.h"
@@ -491,7 +492,7 @@ int main(int argc, char ** argv)
             }
         }
     } else {
-        device_authentication_error();
+        authentication_error();
     }
 
     close_xml();

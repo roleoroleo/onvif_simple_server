@@ -29,6 +29,5 @@ int device_get_capabilities();
 int device_get_network_interfaces();
 
 int device_unsupported(const char *method);
-int device_authentication_error();
 
 #endif //DEVICE_SERVICE_H

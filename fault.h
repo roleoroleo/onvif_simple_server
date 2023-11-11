@@ -18,5 +18,6 @@
 #define EVENTS_SERVICE_H
 
 int send_fault();
+int authentication_error();
 
 #endif //EVENTS_SERVICE_H
