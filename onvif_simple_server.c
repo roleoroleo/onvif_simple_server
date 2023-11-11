@@ -328,7 +328,7 @@ int main(int argc, char ** argv)
             }
             security.password = get_element("Password", "Header");
             if (security.password != NULL) {
-                log_debug("Security: password = %s", security.password);
+                log_debug("Security: password = ********");
             } else {
                 auth_error = 2;
             }
