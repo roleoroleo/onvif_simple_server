@@ -202,6 +202,7 @@ int process_conf_file(char *file)
             service_ctx.ptz_node.set_preset = NULL;
             service_ctx.ptz_node.set_home_position = NULL;
             service_ctx.ptz_node.remove_preset = NULL;
+            service_ctx.ptz_node.jump_to_abs = NULL;
             service_ctx.ptz_node.jump_to_rel = NULL;
         } else if ((strcasecmp(param, "move_left") == 0) && (service_ctx.ptz_node.enable == 1)) {
             service_ctx.ptz_node.move_left = (char *) malloc(strlen(value) + 1);
@@ -230,6 +231,9 @@ int process_conf_file(char *file)
         } else if ((strcasecmp(param, "remove_preset") == 0) && (service_ctx.ptz_node.enable == 1)) {
             service_ctx.ptz_node.remove_preset = (char *) malloc(strlen(value) + 1);
             strcpy(service_ctx.ptz_node.remove_preset, value);
+        } else if ((strcasecmp(param, "jump_to_abs") == 0) && (service_ctx.ptz_node.enable == 1)) {
+            service_ctx.ptz_node.jump_to_abs = (char *) malloc(strlen(value) + 1);
+            strcpy(service_ctx.ptz_node.jump_to_abs, value);
         } else if ((strcasecmp(param, "jump_to_rel") == 0) && (service_ctx.ptz_node.enable == 1)) {
             service_ctx.ptz_node.jump_to_rel = (char *) malloc(strlen(value) + 1);
             strcpy(service_ctx.ptz_node.jump_to_rel, value);
@@ -278,6 +282,7 @@ void free_conf_file()
 
     if (service_ctx.ptz_node.enable == 1) {
         if (service_ctx.ptz_node.jump_to_rel != NULL) free(service_ctx.ptz_node.jump_to_rel);
+        if (service_ctx.ptz_node.jump_to_abs != NULL) free(service_ctx.ptz_node.jump_to_abs);
         if (service_ctx.ptz_node.remove_preset != NULL) free(service_ctx.ptz_node.remove_preset);
         if (service_ctx.ptz_node.set_home_position != NULL) free(service_ctx.ptz_node.set_home_position);
         if (service_ctx.ptz_node.set_preset != NULL) free(service_ctx.ptz_node.set_preset);
@@ -378,6 +383,7 @@ void print_conf_help()
     fprintf(stderr, "\tset_preset=/tmp/sd/yi-hack/bin/ipc_cmd -P %%t\n");
     fprintf(stderr, "\tset_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -H\n");
     fprintf(stderr, "\tremove_preset=/tmp/sd/yi-hack/bin/ipc_cmd -R %%t\n");
+    fprintf(stderr, "\tjump_to_abs=/tmp/sd/yi-hack/bin/ipc_cmd -j %%x,%%y\n");
     fprintf(stderr, "\tjump_to_rel=/tmp/sd/yi-hack/bin/ipc_cmd -J %%x,%%y\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "\t#EVENTS\n");

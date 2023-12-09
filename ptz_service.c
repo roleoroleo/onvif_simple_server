@@ -258,40 +258,54 @@ int ptz_relative_move()
     }
 }
 
+int ptz_absolute_move()
+{
+    char const *x = NULL;
+    char const *y = NULL;
+    char const *z = NULL;
+    double dx, dy;
+    char sys_command_tmp[MAX_LEN];
+    char sys_command[MAX_LEN];
+    int ret = 0;
+    ezxml_t node;
 
-        if (dy > 0.0) {
-            strcpy(sys_command, service_ctx.ptz_node.move_up);
-            system(sys_command);
-            usleep(300000);
-            strcpy(sys_command, service_ctx.ptz_node.move_stop);
-            system(sys_command);
-            ret = 0;
-        } else if (dy < 0.0) {
-            strcpy(sys_command, service_ctx.ptz_node.move_down);
-            system(sys_command);
-            usleep(300000);
-            strcpy(sys_command, service_ctx.ptz_node.move_stop);
-            system(sys_command);
-            ret = 0;
+    node = get_element_ptr(NULL, "Position", "Body");
+    if (node != NULL) {
+        node = get_element_ptr(node, "PanTilt", "Body");
+        if (node != NULL) {
+            x = get_attribute(node, "x");
+            y = get_attribute(node, "y");
+        }
+        node = get_element_ptr(node, "Zoom", "Body");
+        if (node != NULL) {
+            z = get_attribute(node, "x");
         }
     }
 
-    if (z != NULL) {
-        // Do nothing
-        ret = 0;
+    if (x == NULL) {
+        ret = -1;
+    } else {
+        str_subst(sys_command_tmp, service_ctx.ptz_node.jump_to_abs, "%x", (char *) x);
+    }
+    if (y == NULL) {
+        ret = -2;
+    } else {
+        str_subst(sys_command, sys_command_tmp, "%y", (char *) y);
     }
 
     if (ret == 0) {
-        long size = cat(NULL, "ptz_service_files/RelativeMove.xml", 0);
+        system(sys_command);
+
+        long size = cat(NULL, "ptz_service_files/AbsoluteMove.xml", 0);
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("stdout", "ptz_service_files/RelativeMove.xml", 0);
+        return cat("stdout", "ptz_service_files/AbsoluteMove.xml", 0);
 
     } else {
         send_fault();
-        return -1;
+        return ret;
     }
 }
 

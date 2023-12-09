@@ -461,6 +461,8 @@ int main(int argc, char ** argv)
                 ptz_continuous_move();
             } else if (strcasecmp(method, "RelativeMove") == 0) {
                 ptz_relative_move();
+            } else if (strcasecmp(method, "AbsoluteMove") == 0) {
+                ptz_absolute_move();
             } else if (strcasecmp(method, "Stop") == 0) {
                 ptz_stop();
             } else if (strcasecmp(method, "GetStatus") == 0) {

@@ -58,6 +58,7 @@ typedef struct {
     char *set_preset;
     char *set_home_position;
     char *remove_preset;
+    char *jump_to_abs;
     char *jump_to_rel;
 } ptz_node_t;
 
