@@ -45,6 +45,9 @@
 #define TEMPLATE_DIR "/etc/onvif_notify_server"
 #define INOTIFY_DIR "/tmp/onvif_notify_server"
 
+#define ALARM_OFF 0
+#define ALARM_ON  1
+
 #define BD_NO_CHDIR          01
 #define BD_NO_CLOSE_FILES    02
 #define BD_NO_REOPEN_STD_FDS 04
@@ -598,7 +601,10 @@ int main(int argc, char **argv)  {
     }
 
     for (i = 0; i < service_ctx.events_num; i++) {
-        log_debug("%s", service_ctx.events[i].input_file);
+        log_debug("%d: %s", i, service_ctx.events[i].input_file);
+
+        // Init alarm status
+        service_ctx.events[i].is_on = ALARM_OFF;
     }
 
     // Open shared memory
@@ -675,8 +681,8 @@ int main(int argc, char **argv)  {
             for (i = 0; i < service_ctx.events_num; i++) {
                 acc = access(service_ctx.events[i].input_file, F_OK);
 
-                if ((service_ctx.events[i].is_on == 0) && (acc == 0)) {
-                    service_ctx.events[i].is_on = 1;
+                if ((service_ctx.events[i].is_on != ALARM_ON) && (acc == 0)) {
+                    service_ctx.events[i].is_on = ALARM_ON;
                     log_info("File %s created", service_ctx.events[i].input_file);
 
                     now = time(NULL);
@@ -688,8 +694,8 @@ int main(int argc, char **argv)  {
                         }
                     }
 
-                } else if ((service_ctx.events[i].is_on == 1) && (acc != 0)) {
-                    service_ctx.events[i].is_on = 0;
+                } else if ((service_ctx.events[i].is_on != ALARM_OFF) && (acc != 0)) {
+                    service_ctx.events[i].is_on = ALARM_OFF;
                     log_info("File %s deleted", service_ctx.events[i].input_file);
 
                     now = time(NULL);
