@@ -347,7 +347,7 @@ int handle_events(int fd, char *dir)
                 for (i = 0; i < service_ctx.events_num; i++) {
                     if (strcmp(service_ctx.events[i].input_file, input_file) == 0) {
                         now = time(NULL);
-                        for(j = 0; i < MAX_SUBSCRIPTIONS; j++) {
+                        for(j = 0; j < MAX_SUBSCRIPTIONS; j++) {
                             if (subscriptions->items[j].used == 1) {
                                 // Check if subscription is expired
                                 if (now > subscriptions->items[j].expire) continue;
