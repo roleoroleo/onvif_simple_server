@@ -374,11 +374,11 @@ void print_conf_help()
     fprintf(stderr, "\n");
     fprintf(stderr, "\t#PTZ\n");
     fprintf(stderr, "\tptz=1\n");
-    fprintf(stderr, "\tmove_left=/tmp/sd/yi-hack/bin/ipc_cmd -M left\n");
-    fprintf(stderr, "\tmove_right=/tmp/sd/yi-hack/bin/ipc_cmd -M right\n");
+    fprintf(stderr, "\tmove_left=/tmp/sd/yi-hack/bin/ipc_cmd -m left\n");
+    fprintf(stderr, "\tmove_right=/tmp/sd/yi-hack/bin/ipc_cmd -m right\n");
     fprintf(stderr, "\tmove_up=/tmp/sd/yi-hack/bin/ipc_cmd -m up\n");
     fprintf(stderr, "\tmove_down=/tmp/sd/yi-hack/bin/ipc_cmd -m down\n");
-    fprintf(stderr, "\tmove_stop=/tmp/sd/yi-hack/bin/ipc_cmd -M stop\n");
+    fprintf(stderr, "\tmove_stop=/tmp/sd/yi-hack/bin/ipc_cmd -m stop\n");
     fprintf(stderr, "\tmove_preset=/tmp/sd/yi-hack/bin/ipc_cmd -p %%t\n");
     fprintf(stderr, "\tset_preset=/tmp/sd/yi-hack/bin/ipc_cmd -P %%t\n");
     fprintf(stderr, "\tset_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -H\n");
