@@ -26,12 +26,12 @@
                     <tt:AbsolutePanTiltPositionSpace>
                         <tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
                         <tt:XRange>
-                            <tt:Min>-1</tt:Min>
-                            <tt:Max>1</tt:Max>
+                            <tt:Min>0</tt:Min>
+                            <tt:Max>360</tt:Max>
                         </tt:XRange>
                         <tt:YRange>
-                            <tt:Min>-1</tt:Min>
-                            <tt:Max>1</tt:Max>
+                            <tt:Min>0</tt:Min>
+                            <tt:Max>180</tt:Max>
                         </tt:YRange>
                     </tt:AbsolutePanTiltPositionSpace>
                     <tt:AbsoluteZoomPositionSpace>
@@ -44,12 +44,12 @@
                     <tt:RelativePanTiltTranslationSpace>
                         <tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:URI>
                         <tt:XRange>
-                            <tt:Min>-1</tt:Min>
-                            <tt:Max>1</tt:Max>
+                            <tt:Min>-360</tt:Min>
+                            <tt:Max>-360</tt:Max>
                         </tt:XRange>
                         <tt:YRange>
-                            <tt:Min>-1</tt:Min>
-                            <tt:Max>1</tt:Max>
+                            <tt:Min>-180</tt:Min>
+                            <tt:Max>180</tt:Max>
                         </tt:YRange>
                     </tt:RelativePanTiltTranslationSpace>
                     <tt:RelativeZoomTranslationSpace>
@@ -62,11 +62,11 @@
                     <tt:ContinuousPanTiltVelocitySpace>
                         <tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:URI>
                         <tt:XRange>
-                            <tt:Min>-1</tt:Min>
+                            <tt:Min>1</tt:Min>
                             <tt:Max>1</tt:Max>
                         </tt:XRange>
                         <tt:YRange>
-                            <tt:Min>-1</tt:Min>
+                            <tt:Min>1</tt:Min>
                             <tt:Max>1</tt:Max>
                         </tt:YRange>
                     </tt:ContinuousPanTiltVelocitySpace>
@@ -80,7 +80,7 @@
                     <tt:PanTiltSpeedSpace>
                         <tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace</tt:URI>
                         <tt:XRange>
-                            <tt:Min>-1</tt:Min>
+                            <tt:Min>1</tt:Min>
                             <tt:Max>1</tt:Max>
                         </tt:XRange>
                     </tt:PanTiltSpeedSpace>
