@@ -212,6 +212,7 @@ int ptz_relative_move()
     char const *y = NULL;
     char const *z = NULL;
     double dx, dy;
+    char sys_command_tmp[MAX_LEN];
     char sys_command[MAX_LEN];
     int ret = -1;
     ezxml_t node;
@@ -229,28 +230,34 @@ int ptz_relative_move()
         }
     }
 
-    if (x != NULL) {
-        dx = atof(x);
-
-        if (dx > 0.0) {
-            strcpy(sys_command, service_ctx.ptz_node.move_right);
-            system(sys_command);
-            usleep(300000);
-            strcpy(sys_command, service_ctx.ptz_node.move_stop);
-            system(sys_command);
-            ret = 0;
-        } else if (dx < 0.0) {
-            strcpy(sys_command, service_ctx.ptz_node.move_left);
-            system(sys_command);
-            usleep(300000);
-            strcpy(sys_command, service_ctx.ptz_node.move_stop);
-            system(sys_command);
-            ret = 0;
-        }
+    if (x == NULL) {
+        str_subst(sys_command_tmp, service_ctx.ptz_node.jump_to_rel, "%x", "0");
+    } else {
+        str_subst(sys_command_tmp, service_ctx.ptz_node.jump_to_rel, "%x", (char *) x);
+    }
+    if (y == NULL) {
+        str_subst(sys_command, sys_command_tmp, "%y", "0");
+    } else {
+        str_subst(sys_command, sys_command_tmp, "%y", (char *) y);
     }
 
-    if (y != NULL) {
-        dy = atof(y);
+    system(sys_command);
+    ret = 0;
+
+    if (ret == 0) {
+        long size = cat(NULL, "ptz_service_files/RelativeMove.xml", 0);
+
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+        return cat("stdout", "ptz_service_files/RelativeMove.xml", 0);
+
+    } else {
+        send_fault();
+        return -1;
+    }
+}
+
 
         if (dy > 0.0) {
             strcpy(sys_command, service_ctx.ptz_node.move_up);
