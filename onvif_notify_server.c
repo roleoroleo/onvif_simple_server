@@ -559,6 +559,44 @@ int main(int argc, char **argv)  {
     }
     log_info("Completed.");
 
+    // Check if TEMPLATE_DIR exists
+    if (access(TEMPLATE_DIR, F_OK ) != -1) {
+        // file exists
+        DIR *dirptr;
+        if ((dirptr = opendir(TEMPLATE_DIR)) != NULL) {
+            closedir (dirptr);
+        } else {
+            log_fatal("Unable to open directory %s", TEMPLATE_DIR);
+            fclose(fLog);
+            free(conf_file);
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        log_fatal("Unable to open directory %s", TEMPLATE_DIR);
+        fclose(fLog);
+        free(conf_file);
+        exit(EXIT_FAILURE);
+    }
+
+    // Check if INOTIFY_DIR exists
+    if (access(INOTIFY_DIR, F_OK ) != -1) {
+        // file exists
+        DIR *dirptr;
+        if ((dirptr = opendir(INOTIFY_DIR)) != NULL) {
+            closedir (dirptr);
+        } else {
+            log_fatal("Unable to open directory %s", INOTIFY_DIR);
+            fclose(fLog);
+            free(conf_file);
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        log_fatal("Unable to open directory %s", INOTIFY_DIR);
+        fclose(fLog);
+        free(conf_file);
+        exit(EXIT_FAILURE);
+    }
+
     for (i = 0; i < service_ctx.events_num; i++) {
         log_debug("%s", service_ctx.events[i].input_file);
     }

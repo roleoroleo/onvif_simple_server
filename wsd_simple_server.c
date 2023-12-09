@@ -26,6 +26,7 @@
 #include <time.h>
 #include <signal.h>
 #include <getopt.h>
+#include <dirent.h>
 #include <errno.h>
 #include <limits.h>
 
@@ -189,7 +190,9 @@ void signal_handler(int signal)
     message = (char *) malloc((size + 1) * sizeof(char));
     if (message == NULL) {
         log_fatal("Malloc error.\n");
-        exit(EXIT_FAILURE);
+        shutdown(sock, SHUT_RDWR);
+        // Exit from main loop
+        exit_main = 1;
     }
 
     cat(message, template_file, 12,
@@ -203,10 +206,13 @@ void signal_handler(int signal)
     if (sendto(sock, message, strlen(message), 0, (struct sockaddr *) &addr_in, sizeof(addr_in)) < 0) {
         log_fatal("Error sending Bye message.\n");
         free(message);
+        shutdown(sock, SHUT_RDWR);
+        // Exit from main loop
+        exit_main = 1;
         exit(EXIT_FAILURE);
     }
-    free(message);
     log_info("Sent.");
+    free(message);
 
     // Exit from main loop
     shutdown(sock, SHUT_RDWR);
@@ -391,10 +397,29 @@ int main(int argc, char **argv)  {
     // Checking pid file
     if (check_pid(pid_file) == 1) {
         log_fatal("Program is already running.\n");
+        fclose(fLog);
         exit(EXIT_FAILURE);
     }
     if (create_pid(pid_file) < 0) {
         log_fatal("Error creating pid file %s\n", pid_file);
+        fclose(fLog);
+        exit(EXIT_FAILURE);
+    }
+
+    // Check if TEMPLATE_DIR exists
+    if (access(TEMPLATE_DIR, F_OK ) != -1) {
+        // file exists
+        DIR *dirptr;
+        if ((dirptr = opendir(TEMPLATE_DIR)) != NULL) {
+            closedir (dirptr);
+        } else {
+            log_fatal("Unable to open directory %s", TEMPLATE_DIR);
+            fclose(fLog);
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        log_fatal("Unable to open directory %s", TEMPLATE_DIR);
+        fclose(fLog);
         exit(EXIT_FAILURE);
     }
 
@@ -411,11 +436,14 @@ int main(int argc, char **argv)  {
 
     if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
         log_fatal("Unable to create socket.\n");
+        fclose(fLog);
         exit(EXIT_FAILURE);
     }
 
     if (bind(sock, (struct sockaddr *) &addr_in, sizeof(addr_in)) == -1) {
         log_fatal("Unable to bind socket\n");
+        shutdown(sock, SHUT_RDWR);
+        fclose(fLog);
         exit(EXIT_FAILURE);
     }
 
@@ -423,6 +451,8 @@ int main(int argc, char **argv)  {
     mr.imr_interface.s_addr = inet_addr(address);
     if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *) &mr, sizeof(mr)) == -1) {
         log_fatal("Error joining multicast group\n");
+        shutdown(sock, SHUT_RDWR);
+        fclose(fLog);
         exit(EXIT_FAILURE);
     }
 
@@ -448,6 +478,8 @@ int main(int argc, char **argv)  {
     message = (char *) malloc((size + 1) * sizeof(char));
     if (message == NULL) {
         log_fatal("Malloc error.\n");
+        shutdown(sock, SHUT_RDWR);
+        fclose(fLog);
         exit(EXIT_FAILURE);
     }
 
@@ -463,6 +495,8 @@ int main(int argc, char **argv)  {
     if (sendto(sock, message, strlen(message), 0, (struct sockaddr *) &addr_in, sizeof(addr_in)) < 0) {
         log_fatal("Error sending Hello message.\n");
         free(message);
+        shutdown(sock, SHUT_RDWR);
+        fclose(fLog);
         exit(EXIT_FAILURE);
     }
     free(message);
@@ -538,8 +572,12 @@ int main(int argc, char **argv)  {
         }
     }
 
-    unlink(pid_file);
+    shutdown(sock, SHUT_RDWR);
+
     log_info("Terminating program.");
+    fclose(fLog);
+
+    unlink(pid_file);
 
     return 0;
 }
