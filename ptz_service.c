@@ -329,19 +329,52 @@ int ptz_get_status()
     char utctime[32];
     time_t timestamp = time(NULL);
     struct tm *tm = gmtime(&timestamp);
+    int ret = 0;
+    FILE *fp;
+    int x, y;
+    char out[256], sx[128], sy[128], sz[128];
 
     sprintf(utctime, "%04d-%02d-%02dT%02d:%02d:%02dZ",
             tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
             tm->tm_hour, tm->tm_min, tm->tm_sec);
 
-    long size = cat(NULL, "ptz_service_files/GetStatus.xml", 2,
-            "%TIME%", utctime);
+    // Run command that returns to stdout x and y position in the form x,y
+    fp = popen(service_ctx.ptz_node.get_position, "r");
+    if (fp == NULL) {
+        ret = -1;
+    } else {
+        if (fgets(out, sizeof(out), fp) == NULL) {
+            ret = -2;
+        } else {
+            if (sscanf(out, "%d,%d", &x, &y) != 2) {
+                ret = -3;
+            }
+        }
+        pclose(fp);
+    }
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    sprintf(sx, "%d", x);
+    sprintf(sy, "%d", y);
+    sprintf(sz, "%d", 1);
+    if (ret == 0) {
+        long size = cat(NULL, "ptz_service_files/GetStatus.xml", 8,
+                "%X%", sx,
+                "%Y%", sy,
+                "%Z%", sz,
+                "%TIME%", utctime);
 
-    return cat("stdout", "ptz_service_files/GetStatus.xml", 2,
-            "%TIME%", utctime);
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+        return cat("stdout", "ptz_service_files/GetStatus.xml", 8,
+                "%X%", sx,
+                "%Y%", sy,
+                "%Z%", sz,
+                "%TIME%", utctime);
+    } else {
+        send_fault();
+        return ret;
+    }
 }
 
 int ptz_set_preset()

@@ -49,6 +49,7 @@ typedef struct {
 
 typedef struct {
     int enable;
+    char *get_position;
     char *move_left;
     char *move_right;
     char *move_up;

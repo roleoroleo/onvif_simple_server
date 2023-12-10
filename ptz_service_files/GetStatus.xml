@@ -22,6 +22,10 @@
     <SOAP-ENV:Body>
         <tptz:GetStatusResponse>
             <tptz:PTZStatus>
+                <tt:Position>
+                    <tt:PanTilt x="%X%" y="%Y%" space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace" />
+                    <tt:Zoom x="%Z%" space="http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace" />
+                </tt:Position>
                 <tt:UtcTime>%TIME%</tt:UtcTime>
             </tptz:PTZStatus>
         </tptz:GetStatusResponse>
