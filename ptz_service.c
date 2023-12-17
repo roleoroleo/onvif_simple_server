@@ -286,18 +286,27 @@ int ptz_relative_move()
     if (x == NULL) {
         str_subst(sys_command_tmp, service_ctx.ptz_node.jump_to_rel, "%x", "0");
     } else {
-        str_subst(sys_command_tmp, service_ctx.ptz_node.jump_to_rel, "%x", (char *) x);
+        dx = atof(x);
+        if ((dx > 360.0) || (dx < -360.0)) {
+            ret = -3;
+        } else {
+            str_subst(sys_command_tmp, service_ctx.ptz_node.jump_to_rel, "%x", (char *) x);
+        }
     }
     if (y == NULL) {
         str_subst(sys_command, sys_command_tmp, "%y", "0");
     } else {
-        str_subst(sys_command, sys_command_tmp, "%y", (char *) y);
+        dy = atof(y);
+        if ((dy > 180.0) || (dy < -180.0)) {
+            ret = -4;
+        } else {
+            str_subst(sys_command, sys_command_tmp, "%y", (char *) y);
+        }
     }
 
-    system(sys_command);
-    ret = 0;
-
     if (ret == 0) {
+        system(sys_command);
+
         long size = cat(NULL, "ptz_service_files/RelativeMove.xml", 0);
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
@@ -347,14 +356,24 @@ int ptz_absolute_move()
     }
 
     if (x == NULL) {
-        ret = -1;
+        ret = -3;
     } else {
-        str_subst(sys_command_tmp, service_ctx.ptz_node.jump_to_abs, "%x", (char *) x);
+        dx = atof(x);
+        if ((dx > 360.0) || (dx < 0.0)) {
+            ret = -4;
+        } else {
+            str_subst(sys_command_tmp, service_ctx.ptz_node.jump_to_abs, "%x", (char *) x);
+        }
     }
     if (y == NULL) {
-        ret = -2;
+        ret = -5;
     } else {
-        str_subst(sys_command, sys_command_tmp, "%y", (char *) y);
+        dy = atof(y);
+        if ((dy > 180.0) || (dy < 0.0)) {
+            ret = -6;
+        } else {
+            str_subst(sys_command, sys_command_tmp, "%y", (char *) y);
+        }
     }
 
     if (ret == 0) {

@@ -215,8 +215,7 @@ ezxml_t get_element_ptr(ezxml_t start_from, char *name, char *first_node)
     else
         ret = get_element_rec_ptr(start_from, name, first_node);
 
-    if (ret == NULL) return NULL;
-    else return ret;
+    return ret;
 }
 
 const char *get_attribute(ezxml_t node, char *name)

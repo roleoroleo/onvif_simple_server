@@ -33,7 +33,7 @@ int send_fault(char *service, char *rec_send, char *subcode, char *subcode_ex, c
 
     get_ip_address(address, netmask, service_ctx.ifs);
     char device_address[MAX_LEN];
-    char events_service_address[MAX_LEN];
+    char service_address[MAX_LEN];
     char port[8];
     char *cap;
 
@@ -41,14 +41,14 @@ int send_fault(char *service, char *rec_send, char *subcode, char *subcode_ex, c
     if (service_ctx.port != 80)
         sprintf(port, ":%d", service_ctx.port);
     sprintf(device_address, "http://%s%s/onvif", address, port);
-    sprintf(events_service_address, "http://%s%s/onvif/events_service", address, port);
+    sprintf(service_address, "http://%s%s/onvif/%s", address, port, service);
 
     gen_uuid(msg_uuid);
 
     long size = cat(NULL, "generic_files/Fault.xml", 16,
             "%UUID%", msg_uuid,
             "%ADDRESS%", device_address,
-            "%SERVICE%", events_service_address);
+            "%SERVICE%", service_address,
             "%REC_SEND%", rec_send,
             "%SUBCODE%", subcode,
             "%SUBCODE_EX%", subcode_ex,
@@ -64,7 +64,7 @@ int send_fault(char *service, char *rec_send, char *subcode, char *subcode_ex, c
     return cat("stdout", "generic_files/Fault.xml", 16,
             "%UUID%", msg_uuid,
             "%ADDRESS%", device_address,
-            "%SERVICE%", events_service_address);
+            "%SERVICE%", service_address,
             "%REC_SEND%", rec_send,
             "%SUBCODE%", subcode,
             "%SUBCODE_EX%", subcode_ex,
