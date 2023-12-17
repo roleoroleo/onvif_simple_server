@@ -22,9 +22,9 @@
     <SOAP-ENV:Body>
         <trt:GetServiceCapabilitiesResponse>
             <trt:Capabilities SnapshotUri="true" Rotation="false" VideoSourceMode="false" OSD="false" TemporaryOSDText="false" EXICompression="false">
-                <trt:ProfileCapabilities MaximumNumberOfProfiles="1"/>
+                <trt:ProfileCapabilities MaximumNumberOfProfiles="2"/>
                 <trt:StreamingCapabilities RTPMulticast="false"
-                                           RTP_TCP="false"
+                                           RTP_TCP="true"
                                            RTP_RTSP_TCP="true"/>
             </trt:Capabilities>
         </trt:GetServiceCapabilitiesResponse>
