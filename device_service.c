@@ -284,7 +284,7 @@ int device_get_capabilities()
         } else if (strcasecmp(category, "All") == 0) {
             icategory = 15;
         } else {
-            send_fault();
+            send_fault("device_service", "Receiver", "ter:ActionNotSupported", "ter:NoSuchService", "No such service", "The requested WSDL service category is not supported by the device");
             return -1;
         }
     } else {
@@ -403,6 +403,6 @@ int device_get_network_interfaces()
 
 int device_unsupported(const char *method)
 {
-    send_fault();
+    send_action_failed_fault();
     return -1;
 }

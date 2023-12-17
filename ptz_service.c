@@ -91,6 +91,19 @@ int ptz_get_node()
 
 int ptz_get_presets()
 {
+    ezxml_t node;
+
+    node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoPTZProfile", "No PTZ profile", "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
+
     long size = cat(NULL, "ptz_service_files/GetPresets.xml", 0);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
@@ -103,6 +116,18 @@ int ptz_goto_preset()
 {
     const char *preset;
     char sys_command[MAX_LEN];
+    ezxml_t node;
+
+    node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoPTZProfile", "No PTZ profile", "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
 
     preset = get_element("PresetToken", "Body");
 
@@ -117,14 +142,26 @@ int ptz_goto_preset()
 
         return cat("stdout", "ptz_service_files/GotoPreset.xml", 0);
     } else {
-        send_fault();
-        return -1;
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
+        return -3;
     }
 }
 
 int ptz_goto_home_position()
 {
     char sys_command[MAX_LEN];
+    ezxml_t node;
+
+    node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoPTZProfile", "No PTZ profile", "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
 
     str_subst(sys_command, service_ctx.ptz_node.move_preset, "%t", "0");
     system(sys_command);
@@ -146,6 +183,17 @@ int ptz_continuous_move()
     char sys_command[MAX_LEN];
     int ret = -1;
     ezxml_t node;
+
+    node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoPTZProfile", "No PTZ profile", "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
 
     node = get_element_ptr(NULL, "Velocity", "Body");
     if (node != NULL) {
@@ -192,18 +240,12 @@ int ptz_continuous_move()
         ret = 0;
     }
 
-    if (ret == 0) {
-        long size = cat(NULL, "ptz_service_files/ContinuousMove.xml", 0);
+    long size = cat(NULL, "ptz_service_files/ContinuousMove.xml", 0);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("stdout", "ptz_service_files/ContinuousMove.xml", 0);
-
-    } else {
-        send_fault();
-        return -1;
-    }
+    return cat("stdout", "ptz_service_files/ContinuousMove.xml", 0);
 }
 
 int ptz_relative_move()
@@ -216,6 +258,17 @@ int ptz_relative_move()
     char sys_command[MAX_LEN];
     int ret = -1;
     ezxml_t node;
+
+    node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoPTZProfile", "No PTZ profile", "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
 
     node = get_element_ptr(NULL, "Translation", "Body");
     if (node != NULL) {
@@ -253,8 +306,8 @@ int ptz_relative_move()
         return cat("stdout", "ptz_service_files/RelativeMove.xml", 0);
 
     } else {
-        send_fault();
-        return -1;
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:InvalidTranslation", "Invalid translation", "The requested translation is out of bounds");
+        return ret;
     }
 }
 
@@ -268,6 +321,17 @@ int ptz_absolute_move()
     char sys_command[MAX_LEN];
     int ret = 0;
     ezxml_t node;
+
+    node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoPTZProfile", "No PTZ profile", "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
 
     node = get_element_ptr(NULL, "Position", "Body");
     if (node != NULL) {
@@ -304,7 +368,7 @@ int ptz_absolute_move()
         return cat("stdout", "ptz_service_files/AbsoluteMove.xml", 0);
 
     } else {
-        send_fault();
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:InvalidPosition", "Invalid position", "The requested position is out of bounds");
         return ret;
     }
 }
@@ -312,6 +376,18 @@ int ptz_absolute_move()
 int ptz_stop()
 {
     char sys_command[MAX_LEN];
+    ezxml_t node;
+
+    node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoPTZProfile", "No PTZ profile", "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
 
     sprintf(sys_command, service_ctx.ptz_node.move_stop);
     system(sys_command);
@@ -333,6 +409,18 @@ int ptz_get_status()
     FILE *fp;
     int x, y;
     char out[256], sx[128], sy[128], sz[128];
+    ezxml_t node;
+
+    node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoPTZProfile", "No PTZ profile", "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
 
     sprintf(utctime, "%04d-%02d-%02dT%02d:%02d:%02dZ",
             tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
@@ -341,13 +429,13 @@ int ptz_get_status()
     // Run command that returns to stdout x and y position in the form x,y
     fp = popen(service_ctx.ptz_node.get_position, "r");
     if (fp == NULL) {
-        ret = -1;
+        ret = -3;
     } else {
         if (fgets(out, sizeof(out), fp) == NULL) {
-            ret = -2;
+            ret = -4;
         } else {
             if (sscanf(out, "%d,%d", &x, &y) != 2) {
-                ret = -3;
+                ret = -4;
             }
         }
         pclose(fp);
@@ -372,7 +460,7 @@ int ptz_get_status()
                 "%Z%", sz,
                 "%TIME%", utctime);
     } else {
-        send_fault();
+        send_fault("ptz_service", "Receiver", "ter:Action", "ter:NoStatus", "No status", "No PTZ status is available in the requested Media Profile");
         return ret;
     }
 }
@@ -381,6 +469,18 @@ int ptz_set_preset()
 {
     char sys_command[MAX_LEN];
     const char *preset_name;
+    ezxml_t node;
+
+    node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoPTZProfile", "No PTZ profile", "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
 
     preset_name = get_element("PresetName", "Body");
     str_subst(sys_command, service_ctx.ptz_node.set_preset, "%t", (char *) preset_name);
@@ -397,6 +497,18 @@ int ptz_set_preset()
 int ptz_set_home_position()
 {
     char sys_command[MAX_LEN];
+    ezxml_t node;
+
+    node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoPTZProfile", "No PTZ profile", "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
 
     strcpy(sys_command, service_ctx.ptz_node.set_home_position);
     system(sys_command);
@@ -413,6 +525,18 @@ int ptz_remove_preset()
 {
     char sys_command[MAX_LEN];
     const char *preset_token;
+    ezxml_t node;
+
+    node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoPTZProfile", "No PTZ profile", "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
 
     preset_token = get_element("PresetToken", "Body");
     str_subst(sys_command, service_ctx.ptz_node.remove_preset, "%t", (char *) preset_token);
@@ -428,6 +552,6 @@ int ptz_remove_preset()
 
 int ptz_unsupported(const char *method)
 {
-    send_fault();
+    send_action_failed_fault();
     return -1;
 }

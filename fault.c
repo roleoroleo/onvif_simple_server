@@ -25,7 +25,7 @@
 
 extern service_context_t service_ctx;
 
-int send_fault()
+int send_fault(char *service, char *rec_send, char *subcode, char *subcode_ex, char *reason, char *detail)
 {
     char msg_uuid[UUID_LEN + 1];
     char address[16];
@@ -45,10 +45,15 @@ int send_fault()
 
     gen_uuid(msg_uuid);
 
-    long size = cat(NULL, "generic_files/Fault.xml", 6,
+    long size = cat(NULL, "generic_files/Fault.xml", 16,
             "%UUID%", msg_uuid,
             "%ADDRESS%", device_address,
             "%SERVICE%", events_service_address);
+            "%REC_SEND%", rec_send,
+            "%SUBCODE%", subcode,
+            "%SUBCODE_EX%", subcode_ex,
+            "%REASON%", reason,
+            "%DETAIL%", detail);
 
 //    fprintf(stdout, "Status: 500 Internal Server Error\r\n");
     fprintf(stdout, "HTTP/1.1 500 Internal Server Error\r\n");
@@ -56,10 +61,20 @@ int send_fault()
     fprintf(stdout, "Content-Length: %ld\r\n", size);
     fprintf(stdout, "\r\n");
 
-    return cat("stdout", "generic_files/Fault.xml", 6,
+    return cat("stdout", "generic_files/Fault.xml", 16,
             "%UUID%", msg_uuid,
             "%ADDRESS%", device_address,
             "%SERVICE%", events_service_address);
+            "%REC_SEND%", rec_send,
+            "%SUBCODE%", subcode,
+            "%SUBCODE_EX%", subcode_ex,
+            "%REASON%", reason,
+            "%DETAIL%", detail);
+}
+
+int send_action_failed_fault()
+{
+    send_fault("ptz_service", "Receiver", "ter:Action", "ter:ActionFailed", "Action failed", "The requested SOAP action failed");
 }
 
 int authentication_error()

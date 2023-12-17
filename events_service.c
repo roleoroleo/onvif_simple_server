@@ -68,7 +68,7 @@ int events_subscribe()
     address = get_element("Address", "Body");
     if (address == NULL) {
         log_error("No Address element for subscribe method");
-        send_fault();
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "", "Resource nnknown", "");
         return -1;
     }
 
@@ -77,13 +77,13 @@ int events_subscribe()
         element = get_element("TopicExpression", "Body");
         if ((element != NULL) && (strstr(element, "VideoSource/MotionAlarm") == NULL) && (strlen(element) > 0)) {
             log_error("Invalid filter");
-            send_fault();
+            send_fault("events_service", "Receiver", "wsrf-rw:InvalidFilterFault", "", "Invalid filter", "");
             return -2;
         }
         element = get_element("MessageContent", "Body");
         if ((element != NULL) && (strlen(element) > 0)) {
             log_error("Invalid filter");
-            send_fault();
+            send_fault("events_service", "Receiver", "wsrf-rw:InvalidFilterFault", "", "Invalid filter", "");
             return -2;
         }
     }
@@ -91,7 +91,7 @@ int events_subscribe()
     itt = get_element("InitialTerminationTime", "Body");
     if (itt == NULL) {
         log_error("No InitialTerminationTime element for subscribe method");
-        send_fault();
+        send_fault("events_service", "Receiver", "wsntw:UnacceptableInitialTerminationTimeFault", "", "Unacceptable initial termination time", "");
         return -3;
     }
 
@@ -99,7 +99,7 @@ int events_subscribe()
     subscriptions = (subscriptions_t *) create_shared_memory(0);
     if (subscriptions == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
-        send_fault();
+        send_action_failed_fault();
         return -4;
     }
     for (i = 0; i < MAX_SUBSCRIPTIONS; i++) {
@@ -123,7 +123,7 @@ int events_subscribe()
     relates_to_uuid = get_element("MessageID", "Header");
     if (relates_to_uuid == NULL) {
         log_error("No MessageID element for subscribe method");
-        send_fault();
+        send_action_failed_fault();
         return -5;
     }
 
@@ -170,7 +170,7 @@ int events_renew()
     get_from_query_string(&qs_string, &qs_size, "sub");
     if ((qs_size == -1) || (qs_string == NULL)) {
         log_error("No sub parameter in query string for renew method");
-        send_fault();
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "", "Resource nnknown", "");
         return -1;
     }
     sub_index_s = (char *) malloc((qs_size + 1) * sizeof(char));
@@ -180,7 +180,7 @@ int events_renew()
     free(sub_index_s);
     if ((sub_index <= 0) || (sub_index > MAX_SUBSCRIPTIONS)) {
         log_error("sub index out of range for renew method");
-        send_fault();
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "", "Resource nnknown", "");
         return -2;
     }
     sub_index--;
@@ -188,7 +188,7 @@ int events_renew()
     tt = get_element("TerminationTime", "Body");
     if (tt == NULL) {
         log_error("No TerminationTime element for renew method");
-        send_fault();
+        send_fault("events_service", "Receiver", "wsntw:UnacceptableInitialTerminationTimeFault", "", "Unacceptable initial termination time", "");
         return -3;
     }
 
@@ -196,12 +196,12 @@ int events_renew()
     subscriptions = (subscriptions_t *) create_shared_memory(0);
     if (subscriptions == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
-        send_fault();
+        send_action_failed_fault();
         return -4;
     }
     if (subscriptions->items[sub_index].used == 0) {
         destroy_shared_memory((void *) subscriptions, 0);
-        send_fault();
+        send_action_failed_fault();
         return 0;
     }
     subscriptions->items[sub_index].used = 1;
@@ -212,7 +212,7 @@ int events_renew()
     relates_to_uuid = get_element("MessageID", "Header");
     if (relates_to_uuid == NULL) {
         log_error("No MessageID element for renew method");
-        send_fault();
+        send_action_failed_fault();
         return -5;
     }
 
@@ -287,7 +287,7 @@ int events_get_event_properties()
             }
             if ((c == 0) && (j == 3) && (token != NULL)) {
                 log_error("The topic has too many levels");
-                send_fault();
+                send_action_failed_fault();
                 return -1;
             }
 
@@ -321,7 +321,7 @@ int events_unsubscribe()
     get_from_query_string(&qs_string, &qs_size, "sub");
     if ((qs_size == -1) || (qs_string == NULL)) {
         log_error("No sub parameter in query string for unsubscribe method");
-        send_fault();
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "", "Resource nnknown", "");
         return 1;
     }
 
@@ -332,7 +332,7 @@ int events_unsubscribe()
     free(sub_index_s);
     if ((sub_index <= 0) || (sub_index > MAX_SUBSCRIPTIONS)) {
         log_error("sub index out of range for unsubscribe method");
-        send_fault();
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "", "Resource nnknown", "");
         return -2;
     }
     sub_index--;
@@ -340,12 +340,12 @@ int events_unsubscribe()
     subscriptions = (subscriptions_t *) create_shared_memory(0);
     if (subscriptions == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
-        send_fault();
+        send_action_failed_fault();
         return -3;
     }
     if (subscriptions->items[sub_index].used == 0) {
         destroy_shared_memory((void *) subscriptions, 0);
-        send_fault();
+        send_action_failed_fault();
         return 0;
     }
     memset(&(subscriptions->items[sub_index]), '\0', sizeof (subscription_t));
@@ -366,7 +366,7 @@ int events_set_synchronization_point()
     subscriptions = (subscriptions_t *) create_shared_memory(0);
     if (subscriptions == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
-        send_fault();
+        send_action_failed_fault();
         return -3;
     }
     subscriptions->need_sync = 1;
@@ -382,6 +382,6 @@ int events_set_synchronization_point()
 
 int events_unsupported(const char *method)
 {
-    send_fault();
+    send_action_failed_fault();
     return -1;
 }
