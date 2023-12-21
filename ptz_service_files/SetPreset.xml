@@ -5,7 +5,7 @@
               xmlns:tptz="http://www.onvif.org/ver20/ptz/wsdl">
     <SOAP-ENV:Body>
         <tptz:SetPresetResponse>
-            <tptz:PresetToken>Unknown</tptz:PresetToken>
+            <tptz:PresetToken>%PRESET_TOKEN%</tptz:PresetToken>
         </tptz:SetPresetResponse>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>

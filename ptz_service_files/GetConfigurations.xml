@@ -35,8 +35,8 @@
                 <tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
                 <tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
                 <tt:DefaultPTZSpeed>
-                    <tt:PanTilt x="1"
-                                y="1"
+                    <tt:PanTilt x="1.0"
+                                y="1.0"
                                 space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace"/>
                     <tt:Zoom x="0.0"
                              space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace"/>

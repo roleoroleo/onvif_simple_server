@@ -45,7 +45,7 @@
                         <tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:URI>
                         <tt:XRange>
                             <tt:Min>-360</tt:Min>
-                            <tt:Max>-360</tt:Max>
+                            <tt:Max>360</tt:Max>
                         </tt:XRange>
                         <tt:YRange>
                             <tt:Min>-180</tt:Min>
