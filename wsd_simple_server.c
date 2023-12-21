@@ -462,7 +462,7 @@ int main(int argc, char **argv)  {
     gen_uuid(uuid);
     gen_uuid(msg_uuid);
 
-    str_subst(xaddr, xaddr_s, "%s", address);
+    sprintf(xaddr, xaddr_s, address);
 
     // Send Hello message
     log_info("Sending Hello message.");

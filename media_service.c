@@ -495,7 +495,7 @@ int media_get_snapshot_uri()
             return -2;
         }
 
-        if (str_subst(line, service_ctx.profiles[0].snapurl, "%s", address) < 0) {
+        if (sprintf(line, service_ctx.profiles[0].snapurl, address) < 0) {
             strcpy(line, service_ctx.profiles[0].snapurl);
         }
         // Escape html chars
@@ -518,7 +518,7 @@ int media_get_snapshot_uri()
             return -2;
         }
 
-        if (str_subst(line, service_ctx.profiles[1].snapurl, "%s", address) < 0) {
+        if (sprintf(line, service_ctx.profiles[1].snapurl, address) < 0) {
             strcpy(line, service_ctx.profiles[1].snapurl);
         }
         // Escape html chars
@@ -563,7 +563,7 @@ int media_get_stream_uri()
             return -2;
         }
 
-        if (str_subst(line, service_ctx.profiles[0].url, "%s", address) < 0) {
+        if (sprintf(line, service_ctx.profiles[0].url, address) < 0) {
             strcpy(line, service_ctx.profiles[0].url);
         }
         // Escape html chars
@@ -586,7 +586,7 @@ int media_get_stream_uri()
             return -2;
         }
 
-        if (str_subst(line, service_ctx.profiles[1].url, "%s", address) < 0) {
+        if (sprintf(line, service_ctx.profiles[1].url, address) < 0) {
             strcpy(line, service_ctx.profiles[1].url);
         }
         // Escape html chars

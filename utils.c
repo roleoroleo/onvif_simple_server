@@ -295,25 +295,6 @@ int netmask2prefixlen(char *netmask)
     return i;
 }
 
-int str_subst(char *output, char *request, char *value, char *new_value)
-{
-    char *s;
-    int ret;
-
-    s = strstr(request, value);
-    if (s != NULL) {
-        strncpy(output, request, s - request);
-        strcpy(&output[s - request], new_value);
-        strcpy(&output[s - request + strlen(new_value)], s + strlen(value));
-        ret = 0;
-    } else {
-        strcpy(output, request);
-        ret = 0;
-    }
-
-    return ret;
-}
-
 /**
  * Remove spaces from the left of the string
  * @param s The input string

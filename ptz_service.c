@@ -242,7 +242,7 @@ int ptz_goto_preset()
     destroy_presets();
 
     if ((preset_number >= 0) && (preset_number < count)) {
-        str_subst(sys_command, service_ctx.ptz_node.move_preset, "%t", (char *) preset);
+        sprintf(sys_command, service_ctx.ptz_node.move_preset, preset_number);
         system(sys_command);
 
         long size = cat(NULL, "ptz_service_files/GotoPreset.xml", 0);
@@ -279,7 +279,7 @@ int ptz_goto_home_position()
         return -3;
     }
 
-    str_subst(sys_command, service_ctx.ptz_node.move_preset, "%t", "0");
+    sprintf(sys_command, service_ctx.ptz_node.move_preset, 0);
     system(sys_command);
 
     destroy_presets();
@@ -679,7 +679,7 @@ int ptz_set_preset()
     }
     destroy_presets();
 
-    str_subst(sys_command, service_ctx.ptz_node.set_preset, "%t", (char *) preset_name);
+    sprintf(sys_command, service_ctx.ptz_node.set_preset, (char *) preset_name_out);
     system(sys_command);
 
     long size = cat(NULL, "ptz_service_files/SetPreset.xml", 0);
@@ -741,7 +741,7 @@ int ptz_remove_preset()
         return -3;
     }
 
-    str_subst(sys_command, service_ctx.ptz_node.remove_preset, "%t", (char *) preset_token);
+    sprintf(sys_command, service_ctx.ptz_node.remove_preset, preset_number);
     system(sys_command);
 
     long size = cat(NULL, "ptz_service_files/RemovePreset.xml", 0);
