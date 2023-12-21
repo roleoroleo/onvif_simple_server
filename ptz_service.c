@@ -140,6 +140,12 @@ int ptz_get_nodes()
 
 int ptz_get_node()
 {
+    const char *node_token = get_element("NodeToken", "Body");
+    if (strcmp("PTZNodeToken", node_token) != 0) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoEntity", "No entity", "No such node on the device");
+        return -1;
+    }
+
     long size = cat(NULL, "ptz_service_files/GetNode.xml", 0);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
@@ -209,7 +215,8 @@ int ptz_get_presets()
 
 int ptz_goto_preset()
 {
-    const char *preset;
+    const char *preset_token;
+    int preset_number, count;
     char sys_command[MAX_LEN];
     ezxml_t node;
 
@@ -224,9 +231,17 @@ int ptz_goto_preset()
         return -2;
     }
 
-    preset = get_element("PresetToken", "Body");
+    preset_token = get_element("PresetToken", "Body");
+    if (sscanf(preset_token, "PresetToken_%d", &preset_number) != 1) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
+        return -3;
+    }
 
-    if ((preset[0] >= '0') && (preset[0] < '8')) {
+    init_presets();
+    count = presets.count;
+    destroy_presets();
+
+    if ((preset_number >= 0) && (preset_number < count)) {
         str_subst(sys_command, service_ctx.ptz_node.move_preset, "%t", (char *) preset);
         system(sys_command);
 
@@ -258,8 +273,16 @@ int ptz_goto_home_position()
         return -2;
     }
 
+    init_presets();
+    if (presets.count == 0) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoHomePosition", "No home position", "No home position has been defined for this profile");
+        return -3;
+    }
+
     str_subst(sys_command, service_ctx.ptz_node.move_preset, "%t", "0");
     system(sys_command);
+
+    destroy_presets();
 
     long size = cat(NULL, "ptz_service_files/GotoHomePosition.xml", 0);
 
@@ -596,7 +619,36 @@ int ptz_set_preset()
         return -2;
     }
 
+    preset_token = get_element("PresetToken", "Body");
+    if (preset_token != NULL) {
+        if (sscanf(preset_token, "PresetToken_%s", &preset_number) != 1) {
+            send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
+            return -3;
+        }
+        // Update of an existing preset is not supported
+        send_action_failed_fault(-4);
+        return -4;
+    }
+
+    init_presets();
     preset_name = get_element("PresetName", "Body");
+    if (preset_name == NULL)
+        sprintf(preset_name_out, "PRESET_%d", presets.count);
+    else
+        strcpy(preset_name_out, preset_name);
+
+    if ((strchr(preset_name_out, ' ') != NULL) || (strlen(preset_name_out) > 64)) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:InvalidPresetName", "Invalid preset name", "The preset name is either too long or contains invalid characters");
+        return -5;
+    }
+    for (i = 0; i < presets.count; i++) {
+        if (strcasecmp(presets.items[i].name, preset_name_out) == 0) {
+            send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:PresetExist", "Preset exists", "The requested name already exist for another preset");
+            return -6;
+        }
+    }
+    destroy_presets();
+
     str_subst(sys_command, service_ctx.ptz_node.set_preset, "%t", (char *) preset_name);
     system(sys_command);
 
@@ -653,6 +705,11 @@ int ptz_remove_preset()
     }
 
     preset_token = get_element("PresetToken", "Body");
+    if (sscanf(preset_token, "PresetToken_%d", &preset_number) != 1) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
+        return -3;
+    }
+
     str_subst(sys_command, service_ctx.ptz_node.remove_preset, "%t", (char *) preset_token);
     system(sys_command);
 
