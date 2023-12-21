@@ -19,7 +19,7 @@
 
 #include "ezxml/ezxml.h"
 
-int init_xml(char *buffer, int buffer_size);
+void init_xml(char *buffer, int buffer_size);
 void close_xml();
 const char *get_method(int skip_prefix);
 const char *get_element(char *name, char *first_node);

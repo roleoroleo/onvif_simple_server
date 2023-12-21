@@ -22,12 +22,12 @@
 
 ezxml_t root_xml;
 
-int init_xml(char *buffer, int buffer_size)
+void init_xml(char *buffer, int buffer_size)
 {
     root_xml = ezxml_parse_str(buffer, buffer_size);
 }
 
-int init_xml_from_file(char *file)
+void init_xml_from_file(char *file)
 {
     root_xml = ezxml_parse_file(file);
 }
