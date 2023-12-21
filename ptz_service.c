@@ -371,11 +371,13 @@ int ptz_relative_move()
     char const *x = NULL;
     char const *y = NULL;
     char const *z = NULL;
-    double dx, dy;
+    double dx = 0;
+    double dy = 0;
+    double dz = 0;
     char sys_command_tmp[MAX_LEN];
     char sys_command[MAX_LEN];
-    int ret = -1;
-    ezxml_t node;
+    int ret = 0;
+    ezxml_t node, node_c;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
     if (node == NULL) {
@@ -390,35 +392,48 @@ int ptz_relative_move()
 
     node = get_element_ptr(NULL, "Translation", "Body");
     if (node != NULL) {
-        node = get_element_ptr(node, "PanTilt", "Body");
-        if (node != NULL) {
-            x = get_attribute(node, "x");
-            y = get_attribute(node, "y");
+        node_c = get_element_in_element_ptr("PanTilt", node);
+        if (node_c != NULL) {
+            x = get_attribute(node_c, "x");
+            y = get_attribute(node_c, "y");
         }
-        node = get_element_ptr(node, "Zoom", "Body");
-        if (node != NULL) {
-            z = get_attribute(node, "x");
+        node_c = get_element_in_element_ptr("Zoom", node);
+        if (node_c != NULL) {
+            z = get_attribute(node_c, "x");
         }
     }
 
-    if (x == NULL) {
-        str_subst(sys_command_tmp, service_ctx.ptz_node.jump_to_rel, "%x", "0");
-    } else {
-        dx = atof(x);
-        if ((dx > 360.0) || (dx < -360.0)) {
-            ret = -3;
-        } else {
-            str_subst(sys_command_tmp, service_ctx.ptz_node.jump_to_rel, "%x", (char *) x);
-        }
+    node = get_element_ptr(NULL, "Speed", "Body");
+    if (node != NULL) {
+        // do nothing
     }
-    if (y == NULL) {
-        str_subst(sys_command, sys_command_tmp, "%y", "0");
+
+    if (((x == NULL) && (y == NULL) && (z == NULL)) ||
+            ((x == NULL) && (y != NULL)) ||
+            ((x != NULL) && (y == NULL))) {
+
+        ret = -3;
+
     } else {
-        dy = atof(y);
-        if ((dy > 180.0) || (dy < -180.0)) {
-            ret = -4;
-        } else {
-            str_subst(sys_command, sys_command_tmp, "%y", (char *) y);
+        if ((x != NULL) && (y != NULL)) {
+            dx = atof(x);
+            if ((dx > 360.0) || (dx < -360.0)) {
+                ret = -4;
+            }
+            dy = atof(y);
+            if ((dy > 180.0) || (dy < -180.0)) {
+                ret = -5;
+            } else {
+                sprintf(sys_command, service_ctx.ptz_node.jump_to_rel, dx, dy);
+            }
+        }
+        if (z != NULL) {
+            dz = atof(z);
+            if (dz != 0.0) {
+                ret = -6;
+            } else {
+                // do nothing
+            }
         }
     }
 
@@ -443,11 +458,13 @@ int ptz_absolute_move()
     char const *x = NULL;
     char const *y = NULL;
     char const *z = NULL;
-    double dx, dy;
+    double dx = 0.0;
+    double dy = 0.0;
+    double dz = 0.0;
     char sys_command_tmp[MAX_LEN];
     char sys_command[MAX_LEN];
     int ret = 0;
-    ezxml_t node;
+    ezxml_t node, node_c;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
     if (node == NULL) {
@@ -462,35 +479,48 @@ int ptz_absolute_move()
 
     node = get_element_ptr(NULL, "Position", "Body");
     if (node != NULL) {
-        node = get_element_ptr(node, "PanTilt", "Body");
-        if (node != NULL) {
-            x = get_attribute(node, "x");
-            y = get_attribute(node, "y");
+        node_c = get_element_in_element_ptr("PanTilt", node);
+        if (node_c != NULL) {
+            x = get_attribute(node_c, "x");
+            y = get_attribute(node_c, "y");
         }
-        node = get_element_ptr(node, "Zoom", "Body");
-        if (node != NULL) {
-            z = get_attribute(node, "x");
+        node_c = get_element_in_element_ptr("Zoom", node);
+        if (node_c != NULL) {
+            z = get_attribute(node_c, "x");
         }
     }
 
-    if (x == NULL) {
-        ret = -3;
-    } else {
-        dx = atof(x);
-        if ((dx > 360.0) || (dx < 0.0)) {
-            ret = -4;
-        } else {
-            str_subst(sys_command_tmp, service_ctx.ptz_node.jump_to_abs, "%x", (char *) x);
-        }
+    node = get_element_ptr(NULL, "Speed", "Body");
+    if (node != NULL) {
+        // do nothing
     }
-    if (y == NULL) {
-        ret = -5;
+
+    if (((x == NULL) && (y == NULL) && (z == NULL)) ||
+            ((x == NULL) && (y != NULL)) ||
+            ((x != NULL) && (y == NULL))) {
+
+        ret = -3;
+
     } else {
-        dy = atof(y);
-        if ((dy > 180.0) || (dy < 0.0)) {
-            ret = -6;
-        } else {
-            str_subst(sys_command, sys_command_tmp, "%y", (char *) y);
+        if ((x != NULL) && (y != NULL)) {
+            dx = atof(x);
+            if ((dx > 360.0) || (dx < 0.0)) {
+                ret = -4;
+            }
+            dy = atof(y);
+            if ((dy > 180.0) || (dy < 0.0)) {
+                ret = -5;
+            } else {
+                sprintf(sys_command, service_ctx.ptz_node.jump_to_abs, dx, dy);
+            }
+        }
+        if (z != NULL) {
+            dz = atof(z);
+            if (dz != 1.0) {
+                ret = -6;
+            } else {
+                // do nothing
+            }
         }
     }
 
