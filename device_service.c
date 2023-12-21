@@ -403,6 +403,6 @@ int device_get_network_interfaces()
 
 int device_unsupported(const char *method)
 {
-    send_action_failed_fault();
+    send_action_failed_fault(-1);
     return -1;
 }

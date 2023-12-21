@@ -783,6 +783,6 @@ int media_get_stream_uri()
 
 int media_unsupported(const char *method)
 {
-    send_action_failed_fault();
+    send_action_failed_fault(-1);
     return -1;
 }

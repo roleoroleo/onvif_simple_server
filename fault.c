@@ -72,9 +72,11 @@ int send_fault(char *service, char *rec_send, char *subcode, char *subcode_ex, c
             "%DETAIL%", detail);
 }
 
-int send_action_failed_fault()
+int send_action_failed_fault(int code)
 {
-    send_fault("ptz_service", "Receiver", "ter:Action", "ter:ActionFailed", "Action failed", "The requested SOAP action failed");
+    char error_string[1024];
+    sprintf(error_string, "The requested SOAP action failed: error %d", code);
+    send_fault("ptz_service", "Receiver", "ter:Action", "ter:ActionFailed", "Action failed", error_string);
 }
 
 int authentication_error()

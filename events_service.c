@@ -99,7 +99,7 @@ int events_subscribe()
     subscriptions = (subscriptions_t *) create_shared_memory(0);
     if (subscriptions == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
-        send_action_failed_fault();
+        send_action_failed_fault(-4);
         return -4;
     }
     for (i = 0; i < MAX_SUBSCRIPTIONS; i++) {
@@ -123,7 +123,7 @@ int events_subscribe()
     relates_to_uuid = get_element("MessageID", "Header");
     if (relates_to_uuid == NULL) {
         log_error("No MessageID element for subscribe method");
-        send_action_failed_fault();
+        send_action_failed_fault(-5);
         return -5;
     }
 
@@ -196,13 +196,13 @@ int events_renew()
     subscriptions = (subscriptions_t *) create_shared_memory(0);
     if (subscriptions == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
-        send_action_failed_fault();
+        send_action_failed_fault(-4);
         return -4;
     }
     if (subscriptions->items[sub_index].used == 0) {
         destroy_shared_memory((void *) subscriptions, 0);
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
-        return 0;
+        return -5;
     }
     subscriptions->items[sub_index].used = 1;
     subscriptions->items[sub_index].expire = now + interval2sec(tt);
@@ -212,8 +212,8 @@ int events_renew()
     relates_to_uuid = get_element("MessageID", "Header");
     if (relates_to_uuid == NULL) {
         log_error("No MessageID element for renew method");
-        send_action_failed_fault();
-        return -5;
+        send_action_failed_fault(-6);
+        return -6;
     }
 
     to_iso_date(iso_str, sizeof(iso_str), now);
@@ -287,7 +287,7 @@ int events_get_event_properties()
             }
             if ((c == 0) && (j == 3) && (token != NULL)) {
                 log_error("The topic has too many levels");
-                send_action_failed_fault();
+                send_action_failed_fault(-1);
                 return -1;
             }
 
@@ -340,7 +340,7 @@ int events_unsubscribe()
     subscriptions = (subscriptions_t *) create_shared_memory(0);
     if (subscriptions == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
-        send_action_failed_fault();
+        send_action_failed_fault(-3);
         return -3;
     }
     if (subscriptions->items[sub_index].used == 0) {
@@ -366,7 +366,7 @@ int events_set_synchronization_point()
     subscriptions = (subscriptions_t *) create_shared_memory(0);
     if (subscriptions == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
-        send_action_failed_fault();
+        send_action_failed_fault(-3);
         return -3;
     }
     subscriptions->need_sync = 1;
@@ -382,6 +382,6 @@ int events_set_synchronization_point()
 
 int events_unsupported(const char *method)
 {
-    send_action_failed_fault();
+    send_action_failed_fault(-1);
     return -1;
 }
