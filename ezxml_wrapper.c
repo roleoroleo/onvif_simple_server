@@ -22,21 +22,38 @@
 
 ezxml_t root_xml;
 
+/**
+ * Init xml parser
+ * @param buffer The buffer contaning the xml file
+ * @param buffer_size The size of the buffer
+ */
 void init_xml(char *buffer, int buffer_size)
 {
     root_xml = ezxml_parse_str(buffer, buffer_size);
 }
 
+/**
+ * Init xml parser
+ * @param buffer The name of the xml file
+ */
 void init_xml_from_file(char *file)
 {
     root_xml = ezxml_parse_file(file);
 }
 
+/**
+ * Close xml parser
+ */
 void close_xml()
 {
     ezxml_free(root_xml); 
 }
 
+/**
+ * Get the method (the 1st element after <Body>)
+ * @param skip_prefix 1 to skip the prefix of the element (<prefix:method>)
+ * @return A pointer to the name of the method, NULL if not found
+ */
 const char *get_method(int skip_prefix)
 {
     ezxml_t xml;
@@ -85,6 +102,13 @@ const char *get_method(int skip_prefix)
 
 int go_to_parent;
 
+/**
+ * Internal recursive function: get the 1st element with name "name" starting from "first_node"
+ * @param xml The xml structure
+ * @param name The name of the element to find
+ * @param first_node The node where to find the element
+ * @return A pointer to the value of the element, NULL if not found
+ */
 const char *get_element_rec(ezxml_t xml, char *name, char *first_node)
 {
     const char *ret;
@@ -139,6 +163,12 @@ const char *get_element_rec(ezxml_t xml, char *name, char *first_node)
     return NULL;
 }
 
+/**
+ * Get the 1st element with name "name" starting from "first_node"
+ * @param name The name of the element to find
+ * @param first_node The node where to find the element
+ * @return A pointer to the value of the element, NULL if not found
+ */
 const char *get_element(char *name, char *first_node)
 {
     char *ret;
@@ -151,6 +181,13 @@ const char *get_element(char *name, char *first_node)
     // ret should be a (const char *)
 }
 
+/**
+ * Internal recursive function: get the 1st element with name "name" starting from "first_node"
+ * @param xml The xml structure
+ * @param name The name of the element to find
+ * @param first_node The node where to find the element
+ * @return ezxml_t type pointing to the element, NULL if not found
+ */
 ezxml_t get_element_rec_ptr(ezxml_t xml, char *name, char *first_node)
 {
     ezxml_t ret;
@@ -205,6 +242,13 @@ ezxml_t get_element_rec_ptr(ezxml_t xml, char *name, char *first_node)
     return NULL;
 }
 
+/**
+ * Get the 1st element with name "name" starting from "first_node"
+ * @param start_from The element where to start
+ * @param name The name of the element to find
+ * @param first_node The 1st level node where to find the element
+ * @return ezxml_t type pointing to the element, NULL if not found
+ */
 ezxml_t get_element_ptr(ezxml_t start_from, char *name, char *first_node)
 {
     ezxml_t ret;
