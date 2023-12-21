@@ -262,6 +262,39 @@ ezxml_t get_element_ptr(ezxml_t start_from, char *name, char *first_node)
     return ret;
 }
 
+/**
+ * Get the element with name "name" starting from node "father"
+ * @param name The name of the element to find
+ * @param father The node where to find the element
+ * @return A pointer to the value of the element, NULL if not found
+ */
+const char *get_element_in_element(const char *name, ezxml_t father)
+{
+    ezxml_t child = ezxml_child(father, name);
+    if (child == NULL) {
+        return NULL;
+    } else {
+        return child->txt;
+    }
+}
+
+/**
+ * Get the element with name "name" starting from node "father"
+ * @param name The name of the element to find
+ * @param father The node where to find the element
+ * @return ezxml_t type pointing to the element, NULL if not found
+ */
+ezxml_t get_element_in_element_ptr(const char *name, ezxml_t father)
+{
+    return ezxml_child(father, name);
+}
+
+/**
+ * Get the attribute of a node with name "name"
+ * @param node The node where to find the attribute
+ * @param name The name of the attribute to find
+ * @return A pointer to the value of the attribute, NULL if not found
+ */
 const char *get_attribute(ezxml_t node, char *name)
 {
     return ezxml_attr(node, name);

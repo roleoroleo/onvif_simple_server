@@ -24,6 +24,8 @@ void close_xml();
 const char *get_method(int skip_prefix);
 const char *get_element(char *name, char *first_node);
 ezxml_t get_element_ptr(ezxml_t start_from, char *name, char *first_node);
+const char *get_element_in_element(const char *name, ezxml_t father);
+ezxml_t get_element_in_element_ptr(const char *name, ezxml_t father);
 const char *get_attribute(ezxml_t node, char *name);
 
 #endif //EZXML_WRAPPER_H
