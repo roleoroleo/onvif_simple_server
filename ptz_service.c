@@ -253,7 +253,7 @@ int ptz_goto_preset()
         return cat("stdout", "ptz_service_files/GotoPreset.xml", 0);
     } else {
         send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
-        return -3;
+        return -4;
     }
 }
 
@@ -756,7 +756,6 @@ int ptz_remove_preset()
         send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoPTZProfile", "No PTZ profile", "The requested profile token does not reference a PTZ configuration");
         return -2;
     }
-
     preset_token = get_element("PresetToken", "Body");
     if (sscanf(preset_token, "PresetToken_%d", &preset_number) != 1) {
         send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");

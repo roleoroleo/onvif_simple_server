@@ -291,7 +291,7 @@ int events_get_event_properties()
                 return -1;
             }
 
-            size = cat(dest, "events_service_files//GetEventProperties_2.xml", 14,
+            size = cat(dest, "events_service_files/GetEventProperties_2.xml", 14,
                 "%TOPIC_L1_START%", topic_ls[0],
                 "%TOPIC_L2_START%", topic_ls[1],
                 "%TOPIC_L3_START%", topic_ls[2],
@@ -306,7 +306,7 @@ int events_get_event_properties()
         if (c == 0) total_size += size;
     }
 
-    return total_size;;
+    return total_size;
 }
 
 int events_unsubscribe()
@@ -346,7 +346,7 @@ int events_unsubscribe()
     if (subscriptions->items[sub_index].used == 0) {
         destroy_shared_memory((void *) subscriptions, 0);
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
-        return 0;
+        return -4;
     }
     memset(&(subscriptions->items[sub_index]), '\0', sizeof (subscription_t));
     destroy_shared_memory((void *) subscriptions, 0);
