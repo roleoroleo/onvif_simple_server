@@ -145,52 +145,31 @@ int media_get_video_source_configuration_options()
 int media_get_profiles()
 {
     char profiles_num[2];
-    char stmp_w_l[16], stmp_h_l[16];
     char stmp_w_h[16], stmp_h_h[16];
+    char stmp_w_l[16], stmp_h_l[16];
 
     sprintf(profiles_num, "%d", service_ctx.profiles_num);
 
     if (service_ctx.profiles_num == 1) {
-        if (strcasecmp(service_ctx.profiles[0].name, "Profile_0") == 0) {
-            sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
-            sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
-            long size = cat(NULL, "media_service_files/GetProfiles_high.xml", 10,
-                    "%PROFILES_NUM%", profiles_num,
-                    "%VSC_WIDTH%", stmp_w_h,
-                    "%VSC_HEIGHT%", stmp_h_h,
-                    "%VEC_WIDTH_HIGH%", stmp_w_h,
-                    "%VEC_HEIGHT_HIGH%", stmp_h_h);
+        sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
+        sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
+        long size = cat(NULL, "media_service_files/GetProfiles_high.xml", 10,
+                "%PROFILES_NUM%", profiles_num,
+                "%VSC_WIDTH%", stmp_w_h,
+                "%VSC_HEIGHT%", stmp_h_h,
+                "%VEC_WIDTH_HIGH%", stmp_w_h,
+                "%VEC_HEIGHT_HIGH%", stmp_h_h);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-            return cat("stdout", "media_service_files/GetProfiles_high.xml", 10,
-                    "%PROFILES_NUM%", profiles_num,
-                    "%VSC_WIDTH%", stmp_w_h,
-                    "%VSC_HEIGHT%", stmp_h_h,
-                    "%VEC_WIDTH_HIGH%", stmp_w_h,
-                    "%VEC_HEIGHT_HIGH%", stmp_h_h);
+        return cat("stdout", "media_service_files/GetProfiles_high.xml", 10,
+                "%PROFILES_NUM%", profiles_num,
+                "%VSC_WIDTH%", stmp_w_h,
+                "%VSC_HEIGHT%", stmp_h_h,
+                "%VEC_WIDTH_HIGH%", stmp_w_h,
+                "%VEC_HEIGHT_HIGH%", stmp_h_h);
 
-        } else if (strcasecmp(service_ctx.profiles[0].name, "Profile_1") == 0) {
-            sprintf(stmp_w_l, "%d", service_ctx.profiles[0].width);
-            sprintf(stmp_h_l, "%d", service_ctx.profiles[0].height);
-            long size = cat(NULL, "media_service_files/GetProfiles_low.xml", 10,
-                    "%PROFILES_NUM%", profiles_num,
-                    "%VSC_WIDTH%", stmp_w_l,
-                    "%VSC_HEIGHT%", stmp_h_l,
-                    "%VEC_WIDTH_LOW%", stmp_w_l,
-                    "%VEC_HEIGHT_LOW%", stmp_h_l);
-
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-            return cat("stdout", "media_service_files/GetProfiles_low.xml", 10,
-                    "%PROFILES_NUM%", profiles_num,
-                    "%VSC_WIDTH%", stmp_w_l,
-                    "%VSC_HEIGHT%", stmp_h_l,
-                    "%VEC_WIDTH_LOW%", stmp_w_l,
-                    "%VEC_HEIGHT_LOW%", stmp_h_l);
-        }
     } else if (service_ctx.profiles_num == 2) {
         sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
@@ -240,12 +219,9 @@ int media_get_profile()
 
     sprintf(profiles_num, "%d", service_ctx.profiles_num);
 
-    if (((service_ctx.profiles_num == 1) &&
-            (strcasecmp(service_ctx.profiles[0].name, "Profile_0") == 0) &&
-            (strcasecmp(profile_token, "Profile_0") == 0)) ||
-            ((service_ctx.profiles_num == 2) &&
-            (strcasecmp(profile_token, "Profile_0") == 0))) {
+    if (strcasecmp(service_ctx.profiles[0].name, profile_token) == 0) {
 
+        // Get the video source configuration from the 1st profile
         sprintf(stmp_vsc_w, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_vsc_h, "%d", service_ctx.profiles[0].height);
         sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
@@ -267,34 +243,10 @@ int media_get_profile()
                 "%WIDTH%", stmp_w,
                 "%HEIGHT%", stmp_h);
 
-    } else if ((service_ctx.profiles_num == 1) &&
-            (strcasecmp(service_ctx.profiles[0].name, "Profile_1") == 0) &&
-            (strcasecmp(profile_token, "Profile_1") == 0)) {
-
-        sprintf(stmp_vsc_w, "%d", service_ctx.profiles[0].width);
-        sprintf(stmp_vsc_h, "%d", service_ctx.profiles[0].height);
-        sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
-        sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
-        long size = cat(NULL, "media_service_files/GetProfile_low.xml", 10,
-                "%PROFILES_NUM%", profiles_num,
-                "%VSC_WIDTH%", stmp_vsc_w,
-                "%VSC_HEIGHT%", stmp_vsc_h,
-                "%WIDTH%", stmp_w,
-                "%HEIGHT%", stmp_h);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "media_service_files/GetProfile_low.xml", 10,
-                "%PROFILES_NUM%", profiles_num,
-                "%VSC_WIDTH%", stmp_vsc_w,
-                "%VSC_HEIGHT%", stmp_vsc_h,
-                "%WIDTH%", stmp_w,
-                "%HEIGHT%", stmp_h);
-
     } else if ((service_ctx.profiles_num == 2) &&
-            (strcasecmp(profile_token, "Profile_1") == 0)) {
+            (strcasecmp(service_ctx.profiles[1].name, profile_token) == 0)) {
 
+        // Get the video source configuration from the 1st profile
         sprintf(stmp_vsc_w, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_vsc_h, "%d", service_ctx.profiles[0].height);
         sprintf(stmp_w, "%d", service_ctx.profiles[1].width);
@@ -327,34 +279,19 @@ int media_get_video_encoder_configurations()
     char stmp_w_h[16], stmp_h_h[16];
 
     if (service_ctx.profiles_num == 1) {
-        if (strcasecmp(service_ctx.profiles[0].name, "Profile_0") == 0) {
-            sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
-            sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
-            long size = cat(NULL, "media_service_files/GetVideoEncoderConfigurations_high.xml", 4,
-                    "%WIDTH_HIGH%", stmp_w_h,
-                    "%HEIGHT_HIGH%", stmp_h_h);
+        sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
+        sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
+        long size = cat(NULL, "media_service_files/GetVideoEncoderConfigurations_high.xml", 4,
+                "%WIDTH_HIGH%", stmp_w_h,
+                "%HEIGHT_HIGH%", stmp_h_h);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-            return cat("stdout", "media_service_files/GetVideoEncoderConfigurations_high.xml", 4,
-                    "%WIDTH_HIGH%", stmp_w_h,
-                    "%HEIGHT_HIGH%", stmp_h_h);
+        return cat("stdout", "media_service_files/GetVideoEncoderConfigurations_high.xml", 4,
+                "%WIDTH_HIGH%", stmp_w_h,
+                "%HEIGHT_HIGH%", stmp_h_h);
 
-        } else if (strcasecmp(service_ctx.profiles[0].name, "Profile_1") == 0) {
-            sprintf(stmp_w_l, "%d", service_ctx.profiles[0].width);
-            sprintf(stmp_h_l, "%d", service_ctx.profiles[0].height);
-            long size = cat(NULL, "media_service_files/GetVideoEncoderConfigurations_low.xml", 4,
-                    "%WIDTH_LOW%", stmp_w_l,
-                    "%HEIGHT_LOW%", stmp_h_l);
-
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-            return cat("stdout", "media_service_files/GetVideoEncoderConfigurations_low.xml", 4,
-                    "%WIDTH_LOW%", stmp_w_l,
-                    "%HEIGHT_LOW%", stmp_h_l);
-        }
     } else if (service_ctx.profiles_num == 2) {
         sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
@@ -382,17 +319,17 @@ int media_get_video_encoder_configuration()
     char stmp_w_l[16], stmp_h_l[16];
     char stmp_w_h[16], stmp_h_h[16];
     const char *configuration_token = get_element("ConfigurationToken", "Body");
+    char token[10];
 
     if (configuration_token == NULL) {
         send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
         return -1;
     }
 
-    if (((service_ctx.profiles_num == 1) &&
-            (strcasecmp(service_ctx.profiles[0].name, "Profile_0") == 0) &&
-            (strcasecmp(configuration_token, "Profile_0_VideoEncoderToken") == 0)) ||
-            ((service_ctx.profiles_num == 2) &&
-            (strcasecmp(configuration_token, "Profile_0_VideoEncoderToken") == 0))) {
+    memset(token, '\0', sizeof(token));
+    strncpy(token, configuration_token, 9);
+
+    if (strcasecmp(service_ctx.profiles[0].name, token) == 0) {
 
         sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
@@ -407,25 +344,8 @@ int media_get_video_encoder_configuration()
                 "%WIDTH_HIGH%", stmp_w_h,
                 "%HEIGHT_HIGH%", stmp_h_h);
 
-    } else if ((service_ctx.profiles_num == 1) &&
-            (strcasecmp(service_ctx.profiles[0].name, "Profile_1") == 0) &&
-            (strcasecmp(configuration_token, "Profile_1_VideoEncoderToken") == 0)) {
-
-        sprintf(stmp_w_l, "%d", service_ctx.profiles[0].width);
-        sprintf(stmp_h_l, "%d", service_ctx.profiles[0].height);
-        long size = cat(NULL, "media_service_files/GetVideoEncoderConfiguration_low.xml", 4,
-                "%WIDTH_LOW%", stmp_w_l,
-                "%HEIGHT_LOW%", stmp_h_l);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "media_service_files/GetVideoEncoderConfiguration_low.xml", 4,
-                "%WIDTH_LOW%", stmp_w_l,
-                "%HEIGHT_LOW%", stmp_h_l);
-
     } else if ((service_ctx.profiles_num == 2) &&
-            (strcasecmp(configuration_token, "Profile_1_VideoEncoderToken") == 0)) {
+            (strcasecmp(service_ctx.profiles[1].name, token) == 0)) {
 
         sprintf(stmp_w_l, "%d", service_ctx.profiles[1].width);
         sprintf(stmp_h_l, "%d", service_ctx.profiles[1].height);
@@ -456,11 +376,7 @@ int media_get_compatible_video_encoder_configurations()
         return -1;
     }
 
-    if (((service_ctx.profiles_num == 1) &&
-            (strcasecmp(service_ctx.profiles[0].name, "Profile_0") == 0) &&
-            (strcasecmp(profile_token, "Profile_0") == 0)) ||
-            ((service_ctx.profiles_num == 2) &&
-            (strcasecmp(profile_token, "Profile_0") == 0))) {
+    if (strcasecmp(service_ctx.profiles[0].name, profile_token) == 0) {
 
         sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
@@ -475,25 +391,8 @@ int media_get_compatible_video_encoder_configurations()
                 "%WIDTH_HIGH%", stmp_w_h,
                 "%HEIGHT_HIGH%", stmp_h_h);
 
-    } else if ((service_ctx.profiles_num == 1) &&
-        (strcasecmp(service_ctx.profiles[0].name, "Profile_1") == 0) &&
-        (strcasecmp(profile_token, "Profile_1") == 0)) {
-
-        sprintf(stmp_w_l, "%d", service_ctx.profiles[0].width);
-        sprintf(stmp_h_l, "%d", service_ctx.profiles[0].height);
-        long size = cat(NULL, "media_service_files/GetCompatibleVideoEncoderConfigurations_low.xml", 4,
-                "%WIDTH_LOW%", stmp_w_l,
-                "%HEIGHT_LOW%", stmp_h_l);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "media_service_files/GetCompatibleVideoEncoderConfigurations_low.xml", 4,
-                "%WIDTH_LOW%", stmp_w_l,
-                "%HEIGHT_LOW%", stmp_h_l);
-
     } else if ((service_ctx.profiles_num == 2) &&
-            (strcasecmp(profile_token, "Profile_1") == 0)) {
+            (strcasecmp(service_ctx.profiles[1].name, profile_token) == 0)) {
 
         sprintf(stmp_w_l, "%d", service_ctx.profiles[1].width);
         sprintf(stmp_h_l, "%d", service_ctx.profiles[1].height);
@@ -515,78 +414,61 @@ int media_get_compatible_video_encoder_configurations()
 
 int media_get_video_encoder_configuration_options()
 {
-    char stmp_w_l[16], stmp_h_l[16];
-    char stmp_w_h[16], stmp_h_h[16];
+    char stmp_w[16], stmp_h[16];
     const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
+    char token[10];
 
-    if (configuration_token == NULL) {
-        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
-        return -1;
+    memset(token, '\0', sizeof(token));
+    if (configuration_token != NULL) {
+        // Extract "Profile_x" from token Profile_x_VideoEncoder
+        strncpy(token, configuration_token, 9);
+    } else if (profile_token != NULL) {
+        // Extract "Profile_x" from token Profile_x
+        strncpy(token, profile_token, 9);
+    } else {
+        strncpy(token, service_ctx.profiles[0].name, 9);
     }
 
-    if (((service_ctx.profiles_num == 1) &&
-            (strcasecmp(service_ctx.profiles[0].name, "Profile_0") == 0) &&
-            (strcasecmp(configuration_token, "Profile_0_VideoEncoderToken") == 0)) ||
-            ((service_ctx.profiles_num == 2) &&
-            (strcasecmp(configuration_token, "Profile_0_VideoEncoderToken") == 0))) {
+    if (strcasecmp(service_ctx.profiles[0].name, token) == 0) {
 
-        sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
-        sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
+        sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
+        sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
         long size = cat(NULL, "media_service_files/GetVideoEncoderConfigurationOptions.xml", 6,
-                "%WIDTH%", stmp_w_h,
-                "%HEIGHT%", stmp_h_h,
+                "%WIDTH%", stmp_w,
+                "%HEIGHT%", stmp_h,
                 "%PROFILE%", "High");
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
         return cat("stdout", "media_service_files/GetVideoEncoderConfigurationOptions.xml", 6,
-                "%WIDTH%", stmp_w_h,
-                "%HEIGHT%", stmp_h_h,
+                "%WIDTH%", stmp_w,
+                "%HEIGHT%", stmp_h,
                 "%PROFILE%", "High");
-
-    } else if ((service_ctx.profiles_num == 1) &&
-        (strcasecmp(service_ctx.profiles[0].name, "Profile_1") == 0) &&
-        (strcasecmp(configuration_token, "Profile_1_VideoEncoderToken") == 0)) {
-
-        sprintf(stmp_w_l, "%d", service_ctx.profiles[0].width);
-        sprintf(stmp_h_l, "%d", service_ctx.profiles[0].height);
-        long size = cat(NULL, "media_service_files/GetVideoEncoderConfigurationOptions.xml", 6,
-                "%WIDTH%", stmp_w_l,
-                "%HEIGHT%", stmp_h_l,
-                "%PROFILE%", "Main");
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "media_service_files/GetVideoEncoderConfigurationOptions.xml", 6,
-                "%WIDTH%", stmp_w_l,
-                "%HEIGHT%", stmp_h_l,
-                "%PROFILE%", "Main");
 
     } else if ((service_ctx.profiles_num == 2) &&
-            (strcasecmp(configuration_token, "Profile_1_VideoEncoderToken") == 0)) {
+            (strcasecmp(service_ctx.profiles[1].name, token) == 0)) {
 
-        sprintf(stmp_w_l, "%d", service_ctx.profiles[1].width);
-        sprintf(stmp_h_l, "%d", service_ctx.profiles[1].height);
+        sprintf(stmp_w, "%d", service_ctx.profiles[1].width);
+        sprintf(stmp_h, "%d", service_ctx.profiles[1].height);
         long size = cat(NULL, "media_service_files/GetVideoEncoderConfigurationOptions.xml", 6,
-                "%WIDTH%", stmp_w_l,
-                "%HEIGHT%", stmp_h_l,
+                "%WIDTH%", stmp_w,
+                "%HEIGHT%", stmp_h,
                 "%PROFILE%", "Main");
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
         return cat("stdout", "media_service_files/GetVideoEncoderConfigurationOptions.xml", 6,
-                "%WIDTH%", stmp_w_l,
-                "%HEIGHT%", stmp_h_l,
+                "%WIDTH%", stmp_w,
+                "%HEIGHT%", stmp_h,
                 "%PROFILE%", "Main");
 
     } else {
         send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile does not exist");
         return -2;
     }
-
 }
 
 int media_get_snapshot_uri()
@@ -606,35 +488,7 @@ int media_get_snapshot_uri()
         return -1;
     }
 
-    if (((service_ctx.profiles_num == 1) &&
-            (strcasecmp(service_ctx.profiles[0].name, "Profile_0") == 0) &&
-            (strcasecmp(profile_token, "Profile_0") == 0)) ||
-            ((service_ctx.profiles_num == 2) &&
-            (strcasecmp(profile_token, "Profile_0") == 0))) {
-
-        if (service_ctx.profiles[0].snapurl == NULL) {
-            send_fault("media_service", "Receiver", "ter:Action", "ter:IncompleteConfiguration", "Incomplete configuration", "The specified media profile does not contain either a reference to a video encoder configuration or a reference to a video source configuration");
-            return -2;
-        }
-
-        if (str_subst(line, service_ctx.profiles[0].snapurl, "%s", address) < 0) {
-            strcpy(line, service_ctx.profiles[0].snapurl);
-        }
-        // Escape html chars
-        html_escape(line, MAX_LEN);
-
-        long size = cat(NULL, "media_service_files/GetSnapshotUri.xml", 2,
-                    "%URI%", line);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "media_service_files/GetSnapshotUri.xml", 2,
-                    "%URI%", line);
-
-    } else if ((service_ctx.profiles_num == 1) &&
-            (strcasecmp(service_ctx.profiles[0].name, "Profile_1") == 0) &&
-            (strcasecmp(profile_token, "Profile_1") == 0)) {
+    if (strcasecmp(service_ctx.profiles[0].name, profile_token) == 0) {
 
         if (service_ctx.profiles[0].snapurl == NULL) {
             send_fault("media_service", "Receiver", "ter:Action", "ter:IncompleteConfiguration", "Incomplete configuration", "The specified media profile does not contain either a reference to a video encoder configuration or a reference to a video source configuration");
@@ -657,7 +511,7 @@ int media_get_snapshot_uri()
                     "%URI%", line);
 
     } else if ((service_ctx.profiles_num == 2) &&
-            (strcasecmp(profile_token, "Profile_1") == 0)) {
+            (strcasecmp(service_ctx.profiles[1].name, profile_token) == 0)) {
 
         if (service_ctx.profiles[1].snapurl == NULL) {
             send_fault("media_service", "Receiver", "ter:Action", "ter:IncompleteConfiguration", "Incomplete configuration", "The specified media profile does not contain either a reference to a video encoder configuration or a reference to a video source configuration");
@@ -702,35 +556,7 @@ int media_get_stream_uri()
         return -1;
     }
 
-    if (((service_ctx.profiles_num == 1) &&
-            (strcasecmp(service_ctx.profiles[0].name, "Profile_0") == 0) &&
-            (strcasecmp(profile_token, "Profile_0") == 0)) ||
-            ((service_ctx.profiles_num == 2) &&
-            (strcasecmp(profile_token, "Profile_0") == 0))) {
-
-        if (service_ctx.profiles[0].url == NULL) {
-            send_fault("media_service", "Receiver", "ter:Action", "ter:IncompleteConfiguration", "Incomplete configuration", "The specified media profile does contain either unused sources or encoder configurations without a corresponding source");
-            return -2;
-        }
-
-        if (str_subst(line, service_ctx.profiles[0].url, "%s", address) < 0) {
-            strcpy(line, service_ctx.profiles[0].url);
-        }
-        // Escape html chars
-        html_escape(line, MAX_LEN);
-
-        long size = cat(NULL, "media_service_files/GetStreamUri.xml", 2,
-                    "%URI%", line);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "media_service_files/GetStreamUri.xml", 2,
-                    "%URI%", line);
-
-    } else if ((service_ctx.profiles_num == 1) &&
-            (strcasecmp(service_ctx.profiles[0].name, "Profile_1") == 0) &&
-            (strcasecmp(profile_token, "Profile_1") == 0)) {
+    if (strcasecmp(service_ctx.profiles[0].name, profile_token) == 0) {
 
         if (service_ctx.profiles[0].url == NULL) {
             send_fault("media_service", "Receiver", "ter:Action", "ter:IncompleteConfiguration", "Incomplete configuration", "The specified media profile does contain either unused sources or encoder configurations without a corresponding source");
@@ -753,7 +579,7 @@ int media_get_stream_uri()
                     "%URI%", line);
 
     } else if ((service_ctx.profiles_num == 2) &&
-            (strcasecmp(profile_token, "Profile_1") == 0)) {
+            (strcasecmp(service_ctx.profiles[1].name, profile_token) == 0)) {
 
         if (service_ctx.profiles[1].url == NULL) {
             send_fault("media_service", "Receiver", "ter:Action", "ter:IncompleteConfiguration", "Incomplete configuration", "The specified media profile does contain either unused sources or encoder configurations without a corresponding source");
