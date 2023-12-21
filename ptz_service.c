@@ -574,7 +574,7 @@ int ptz_get_status()
     struct tm *tm = gmtime(&timestamp);
     int ret = 0;
     FILE *fp;
-    int x, y;
+    double x, y, z = 1.0;
     char out[256], sx[128], sy[128], sz[128];
     ezxml_t node;
 
@@ -601,16 +601,16 @@ int ptz_get_status()
         if (fgets(out, sizeof(out), fp) == NULL) {
             ret = -4;
         } else {
-            if (sscanf(out, "%d,%d", &x, &y) != 2) {
+            if (sscanf(out, "%lf,%lf,%lf", &x, &y, &z) < 2) {
                 ret = -4;
             }
         }
         pclose(fp);
     }
 
-    sprintf(sx, "%d", x);
-    sprintf(sy, "%d", y);
-    sprintf(sz, "%d", 1);
+    sprintf(sx, "%f", x);
+    sprintf(sy, "%f", y);
+    sprintf(sz, "%f", z);
     if (ret == 0) {
         long size = cat(NULL, "ptz_service_files/GetStatus.xml", 8,
                 "%X%", sx,
