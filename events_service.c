@@ -68,7 +68,7 @@ int events_subscribe()
     address = get_element("Address", "Body");
     if (address == NULL) {
         log_error("No Address element for subscribe method");
-        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "", "Resource nnknown", "");
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -1;
     }
 
@@ -77,7 +77,7 @@ int events_subscribe()
         element = get_element("TopicExpression", "Body");
         if ((element != NULL) && (strstr(element, "VideoSource/MotionAlarm") == NULL) && (strlen(element) > 0)) {
             log_error("Invalid filter");
-            send_fault("events_service", "Receiver", "wsrf-rw:InvalidFilterFault", "", "Invalid filter", "");
+            send_fault("events_service", "Receiver", "wsrf-rw:InvalidFilterFault", "wsrf-rw:ResourceUnknownFault", "Invalid filter", "");
             return -2;
         }
         element = get_element("MessageContent", "Body");
@@ -170,7 +170,7 @@ int events_renew()
     get_from_query_string(&qs_string, &qs_size, "sub");
     if ((qs_size == -1) || (qs_string == NULL)) {
         log_error("No sub parameter in query string for renew method");
-        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "", "Resource nnknown", "");
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -1;
     }
     sub_index_s = (char *) malloc((qs_size + 1) * sizeof(char));
@@ -180,7 +180,7 @@ int events_renew()
     free(sub_index_s);
     if ((sub_index <= 0) || (sub_index > MAX_SUBSCRIPTIONS)) {
         log_error("sub index out of range for renew method");
-        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "", "Resource nnknown", "");
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -2;
     }
     sub_index--;
@@ -201,7 +201,7 @@ int events_renew()
     }
     if (subscriptions->items[sub_index].used == 0) {
         destroy_shared_memory((void *) subscriptions, 0);
-        send_action_failed_fault();
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return 0;
     }
     subscriptions->items[sub_index].used = 1;
@@ -321,7 +321,7 @@ int events_unsubscribe()
     get_from_query_string(&qs_string, &qs_size, "sub");
     if ((qs_size == -1) || (qs_string == NULL)) {
         log_error("No sub parameter in query string for unsubscribe method");
-        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "", "Resource nnknown", "");
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return 1;
     }
 
@@ -332,7 +332,7 @@ int events_unsubscribe()
     free(sub_index_s);
     if ((sub_index <= 0) || (sub_index > MAX_SUBSCRIPTIONS)) {
         log_error("sub index out of range for unsubscribe method");
-        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "", "Resource nnknown", "");
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -2;
     }
     sub_index--;
@@ -345,7 +345,7 @@ int events_unsubscribe()
     }
     if (subscriptions->items[sub_index].used == 0) {
         destroy_shared_memory((void *) subscriptions, 0);
-        send_action_failed_fault();
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return 0;
     }
     memset(&(subscriptions->items[sub_index]), '\0', sizeof (subscription_t));
