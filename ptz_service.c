@@ -634,13 +634,18 @@ int ptz_get_status()
 
 int ptz_set_preset()
 {
+    int i;
     char sys_command[MAX_LEN];
     const char *preset_name;
+    char preset_name_out[16];
+    const char *preset_token;
     ezxml_t node;
+    char preset_token_out[16];
+    int preset_number = -1;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
     if (node == NULL) {
-        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile token ProfileToken does not exist");
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile token does not exist");
         return -1;
     }
 
@@ -681,13 +686,30 @@ int ptz_set_preset()
 
     sprintf(sys_command, service_ctx.ptz_node.set_preset, (char *) preset_name_out);
     system(sys_command);
+    sleep(1);
 
-    long size = cat(NULL, "ptz_service_files/SetPreset.xml", 0);
+    init_presets();
+    preset_token_out[0] = '\0';
+    for (i = 0; i < presets.count; i++) {
+        if (strcasecmp(presets.items[i].name, preset_name_out) == 0) {
+            sprintf(preset_token_out, "PresetToken_%d", presets.items[i].number);
+            break;
+        }
+    }
+    destroy_presets();
+    if (preset_token_out[0] == '\0') {
+        send_fault("ptz_service", "Receiver", "ter:Action", "ter:TooManyPresets", "Too many presets", "Maximum number of presets reached");
+        return -7;
+    }
+
+    long size = cat(NULL, "ptz_service_files/SetPreset.xml", 2,
+            "%PRESET_TOKEN%", preset_token_out);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("stdout", "ptz_service_files/SetPreset.xml", 0);
+    return cat("stdout", "ptz_service_files/SetPreset.xml", 2,
+            "%PRESET_TOKEN%", preset_token_out);
 }
 
 int ptz_set_home_position()
