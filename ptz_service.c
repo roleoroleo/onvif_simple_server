@@ -721,6 +721,7 @@ int ptz_remove_preset()
 {
     char sys_command[MAX_LEN];
     const char *preset_token;
+    int preset_number;
     ezxml_t node;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
