@@ -17,6 +17,21 @@
 #ifndef PTZ_SERVICE_H
 #define PTZ_SERVICE_H
 
+typedef struct {
+    int number;
+    char *name;
+    double x; // pan
+    double y; // tilt
+    double z; // zoom
+} preset_t;
+
+typedef struct {
+    int count;
+    preset_t *items;
+} presets_t;
+
+int init_presets();
+void destroy_presets();
 int ptz_get_service_capabilities();
 int ptz_get_configurations();
 int ptz_get_configuration();

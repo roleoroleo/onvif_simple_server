@@ -28,6 +28,65 @@
 #include "onvif_simple_server.h"
 
 extern service_context_t service_ctx;
+presets_t presets;
+
+int init_presets()
+{
+    FILE *fp;
+    char out[MAX_LEN];
+    int num;
+    double x, y, z;
+    char name[MAX_LEN];
+    char *p;
+
+    presets.count = 0;
+    presets.items = (preset_t *) malloc(sizeof(preset_t));
+
+    // Run command that returns to stdout the list of the presets in the form number=name,pan,tilt,zoom (zoom is optional)
+    fp = popen(service_ctx.ptz_node.get_presets, "r");
+    if (fp == NULL) {
+        return -1;
+    } else {
+        while (fgets(out, sizeof(out), fp)) {
+            p = out;
+            name[0] = '\0';
+            x = -1.0;
+            y = -1.0;
+            z = 1.0;
+            while((p = strchr(p, ',')) != NULL) {
+                *p++ = ' ';
+            }
+            if (sscanf(out, "%d=%s %lf %lf %lf", &num, name, &x, &y, &z) == 0) {
+                pclose(fp);
+                return -2;
+            } else {
+                if (strlen(name) != 0) {
+                    presets.count++;
+                    presets.items = (preset_t *) realloc(presets.items, sizeof(preset_t) * presets.count);
+                    presets.items[presets.count - 1].name = (char *) malloc(strlen(name) + 1);
+                    strcpy(presets.items[presets.count - 1].name, name);
+                    presets.items[presets.count - 1].number = num;
+                    presets.items[presets.count - 1].x = x;
+                    presets.items[presets.count - 1].y = y;
+                    presets.items[presets.count - 1].z = z;
+                }
+            }
+        }
+        pclose(fp);
+    }
+
+    return 0;
+}
+
+void destroy_presets()
+{
+    int i;
+
+    for (i = presets.count - 1; i >= 0; i--) {
+        free(presets.items[i].name);
+    }
+    free(presets.items);
+}
 
 int ptz_get_service_capabilities()
 {
@@ -92,6 +151,12 @@ int ptz_get_node()
 int ptz_get_presets()
 {
     ezxml_t node;
+    int i, c;
+    char dest_a[] = "stdout";
+    char *dest;
+    char token[16];
+    char sx[16], sy[16], sz[16];
+    long size, total_size;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
     if (node == NULL) {
@@ -104,12 +169,42 @@ int ptz_get_presets()
         return -2;
     }
 
-    long size = cat(NULL, "ptz_service_files/GetPresets.xml", 0);
+    init_presets();
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    // We need 1st step to evaluate content length
+    for (c = 0; c < 2; c++) {
+        if (c == 0) {
+            dest = NULL;
+        } else {
+            dest = dest_a;
+            fprintf(stdout, "Content-type: application/soap+xml\r\n");
+            fprintf(stdout, "Content-Length: %ld\r\n\r\n", total_size);
+        }
 
-    return cat("stdout", "ptz_service_files/GetPresets.xml", 0);
+        size = cat(dest, "ptz_service_files/GetPresets_1.xml", 0);
+        if (c == 0) total_size = size;
+
+        for (i = 0; i < presets.count; i++) {
+            sprintf(token, "PresetToken_%d", presets.items[i].number);
+            sprintf(sx, "%.1f", presets.items[i].x);
+            sprintf(sy, "%.1f", presets.items[i].y);
+            sprintf(sz, "%.1f", presets.items[i].z);
+            size = cat(dest, "ptz_service_files/GetPresets_2.xml", 10,
+                "%TOKEN%", token,
+                "%NAME%", presets.items[i].name,
+                "%X%", sx,
+                "%Y%", sy,
+                "%Z%", sz);
+            if (c == 0) total_size += size;
+        }
+
+        size = cat(dest, "ptz_service_files/GetPresets_3.xml", 0);
+        if (c == 0) total_size += size;
+    }
+
+    destroy_presets();
+
+    return total_size;
 }
 
 int ptz_goto_preset()
