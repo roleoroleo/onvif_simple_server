@@ -131,7 +131,7 @@ void destroy_shared_memory(void *shared_area, int destroy_all)
 long cat(char *out, char *filename, int num, ...)
 {
     va_list valist;
-    char new_line[MAX_LEN];
+    char new_line[MAX_CAT_LEN];
     char *l;
     char *ptr = out;
     char *pars, *pare, *par_to_find, *par_to_sub;
@@ -144,7 +144,7 @@ long cat(char *out, char *filename, int num, ...)
         return -1;
     }
 
-    char line[MAX_LEN];
+    char line[MAX_CAT_LEN];
 
     while (fgets(line, sizeof(line), file)) {
         va_start(valist, num);

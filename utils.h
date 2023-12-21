@@ -20,7 +20,8 @@
 #include <stdarg.h>
 #include <time.h>
 
-#define MAX_LEN 1024
+#define MAX_LEN     1024
+#define MAX_CAT_LEN 2048
 
 #define UUID_LEN 36
 
