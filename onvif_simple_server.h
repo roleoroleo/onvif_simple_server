@@ -61,6 +61,7 @@ typedef struct {
     char *remove_preset;
     char *jump_to_abs;
     char *jump_to_rel;
+    char *get_presets;
 } ptz_node_t;
 
 typedef struct {

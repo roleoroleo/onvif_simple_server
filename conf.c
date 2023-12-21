@@ -241,6 +241,9 @@ int process_conf_file(char *file)
         } else if ((strcasecmp(param, "jump_to_rel") == 0) && (service_ctx.ptz_node.enable == 1)) {
             service_ctx.ptz_node.jump_to_rel = (char *) malloc(strlen(value) + 1);
             strcpy(service_ctx.ptz_node.jump_to_rel, value);
+        } else if ((strcasecmp(param, "get_presets") == 0) && (service_ctx.ptz_node.enable == 1)) {
+            service_ctx.ptz_node.get_presets = (char *) malloc(strlen(value) + 1);
+            strcpy(service_ctx.ptz_node.get_presets, value);
 
         //Events Profile for ONVIF Events Service
         } else if ((strcasecmp(param, "events") == 0) && (strcasecmp(value, "1") == 0)) {
