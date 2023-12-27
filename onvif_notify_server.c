@@ -168,7 +168,7 @@ void signal_handler(int signal)
     exit_main = 1;
 }
 
-int send_notify(char *reference, int alarm_index, char *property, char *value)
+int send_notify(char *reference, int alarm_index, time_t e_time, char *property, char *value)
 {
     char host[1024];
     int port = 80;
@@ -182,11 +182,9 @@ int send_notify(char *reference, int alarm_index, char *property, char *value)
     int sockfd;
     struct sockaddr_in remote;
     char utctime[32];
-    time_t now;
 
     // Prepare time string
-    now = time(NULL);
-    to_iso_date(utctime, sizeof(utctime), now);
+    to_iso_date(utctime, sizeof(utctime), e_time);
 
     // Prepare IP address
     if (strncmp("https", reference, 5) == 0)
@@ -291,7 +289,7 @@ void sync_events()
             now = time(NULL);
             if (now > subs_evts->subscriptions[sub_index].expire) continue;
 
-                send_notify(subscriptions->items[j].reference, i, "Initialized", value);
+            send_notify(subs_evts->subscriptions[sub_index].reference, i, subs_evts->events[i].e_time, "Initialized", value);
             }
         }
     }
