@@ -19,6 +19,6 @@
 
 int send_fault(char *service, char *rec_send, char *subcode, char *subcode_ex, char *reason, char *detail);
 int send_action_failed_fault(int code);
-int authentication_error();
+int send_authentication_error();
 
 #endif //FAULT_H

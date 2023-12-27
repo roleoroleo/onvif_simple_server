@@ -494,7 +494,7 @@ int main(int argc, char ** argv)
             }
         }
     } else {
-        authentication_error();
+        send_authentication_error();
     }
 
     close_xml();

@@ -79,7 +79,7 @@ int send_action_failed_fault(int code)
     send_fault("ptz_service", "Receiver", "ter:Action", "ter:ActionFailed", "Action failed", error_string);
 }
 
-int authentication_error()
+int send_authentication_error()
 {
     long size = cat(NULL, "generic_files/AuthenticationError.xml", 0);
 
