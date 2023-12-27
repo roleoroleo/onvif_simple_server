@@ -4,8 +4,6 @@
               xmlns:xsd="http://www.w3.org/2001/XMLSchema"
               xmlns:tptz="http://www.onvif.org/ver20/ptz/wsdl">
     <SOAP-ENV:Body>
-        <tptz:RemovePresetResponse>
-            <tptz:PresetToken>Unknown</tptz:PresetToken>
-        </tptz:RemovePresetResponse>
+        <tptz:RemovePresetResponse/>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
