@@ -268,9 +268,9 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
     return 0;
 }
 
-void sync_events()
+void sync_events(int sub_index)
 {
-    int i, j;
+    int i;
     char value[8];
     time_t now;
 
@@ -282,7 +282,6 @@ void sync_events()
         else
             strcpy(value, "false");
 
-        for(j = 0; j < MAX_SUBSCRIPTIONS; j++) {
         // Semaphore is already ok
         if (subs_evts->subscriptions[sub_index].used == SUB_PUSH) {
             // Check if subscription is expired
@@ -290,11 +289,49 @@ void sync_events()
             if (now > subs_evts->subscriptions[sub_index].expire) continue;
 
             send_notify(subs_evts->subscriptions[sub_index].reference, i, subs_evts->events[i].e_time, "Initialized", value);
-            }
         }
     }
 
     log_info("Synchronization done");
+}
+
+void clean_expired_subscriptions()
+{
+    int i;
+    time_t now;
+
+    // Semaphore is already ok
+    for(i = 0; i < MAX_SUBSCRIPTIONS; i++) {
+        if (subs_evts->subscriptions[i].expire != 0) {
+            // Check if subscription is expired
+            now = time(NULL);
+            if (now > subs_evts->subscriptions[i].expire) {
+                memset(&subs_evts->subscriptions[i], '\0', sizeof(subscription_shm_t));
+            }
+        }
+    }
+}
+
+void *sync_events_thread(void *arg)
+{
+    int i;
+
+    while (!exit_main) {
+        // Sync all events
+        for(i = 0; i < MAX_SUBSCRIPTIONS; i++) {
+            if (subs_evts->subscriptions[i].need_sync == 1) {
+                sem_memory_wait();
+                subs_evts->subscriptions[i].need_sync = 0;
+                sync_events(i);
+                sem_memory_post();
+            }
+        }
+        // Clean expired_subscriptions
+        sem_memory_wait();
+        clean_expired_subscriptions();
+        sem_memory_post();
+        usleep(500 * 1000);
+    }
 }
 
 int handle_events(int fd, char *dir)
@@ -368,34 +405,6 @@ int handle_events(int fd, char *dir)
                 }
             }
         }
-    }
-}
-
-void clean_expired_subscriptions()
-{
-    int i;
-    time_t now;
-
-    for(i = 0; i < MAX_SUBSCRIPTIONS; i++) {
-        if (subscriptions->items[i].expire != 0) {
-            // Check if subscription is expired
-            now = time(NULL);
-            if (now > subscriptions->items[i].expire) {
-                memset(&subscriptions->items[i], '\0', sizeof(subscription_t));
-            }
-        }
-    }
-}
-
-void *sync_events_thread(void *arg)
-{
-    while (!exit_main) {
-        // Sync all events
-        if (subscriptions->need_sync == 1) {
-            subscriptions->need_sync = 0;
-            sync_events();
-        }
-        usleep(500 * 1000);
     }
 }
 
