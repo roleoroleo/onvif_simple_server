@@ -371,6 +371,7 @@ int ptz_relative_move()
     char const *x = NULL;
     char const *y = NULL;
     char const *z = NULL;
+    char const *space = NULL;
     double dx = 0;
     double dy = 0;
     double dz = 0;
@@ -396,10 +397,12 @@ int ptz_relative_move()
         if (node_c != NULL) {
             x = get_attribute(node_c, "x");
             y = get_attribute(node_c, "y");
+            space = get_attribute(node_c, "space");
         }
         node_c = get_element_in_element_ptr("Zoom", node);
         if (node_c != NULL) {
             z = get_attribute(node_c, "x");
+            space = get_attribute(node_c, "space");
         }
     }
 
@@ -408,32 +411,80 @@ int ptz_relative_move()
         // do nothing
     }
 
-    if (((x == NULL) && (y == NULL) && (z == NULL)) ||
-            ((x == NULL) && (y != NULL)) ||
-            ((x != NULL) && (y == NULL))) {
-
+    if (space == NULL) {
         ret = -3;
-
     } else {
-        if ((x != NULL) && (y != NULL)) {
-            dx = atof(x);
-            if ((dx > 360.0) || (dx < -360.0)) {
+
+        if (strcmp("http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace", space) == 0) {
+
+
+            if (((x == NULL) && (y == NULL) && (z == NULL)) ||
+                    ((x == NULL) && (y != NULL)) ||
+                    ((x != NULL) && (y == NULL))) {
+
                 ret = -4;
-            }
-            dy = atof(y);
-            if ((dy > 180.0) || (dy < -180.0)) {
-                ret = -5;
+
             } else {
-                sprintf(sys_command, service_ctx.ptz_node.jump_to_rel, dx, dy);
+                if ((x != NULL) && (y != NULL)) {
+                    dx = atof(x);
+                    if ((dx > 360.0) || (dx < -360.0)) {
+                        ret = -5;
+                    }
+                    dy = atof(y);
+                    if ((dy > 180.0) || (dy < -180.0)) {
+                        ret = -6;
+                    } else {
+                        sprintf(sys_command, service_ctx.ptz_node.jump_to_rel, dx, dy);
+                    }
+                }
+                if (z != NULL) {
+                    dz = atof(z);
+                    if (dz != 0.0) {
+                        ret = -7;
+                    } else {
+                        // do nothing
+                    }
+                }
             }
-        }
-        if (z != NULL) {
-            dz = atof(z);
-            if (dz != 0.0) {
-                ret = -6;
-            } else {
+        } else if (strcmp("http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationSpaceFov", space) == 0) {
+            node = get_element_ptr(NULL, "Speed", "Body");
+            if (node != NULL) {
                 // do nothing
             }
+
+            if (((x == NULL) && (y == NULL) && (z == NULL)) ||
+                    ((x == NULL) && (y != NULL)) ||
+                    ((x != NULL) && (y == NULL))) {
+
+                ret = -8;
+
+            } else {
+                if ((x != NULL) && (y != NULL)) {
+                    dx = atof(x);
+                    if ((dx > 100.0) || (dx < -100.0)) {
+                        ret = -9;
+                    }
+                    dy = atof(y);
+                    if ((dy > 100.0) || (dy < -100.0)) {
+                        ret = -10;
+                    } else {
+                        // Convert -100/+100 to degrees values based on FOV
+                        dx = (dx / 100.0) * (63.0 / 2.0);
+                        dy = (dy / 100.0) * (37.0 / 2.0);
+                        sprintf(sys_command, service_ctx.ptz_node.jump_to_rel, dx, dy);
+                    }
+                }
+                if (z != NULL) {
+                    dz = atof(z);
+                    if (dz != 0.0) {
+                        ret = -11;
+                    } else {
+                        // do nothing
+                    }
+                }
+            }
+        } else if (strcmp("http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace", space) == 0) {
+            // do nothing
         }
     }
 
