@@ -425,7 +425,7 @@ void print_conf_help()
     fprintf(stderr, "\tinput_file=/tmp/baby_crying\n");
     fprintf(stderr, "\t#Event 5\n");
     fprintf(stderr, "\ttopic=tns1:AudioAnalytics/Audio/DetectedSound\n");
-    fprintf(stderr, "\tsource_name=AudioAnalyticsConfigurationToken\n");
-    fprintf(stderr, "\tsource_value=AudioAnalyticsToken\n");
+    fprintf(stderr, "\tsource_name=VideoSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_value=VideoSourceToken\n");
     fprintf(stderr, "\tinput_file=/tmp/sound_detection\n");
 }
