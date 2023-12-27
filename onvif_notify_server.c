@@ -718,6 +718,10 @@ int main(int argc, char **argv)  {
                     log_info("File %s deleted", service_ctx.events[i].input_file);
 
                     sem_memory_wait();
+                    subs_evts->events[i].is_on = ALARM_OFF;
+                    subs_evts->events[i].e_time = now;
+                    subs_evts->events[i].pull_notify = 0xffffffff;
+
                     for(j = 0; j < MAX_SUBSCRIPTIONS; j++) {
                         if (subs_evts->subscriptions[j].used == SUB_PUSH) {
                             // Check if subscription is expired
