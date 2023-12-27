@@ -614,13 +614,6 @@ int main(int argc, char **argv)  {
         exit(EXIT_FAILURE);
     }
 
-    for (i = 0; i < service_ctx.events_num; i++) {
-        log_debug("%d: %s", i, service_ctx.events[i].input_file);
-
-        // Init alarm status
-        service_ctx.events[i].is_on = ALARM_OFF;
-    }
-
     // Open shared memory
     subs_evts = (shm_t *) create_shared_memory(1);
     if (subs_evts == NULL) {
@@ -633,6 +626,10 @@ int main(int argc, char **argv)  {
     memset(subs_evts, '\0', sizeof(shm_t));
     sem_memory_post();
 
+    // Log events
+    for (i = 0; i < service_ctx.events_num; i++) {
+        log_debug("%d: %s", i, service_ctx.events[i].input_file);
+    }
 
     // Create the file descriptor for accessing the inotify API
     fd = inotify_init1(IN_NONBLOCK);
