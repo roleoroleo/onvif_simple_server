@@ -72,20 +72,21 @@ int events_subscribe()
         return -1;
     }
 
+    // Filter is not supported at the moment
     element = get_element("Filter", "Body");
     if (element != NULL) {
         element = get_element("TopicExpression", "Body");
-        if ((element != NULL) && (strstr(element, "VideoSource/MotionAlarm") == NULL) && (strlen(element) > 0)) {
-            log_error("Invalid filter");
-            send_fault("events_service", "Receiver", "wsrf-rw:InvalidFilterFault", "wsrf-rw:ResourceUnknownFault", "Invalid filter", "");
-            return -2;
-        }
+//        if ((element != NULL) && (strstr(element, "VideoSource/MotionAlarm") == NULL) && (strlen(element) > 0)) {
+//            log_error("Invalid filter");
+//            send_fault("events_service", "Receiver", "wsrf-rw:InvalidFilterFault", "wsrf-rw:ResourceUnknownFault", "Invalid filter", "");
+//            return -2;
+//        }
         element = get_element("MessageContent", "Body");
-        if ((element != NULL) && (strlen(element) > 0)) {
-            log_error("Invalid filter");
-            send_fault("events_service", "Receiver", "wsrf-rw:InvalidFilterFault", "", "Invalid filter", "");
-            return -2;
-        }
+//        if ((element != NULL) && (strlen(element) > 0)) {
+//            log_error("Invalid filter");
+//            send_fault("events_service", "Receiver", "wsrf-rw:InvalidFilterFault", "", "Invalid filter", "");
+//            return -2;
+//        }
     }
 
     itt = get_element("InitialTerminationTime", "Body");
