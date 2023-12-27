@@ -479,6 +479,10 @@ int main(int argc, char ** argv)
         } else if (strcasecmp("events_service", prog_name) == 0) {
             if (strcasecmp(method, "GetServiceCapabilities") == 0) {
                 events_get_service_capabilities();
+            } else if (strcasecmp(method, "CreatePullPointSubscription") == 0) {
+                events_create_pull_point_subscription();
+            } else if (strcasecmp(method, "PullMessages") == 0) {
+                events_pull_messages();
             } else if (strcasecmp(method, "Subscribe") == 0) {
                 events_subscribe();
             } else if (strcasecmp(method, "Renew") == 0) {

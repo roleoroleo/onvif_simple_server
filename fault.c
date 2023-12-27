@@ -72,6 +72,22 @@ int send_fault(char *service, char *rec_send, char *subcode, char *subcode_ex, c
             "%DETAIL%", detail);
 }
 
+int send_pull_messages_fault(char *timeout, char *message_limit)
+{
+    long size = cat(NULL, "generic_files/PullMessagesFaultResponse.xml", 4,
+        "%MAX_TIMEOUT%", timeout,
+        "%MAX_MESSAGE_LIMIT%", message_limit);
+
+//    fprintf(stdout, "Status: 500 Internal Server Error\r\n");
+    fprintf(stdout, "HTTP/1.1 500 Internal Server Error\r\n");
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "generic_files/PullMessagesFaultResponse.xml", 4,
+        "%MAX_TIMEOUT%", timeout,
+        "%MAX_MESSAGE_LIMIT%", message_limit);
+}
+
 int send_action_failed_fault(int code)
 {
     char error_string[1024];
