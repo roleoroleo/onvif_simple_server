@@ -89,6 +89,7 @@ void *create_shared_memory(int create) {
     rc = ftruncate(shmfd, shared_seg_size);
     if (rc != 0) {
         log_error("ftruncate() failed");
+        shm_unlink(SHMOBJ_PATH);
         return NULL;
     }
 
@@ -96,6 +97,7 @@ void *create_shared_memory(int create) {
     shared_area = (char *)mmap(NULL, shared_seg_size, PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0);
     if (shared_area == MAP_FAILED /* is ((void*)-1) */ ) {
         log_error("mmap() failed");
+        shm_unlink(SHMOBJ_PATH);
         return NULL;
     }
     log_debug("Shared memory segment allocated correctly (%d bytes) at address %p", shared_seg_size, shared_area);
