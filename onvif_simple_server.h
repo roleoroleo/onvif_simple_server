@@ -69,7 +69,6 @@ typedef struct {
     char *source_name;
     char *source_value;
     char *input_file;
-    int is_on;
 } event_t;
 
 typedef struct {

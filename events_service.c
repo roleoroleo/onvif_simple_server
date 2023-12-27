@@ -29,7 +29,7 @@
 
 extern service_context_t service_ctx;
 
-subscriptions_t *subscriptions;
+shm_t *subs_evts;
 
 int events_get_service_capabilities()
 {
@@ -96,24 +96,24 @@ int events_subscribe()
     }
 
     time(&now);
-    subscriptions = (subscriptions_t *) create_shared_memory(0);
-    if (subscriptions == NULL) {
+    subs_evts = (shm_t *) create_shared_memory(0);
+    if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
         send_action_failed_fault(-4);
         return -4;
     }
     for (i = 0; i < MAX_SUBSCRIPTIONS; i++) {
-        if (subscriptions->items[i].used == 0) {
+        if (subs_evts->subscriptions[i].used == SUB_UNUSED) {
             if (strlen(address) < CONSUMER_REFERENCE_MAX_SIZE) {
-                memset(subscriptions->items[i].reference, '\0', CONSUMER_REFERENCE_MAX_SIZE);
-                strcpy(subscriptions->items[i].reference, address);
-                subscriptions->items[i].used = 1;
-                subscriptions->items[i].expire = now + interval2sec(itt);
+                memset(subs_evts->subscriptions[i].reference, '\0', CONSUMER_REFERENCE_MAX_SIZE);
+                strcpy(subs_evts->subscriptions[i].reference, address);
+                subs_evts->subscriptions[i].used = SUB_PUSH;
+                subs_evts->subscriptions[i].expire = now + interval2sec(itt);
             }
             break;
         }
     }
-    destroy_shared_memory((void *) subscriptions, 0);
+    destroy_shared_memory((void *) subs_evts, 0);
 
     subsel = i + 1;
     sprintf(events_service_address, "http://%s%s/onvif/events_service?sub=%d", my_address, my_port, subsel);
@@ -193,20 +193,21 @@ int events_renew()
     }
 
     time(&now);
-    subscriptions = (subscriptions_t *) create_shared_memory(0);
-    if (subscriptions == NULL) {
+    subs_evts = (shm_t *) create_shared_memory(0);
+    if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
         send_action_failed_fault(-4);
         return -4;
     }
-    if (subscriptions->items[sub_index].used == 0) {
-        destroy_shared_memory((void *) subscriptions, 0);
+    if (subs_evts->subscriptions[sub_index].used == SUB_UNUSED) {
+        destroy_shared_memory((void *) subs_evts, 0);
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -5;
     }
-    subscriptions->items[sub_index].used = 1;
-    subscriptions->items[sub_index].expire = now + interval2sec(tt);
-    destroy_shared_memory((void *) subscriptions, 0);
+//    subs_evts->subscriptions[sub_index].used = SUB_PUSH;
+    subs_evts->subscriptions[sub_index].expire = now + interval2sec(tt);
+    sem_memory_post();
+    destroy_shared_memory((void *) subs_evts, 0);
 
     gen_uuid(msg_uuid);
     relates_to_uuid = get_element("MessageID", "Header");
@@ -337,19 +338,19 @@ int events_unsubscribe()
     }
     sub_index--;
 
-    subscriptions = (subscriptions_t *) create_shared_memory(0);
-    if (subscriptions == NULL) {
+    subs_evts = (shm_t *) create_shared_memory(0);
+    if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
         send_action_failed_fault(-3);
         return -3;
     }
-    if (subscriptions->items[sub_index].used == 0) {
-        destroy_shared_memory((void *) subscriptions, 0);
+    if (subs_evts->subscriptions[sub_index].used == SUB_UNUSED) {
+        destroy_shared_memory((void *) subs_evts, 0);
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -4;
     }
-    memset(&(subscriptions->items[sub_index]), '\0', sizeof (subscription_t));
-    destroy_shared_memory((void *) subscriptions, 0);
+    memset(&(subs_evts->subscriptions[sub_index]), '\0', sizeof (shm_t));
+    destroy_shared_memory((void *) subs_evts, 0);
 
     log_debug("Subscription data: subscription index %d", sub_index);
 
@@ -363,15 +364,15 @@ int events_unsubscribe()
 
 int events_set_synchronization_point()
 {
-    subscriptions = (subscriptions_t *) create_shared_memory(0);
-    if (subscriptions == NULL) {
+    subs_evts = (shm_t *) create_shared_memory(0);
+    if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
         send_action_failed_fault(-3);
         return -3;
     }
-    subscriptions->need_sync = 1;
-    destroy_shared_memory((void *) subscriptions, 0);
+    subs_evts->subscriptions[sub_index].need_sync = 1;
 
+    destroy_shared_memory((void *) subs_evts, 0);
     long size = cat(NULL, "events_service_files/SetSynchronizationPoint.xml", 0);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");

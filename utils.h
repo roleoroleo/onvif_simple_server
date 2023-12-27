@@ -25,19 +25,32 @@
 
 #define UUID_LEN 36
 
-#define MAX_SUBSCRIPTIONS 8
+#define MAX_SUBSCRIPTIONS 8 // MAX 32
 #define CONSUMER_REFERENCE_MAX_SIZE 256
+
+typedef enum {
+    SUB_UNUSED,
+    SUB_PULL,
+    SUB_PUSH
+} subscription_type;
 
 typedef struct {
     char reference[CONSUMER_REFERENCE_MAX_SIZE];
-    int used;
+    subscription_type used;
     time_t expire;
-} subscription_t;
+    int need_sync;
+} subscription_shm_t;
 
 typedef struct {
-    subscription_t items[MAX_SUBSCRIPTIONS];
-    int need_sync;
-} subscriptions_t;
+    time_t e_time;
+    int is_on;
+    unsigned int pull_notify; // Bit mask
+} event_shm_t;
+
+typedef struct {
+    subscription_shm_t subscriptions[MAX_SUBSCRIPTIONS];
+    event_shm_t events[MAX_EVENTS];
+} shm_t;
 
 void *create_shared_memory(int create);
 void destroy_shared_memory(void *shared_area, int destroy_all);

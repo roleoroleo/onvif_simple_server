@@ -250,12 +250,15 @@ int process_conf_file(char *file)
             service_ctx.events_enable = 1;
         } else if ((strcasecmp(param, "topic") == 0) && (service_ctx.events_enable == 1)) {
             service_ctx.events_num++;
+            if (service_ctx.events_num >= MAX_EVENTS) {
+                log_error("Too many events, max is: %d", MAX_EVENTS);
+                return -1;
+            }
             service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
             service_ctx.events[service_ctx.events_num - 1].topic = NULL;
             service_ctx.events[service_ctx.events_num - 1].source_name = NULL;
             service_ctx.events[service_ctx.events_num - 1].source_value = NULL;
             service_ctx.events[service_ctx.events_num - 1].input_file = NULL;
-            service_ctx.events[service_ctx.events_num - 1].is_on = 0;
             service_ctx.events[service_ctx.events_num - 1].topic = (char *) malloc(strlen(value) + 1);
             strcpy(service_ctx.events[service_ctx.events_num - 1].topic, value);
         } else if ((strcasecmp(param, "source_name") == 0) && (service_ctx.events_enable == 1)) {

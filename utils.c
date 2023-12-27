@@ -47,7 +47,7 @@
 
 void *create_shared_memory(int create) {
     int shmfd, rc;
-    int shared_seg_size = sizeof(subscriptions_t);
+    int shared_seg_size = sizeof(shm_t);
     char *shared_area;      /* the pointer to the shared segment */
 
     /* creating the shared memory object.
@@ -107,7 +107,7 @@ void *create_shared_memory(int create) {
 
 void destroy_shared_memory(void *shared_area, int destroy_all)
 {
-    int shared_seg_size = sizeof(subscriptions_t);
+    int shared_seg_size = sizeof(shm_t);
 
     if (munmap(shared_area, shared_seg_size) != 0) {
         log_error("munmap() failed");

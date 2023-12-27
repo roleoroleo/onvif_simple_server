@@ -57,7 +57,7 @@
 
 #define PID_SIZE 32
 
-subscriptions_t *subscriptions;
+shm_t *subs_evts;
 service_context_t service_ctx;
 
 // Global variables
@@ -284,10 +284,11 @@ void sync_events()
             strcpy(value, "false");
 
         for(j = 0; j < MAX_SUBSCRIPTIONS; j++) {
-            if (subscriptions->items[j].used == 1) {
-                // Check if subscription is expired
-                now = time(NULL);
-                if (now > subscriptions->items[j].expire) continue;
+        // Semaphore is already ok
+        if (subs_evts->subscriptions[sub_index].used == SUB_PUSH) {
+            // Check if subscription is expired
+            now = time(NULL);
+            if (now > subs_evts->subscriptions[sub_index].expire) continue;
 
                 send_notify(subscriptions->items[j].reference, i, "Initialized", value);
             }
@@ -351,11 +352,11 @@ int handle_events(int fd, char *dir)
                     if (strcmp(service_ctx.events[i].input_file, input_file) == 0) {
                         now = time(NULL);
                         for(j = 0; j < MAX_SUBSCRIPTIONS; j++) {
-                            if (subscriptions->items[j].used == 1) {
+                            if (subs_evts->subscriptions[j].used == SUB_PUSH) {
                                 // Check if subscription is expired
-                                if (now > subscriptions->items[j].expire) continue;
+                                if (now > subs_evts->subscriptions[j].expire) continue;
                                 sub_count++;
-                                send_notify(subscriptions->items[j].reference, i, "Changed", value);
+                                send_notify(subs_evts->subscriptions[j].reference, i, subs_evts->events[i].e_time, "Changed", value);
                             }
                         }
                         log_debug("%d subscriptions for %s file", sub_count, service_ctx.events[i].input_file);
@@ -608,14 +609,14 @@ int main(int argc, char **argv)  {
     }
 
     // Open shared memory
-    subscriptions = (subscriptions_t *) create_shared_memory(1);
-    if (subscriptions == NULL) {
+    subs_evts = (shm_t *) create_shared_memory(1);
+    if (subs_evts == NULL) {
         log_fatal("Unable to create shared memory.");
         unlink(pid_file);
         fclose(fLog);
         exit(EXIT_FAILURE);
     }
-    memset(subscriptions, '\0', sizeof(subscriptions_t));
+    memset(subs_evts, '\0', sizeof(shm_t));
 
     // Create the file descriptor for accessing the inotify API
     fd = inotify_init1(IN_NONBLOCK);
@@ -624,7 +625,7 @@ int main(int argc, char **argv)  {
             log_error("inotify interface not implemented, try poll strategy");
         } else {
             log_fatal("Unable to init inotify interface");
-            destroy_shared_memory(subscriptions, 1);
+            destroy_shared_memory(subs_evts, 1);
             unlink(pid_file);
             fclose(fLog);
             exit(EXIT_FAILURE);
@@ -639,7 +640,7 @@ int main(int argc, char **argv)  {
         if (wd == -1) {
             log_fatal("Cannot watch '%s': %s\n", INOTIFY_DIR, strerror(errno));
             close(fd);
-            destroy_shared_memory(subscriptions, 1);
+            destroy_shared_memory(subs_evts, 1);
             unlink(pid_file);
             fclose(fLog);
             exit(EXIT_FAILURE);
@@ -681,29 +682,28 @@ int main(int argc, char **argv)  {
             for (i = 0; i < service_ctx.events_num; i++) {
                 acc = access(service_ctx.events[i].input_file, F_OK);
 
-                if ((service_ctx.events[i].is_on != ALARM_ON) && (acc == 0)) {
-                    service_ctx.events[i].is_on = ALARM_ON;
+                if ((subs_evts->events[i].is_on != ALARM_ON) && (acc == 0)) {
+                    now = time(NULL);
                     log_info("File %s created", service_ctx.events[i].input_file);
 
-                    now = time(NULL);
+                    subs_evts->events[i].is_on = ALARM_ON;
                     for(j = 0; j < MAX_SUBSCRIPTIONS; j++) {
-                        if (subscriptions->items[j].used == 1) {
+                        if (subs_evts->subscriptions[j].used == SUB_PUSH) {
                             // Check if subscription is expired
-                            if (now > subscriptions->items[j].expire) continue;
-                            send_notify(subscriptions->items[j].reference, i, "Changed", "true");
+                            if (now > subs_evts->subscriptions[j].expire) continue;
+                            send_notify(subs_evts->subscriptions[j].reference, i, subs_evts->events[i].e_time, "Changed", "true");
                         }
                     }
 
-                } else if ((service_ctx.events[i].is_on != ALARM_OFF) && (acc != 0)) {
-                    service_ctx.events[i].is_on = ALARM_OFF;
+                } else if ((subs_evts->events[i].is_on != ALARM_OFF) && (acc != 0)) {
+                    now = time(NULL);
                     log_info("File %s deleted", service_ctx.events[i].input_file);
 
-                    now = time(NULL);
                     for(j = 0; j < MAX_SUBSCRIPTIONS; j++) {
-                        if (subscriptions->items[j].used == 1) {
+                        if (subs_evts->subscriptions[j].used == SUB_PUSH) {
                             // Check if subscription is expired
-                            if (now > subscriptions->items[j].expire) continue;
-                            send_notify(subscriptions->items[j].reference, i, "Changed", "false");
+                            if (now > subs_evts->subscriptions[j].expire) continue;
+                            send_notify(subs_evts->subscriptions[j].reference, i, subs_evts->events[i].e_time, "Changed", "false");
                         }
                     }
                 }
@@ -719,7 +719,7 @@ int main(int argc, char **argv)  {
     if (fd != -1)
         close(fd);
 
-    destroy_shared_memory(subscriptions, 1);
+    destroy_shared_memory(subs_evts, 1);
 
     unlink(pid_file);
     log_info("Terminating program.");
