@@ -421,6 +421,7 @@ int events_renew()
     char *sub_index_s;
     int sub_index;
 
+    // Subscription manager replies to address http://%s%s/onvif/events_service?sub=%d
     log_info("Renew request received");
 
     get_from_query_string(&qs_string, &qs_size, "sub");
@@ -470,7 +471,7 @@ int events_renew()
     gen_uuid(msg_uuid);
     relates_to_uuid = get_element("MessageID", "Header");
     if (relates_to_uuid == NULL) {
-        log_error("No MessageID element for renew method");
+        log_error("No MessageID element for Renew method");
         send_action_failed_fault(-6);
         return -6;
     }
@@ -575,6 +576,7 @@ int events_unsubscribe()
     char *sub_index_s;
     int sub_index;
 
+    // Subscription manager replies to address http://%s%s/onvif/events_service?sub=%d
     log_info("Unsubscribe request received");
 
     get_from_query_string(&qs_string, &qs_size, "sub");
@@ -590,7 +592,7 @@ int events_unsubscribe()
     sub_index = atoi(sub_index_s);
     free(sub_index_s);
     if ((sub_index <= 0) || (sub_index > MAX_SUBSCRIPTIONS)) {
-        log_error("sub index out of range for unsubscribe method");
+        log_error("sub index out of range for Unsubscribe method");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -2;
     }
