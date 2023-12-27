@@ -627,6 +627,32 @@ int events_unsubscribe()
 
 int events_set_synchronization_point()
 {
+    int i;
+    int qs_size;
+    char *qs_string;
+    char *sub_index_s;
+    int sub_index;
+
+    get_from_query_string(&qs_string, &qs_size, "sub");
+    if ((qs_size == -1) || (qs_string == NULL)) {
+        log_error("No sub parameter in query string for Renew method");
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
+        return -1;
+    }
+    sub_index_s = (char *) malloc((qs_size + 1) * sizeof(char));
+    memset(sub_index_s, '\0', qs_size + 1);
+    strncpy(sub_index_s, qs_string, qs_size);
+    sub_index = atoi(sub_index_s);
+    free(sub_index_s);
+    if ((sub_index <= 0) || (sub_index > MAX_SUBSCRIPTIONS)) {
+        log_error("sub index out of range for Renew method");
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
+        return -2;
+    }
+    sub_index--;
+
+    log_info("SetSynchronizationPoint request received for subscription %d", sub_index);
+
     subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
@@ -636,6 +662,9 @@ int events_set_synchronization_point()
     sem_memory_wait();
     subs_evts->subscriptions[sub_index].need_sync = 1;
 
+    for (i = 0; i < service_ctx.events_num; i++) {
+        subs_evts->events[i].pull_notify |= (1 << sub_index);
+    }
     sem_memory_post();
     destroy_shared_memory((void *) subs_evts, 0);
 
