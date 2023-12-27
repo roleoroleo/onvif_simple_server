@@ -102,6 +102,7 @@ int events_subscribe()
         send_action_failed_fault(-4);
         return -4;
     }
+    sem_memory_wait();
     for (i = 0; i < MAX_SUBSCRIPTIONS; i++) {
         if (subs_evts->subscriptions[i].used == SUB_UNUSED) {
             if (strlen(address) < CONSUMER_REFERENCE_MAX_SIZE) {
@@ -113,6 +114,7 @@ int events_subscribe()
             break;
         }
     }
+    sem_memory_post();
     destroy_shared_memory((void *) subs_evts, 0);
 
     subsel = i + 1;
@@ -199,7 +201,9 @@ int events_renew()
         send_action_failed_fault(-4);
         return -4;
     }
+    sem_memory_wait();
     if (subs_evts->subscriptions[sub_index].used == SUB_UNUSED) {
+        sem_memory_post();
         destroy_shared_memory((void *) subs_evts, 0);
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -5;
@@ -344,12 +348,15 @@ int events_unsubscribe()
         send_action_failed_fault(-3);
         return -3;
     }
+    sem_memory_wait();
     if (subs_evts->subscriptions[sub_index].used == SUB_UNUSED) {
+        sem_memory_post();
         destroy_shared_memory((void *) subs_evts, 0);
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -4;
     }
     memset(&(subs_evts->subscriptions[sub_index]), '\0', sizeof (shm_t));
+    sem_memory_post();
     destroy_shared_memory((void *) subs_evts, 0);
 
     log_debug("Subscription data: subscription index %d", sub_index);
@@ -370,9 +377,12 @@ int events_set_synchronization_point()
         send_action_failed_fault(-3);
         return -3;
     }
+    sem_memory_wait();
     subs_evts->subscriptions[sub_index].need_sync = 1;
 
+    sem_memory_post();
     destroy_shared_memory((void *) subs_evts, 0);
+
     long size = cat(NULL, "events_service_files/SetSynchronizationPoint.xml", 0);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");

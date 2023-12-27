@@ -44,6 +44,30 @@
 #include "log.h"
 
 #define SHMOBJ_PATH "/onvif_subscription"
+#define MEM_LOCK_FILE "/sub_mem_lock"
+
+sem_t *sem_memory_lock = SEM_FAILED;
+
+int sem_memory_open()
+{
+    sem_memory_lock = sem_open(MEM_LOCK_FILE, O_CREAT, S_IRUSR | S_IWUSR, 1);
+    if (sem_memory_lock == SEM_FAILED) {
+        fprintf(stderr, "Error opening semaphore file %s\n", MEM_LOCK_FILE);
+        return -1;
+    }
+    return 0;
+}
+
+void sem_memory_close()
+
+{
+    if (sem_memory_lock != SEM_FAILED) {
+        sem_close(sem_memory_lock);
+        sem_memory_lock = SEM_FAILED;
+        sem_unlink(MEM_LOCK_FILE);
+    }
+    return;
+}
 
 void *create_shared_memory(int create) {
     int shmfd, rc;
@@ -102,12 +126,21 @@ void *create_shared_memory(int create) {
     }
     log_debug("Shared memory segment allocated correctly (%d bytes) at address %p", shared_seg_size, shared_area);
 
+    if (sem_memory_open() != 0) {
+        fprintf(stderr, "Error, could not open semaphore\n") ;
+        munmap(shared_area, shared_seg_size);
+        shm_unlink(SHMOBJ_PATH);
+        return NULL;
+    }
+
     return shared_area;
 }
 
 void destroy_shared_memory(void *shared_area, int destroy_all)
 {
     int shared_seg_size = sizeof(shm_t);
+
+    sem_memory_close();
 
     if (munmap(shared_area, shared_seg_size) != 0) {
         log_error("munmap() failed");
@@ -121,6 +154,16 @@ void destroy_shared_memory(void *shared_area, int destroy_all)
         }
     }
     log_debug("Shared memory segment deallocated correctly");
+}
+
+int sem_memory_wait()
+{
+    return sem_wait(sem_memory_lock);
+}
+
+int sem_memory_post()
+{
+    return sem_post(sem_memory_lock);
 }
 
 /**

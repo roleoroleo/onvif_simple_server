@@ -19,6 +19,7 @@
 
 #include <stdarg.h>
 #include <time.h>
+#include "semaphore.h"
 
 #define MAX_LEN     1024
 #define MAX_CAT_LEN 2048
@@ -26,6 +27,7 @@
 #define UUID_LEN 36
 
 #define MAX_SUBSCRIPTIONS 8 // MAX 32
+#define MAX_EVENTS        8 // MAX 32
 #define CONSUMER_REFERENCE_MAX_SIZE 256
 
 typedef enum {
@@ -54,6 +56,8 @@ typedef struct {
 
 void *create_shared_memory(int create);
 void destroy_shared_memory(void *shared_area, int destroy_all);
+int sem_memory_wait();
+int sem_memory_post();
 long cat(char *out, char *filename, int num, ...);
 int get_ip_address(char *address, char *netmask, char *name);
 int get_mac_address(char *address, char *name);
