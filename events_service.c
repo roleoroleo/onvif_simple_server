@@ -67,7 +67,7 @@ int events_subscribe()
 
     address = get_element("Address", "Body");
     if (address == NULL) {
-        log_error("No Address element for subscribe method");
+        log_error("No Address element for Subscribe method");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -1;
     }
@@ -90,7 +90,7 @@ int events_subscribe()
 
     itt = get_element("InitialTerminationTime", "Body");
     if (itt == NULL) {
-        log_error("No InitialTerminationTime element for subscribe method");
+        log_error("No InitialTerminationTime element for Subscribe method");
         send_fault("events_service", "Receiver", "wsntw:UnacceptableInitialTerminationTimeFault", "", "Unacceptable initial termination time", "");
         return -3;
     }
@@ -122,7 +122,7 @@ int events_subscribe()
 
     relates_to_uuid = get_element("MessageID", "Header");
     if (relates_to_uuid == NULL) {
-        log_error("No MessageID element for subscribe method");
+        log_error("No MessageID element for Subscribe method");
         send_action_failed_fault(-5);
         return -5;
     }
@@ -169,7 +169,7 @@ int events_renew()
 
     get_from_query_string(&qs_string, &qs_size, "sub");
     if ((qs_size == -1) || (qs_string == NULL)) {
-        log_error("No sub parameter in query string for renew method");
+        log_error("No sub parameter in query string for Renew method");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -1;
     }
@@ -179,7 +179,7 @@ int events_renew()
     sub_index = atoi(sub_index_s);
     free(sub_index_s);
     if ((sub_index <= 0) || (sub_index > MAX_SUBSCRIPTIONS)) {
-        log_error("sub index out of range for renew method");
+        log_error("sub index out of range for Renew method");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -2;
     }
@@ -187,7 +187,7 @@ int events_renew()
 
     tt = get_element("TerminationTime", "Body");
     if (tt == NULL) {
-        log_error("No TerminationTime element for renew method");
+        log_error("No TerminationTime element for Renew method");
         send_fault("events_service", "Receiver", "wsntw:UnacceptableInitialTerminationTimeFault", "", "Unacceptable initial termination time", "");
         return -3;
     }
@@ -320,7 +320,7 @@ int events_unsubscribe()
 
     get_from_query_string(&qs_string, &qs_size, "sub");
     if ((qs_size == -1) || (qs_string == NULL)) {
-        log_error("No sub parameter in query string for unsubscribe method");
+        log_error("No sub parameter in query string for Unsubscribe method");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return 1;
     }
