@@ -86,55 +86,58 @@ type=H264
 
 #PTZ
 ptz=1
-move_left=/tmp/sd/yi-hack/bin/ipc_cmd -M left
-move_right=/tmp/sd/yi-hack/bin/ipc_cmd -M right
+get_position=/tmp/sd/yi-hack/bin/ipc_cmd -g
+move_left=/tmp/sd/yi-hack/bin/ipc_cmd -m left
+move_right=/tmp/sd/yi-hack/bin/ipc_cmd -m right
 move_up=/tmp/sd/yi-hack/bin/ipc_cmd -m up
 move_down=/tmp/sd/yi-hack/bin/ipc_cmd -m down
-move_stop=/tmp/sd/yi-hack/bin/ipc_cmd -M stop
-move_preset=/tmp/sd/yi-hack/bin/ipc_cmd -p %t
-set_preset=/tmp/sd/yi-hack/bin/ipc_cmd -P %t
-set_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -H
-remove_preset=/tmp/sd/yi-hack/bin/ipc_cmd -R %t
+move_stop=/tmp/sd/yi-hack/bin/ipc_cmd -m stop
+move_preset=/tmp/sd/yi-hack/bin/ipc_cmd -p %d
+set_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a add_preset -m %s
+set_home_position=/tmp/sd/yi-hack/script/ptz_presets.sh -a set_home_position
+remove_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a del_preset -n %d
+jump_to_abs=/tmp/sd/yi-hack/bin/ipc_cmd -j %f,%f
+jump_to_rel=/tmp/sd/yi-hack/bin/ipc_cmd -J %f,%f
+get_presets=/tmp/sd/yi-hack/script/ptz_presets.sh -a get_presets
 
-#EVENTS
+#EVENT
 events=1
 #Event 0
 topic=tns1:VideoSource/MotionAlarm
 source_name=VideoSourceConfigurationToken
 source_value=VideoSourceToken
-input_file=/tmp/motion_alarm
+input_file=/tmp/onvif_notify_server/motion_alarm
 #Event 1
 topic=tns1:RuleEngine/MyRuleDetector/PeopleDetect
 source_name=VideoSourceConfigurationToken
 source_value=VideoSourceToken
-input_file=/tmp/human_detection
+input_file=/tmp/onvif_notify_server/human_detection
 #Event 2
 topic=tns1:RuleEngine/MyRuleDetector/VehicleDetect
 source_name=VideoSourceConfigurationToken
 source_value=VideoSourceToken
-input_file=/tmp/vehicle_detection
+input_file=/tmp/onvif_notify_server/vehicle_detection
 #Event 3
 topic=tns1:RuleEngine/MyRuleDetector/DogCatDetect
 source_name=VideoSourceConfigurationToken
 source_value=VideoSourceToken
-input_file=/tmp/animal_detection
+input_file=/tmp/onvif_notify_server/animal_detection
 #Event 4
 topic=tns1:RuleEngine/MyRuleDetector/BabyCryingDetect
 source_name=VideoSourceConfigurationToken
 source_value=VideoSourceToken
-input_file=/tmp/baby_crying
+input_file=/tmp/onvif_notify_server/baby_crying
 #Event 5
 topic=tns1:AudioAnalytics/Audio/DetectedSound
-source_name=AudioAnalyticsConfigurationToken
-source_value=AudioAnalyticsToken
-input_file=/tmp/sound_detection
+source_name=VideoSourceConfigurationToken
+source_value=VideoSourceToken
+input_file=/tmp/onvif_notify_server/sound_detection
 ```
 
 Note:
 - you can use 1 or 2 profiles.
 - ipc_cmd is just an example of a local binary that handles ptz, use the specific program of your cam
-- %s is replaced runtime with the IP address of the device
-- %t is replaced runtime with the preset token
+- %s, %d and %f are placeholders replaced runtime with the proper parameter
 - use the same folder for the input files of the events
 
 **Please pay attention: the order of the lines must be respected. Don't mix them!**
