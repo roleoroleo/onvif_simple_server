@@ -378,7 +378,7 @@ int ptz_relative_move()
     char sys_command_tmp[MAX_LEN];
     char sys_command[MAX_LEN];
     int ret = 0;
-    ezxml_t node, node_c;
+    ezxml_t node, node_p, node_z;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
     if (node == NULL) {
@@ -393,16 +393,16 @@ int ptz_relative_move()
 
     node = get_element_ptr(NULL, "Translation", "Body");
     if (node != NULL) {
-        node_c = get_element_in_element_ptr("PanTilt", node);
-        if (node_c != NULL) {
-            x = get_attribute(node_c, "x");
-            y = get_attribute(node_c, "y");
-            space = get_attribute(node_c, "space");
+        node_p = get_element_in_element_ptr("PanTilt", node);
+        if (node_p != NULL) {
+            x = get_attribute(node_p, "x");
+            y = get_attribute(node_p, "y");
+            space = get_attribute(node_p, "space");
         }
-        node_c = get_element_in_element_ptr("Zoom", node);
-        if (node_c != NULL) {
-            z = get_attribute(node_c, "x");
-            space = get_attribute(node_c, "space");
+        node_z = get_element_in_element_ptr("Zoom", node);
+        if (node_z != NULL) {
+            z = get_attribute(node_z, "x");
+            space = get_attribute(node_z, "space");
         }
     }
 
@@ -411,14 +411,10 @@ int ptz_relative_move()
         // do nothing
     }
 
-    if (space == NULL) {
-        ret = -3;
-    } else {
+    if (node_p != NULL) {
+        if ((space == NULL) || (strcmp("http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace", space) == 0)) {
 
-        if (strcmp("http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace", space) == 0) {
-
-
-            if (((x == NULL) && (y == NULL) && (z == NULL)) ||
+            if (((x == NULL) && (y == NULL)) ||
                     ((x == NULL) && (y != NULL)) ||
                     ((x != NULL) && (y == NULL))) {
 
@@ -483,7 +479,11 @@ int ptz_relative_move()
                     }
                 }
             }
-        } else if (strcmp("http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace", space) == 0) {
+        }
+    }
+
+    if (node_z != NULL) {
+        if (strcmp("http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace", space) == 0) {
             // do nothing
         }
     }
