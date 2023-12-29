@@ -40,6 +40,8 @@
 #define DEFAULT_LOG_FILE "/var/log/onvif_simple_server.log"
 #define DEBUG_FILE "/tmp/onvif_simple_server.debug"
 
+#define ROTATION_LOG_LENGTH 3
+
 service_context_t service_ctx;
 
 FILE *fLog;
@@ -101,21 +103,22 @@ int check_debug_file(char *file_name)
 
 void rotate_log()
 {
-    char tmp_log_file_1[256];
-    char tmp_log_file_2[256];
-    char *p1, *p2;
+    char tmp_log_file[ROTATION_LOG_LENGTH][256];
+    char *p;
+    int i;
 
-    sprintf(tmp_log_file_1, DEFAULT_LOG_FILE);
-    sprintf(tmp_log_file_2, DEFAULT_LOG_FILE);
-    p1 = strrchr(tmp_log_file_1, '.');
-    p1++;
-    strcpy(p1, "1.log");
-    p2 = strrchr(tmp_log_file_2, '.');
-    p2++;
-    strcpy(p2, "2.log");
-    remove(tmp_log_file_2);
-    rename(tmp_log_file_1, tmp_log_file_2);
-    rename(DEFAULT_LOG_FILE, tmp_log_file_1);
+    for (i = 1; i < ROTATION_LOG_LENGTH; i++) {
+        sprintf(tmp_log_file[i], DEFAULT_LOG_FILE);
+        p = strrchr(tmp_log_file[i], '.');
+        p++;
+        sprintf(p, "%d.log", i);
+    }
+
+    remove(tmp_log_file[i]);
+    for (i = ROTATION_LOG_LENGTH - 1; i > 1; i--) {
+        rename(tmp_log_file[i - 1], tmp_log_file[i]);
+    }
+    rename(DEFAULT_LOG_FILE, tmp_log_file[1]);
 }
 
 void print_usage(char *progname)
