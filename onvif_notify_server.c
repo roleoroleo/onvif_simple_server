@@ -162,10 +162,47 @@ int create_pid(char *file_name)
     return 0;
 }
 
+void print_subscriptions()
+{
+    int i;
+    char iso_str[21];
+
+    fprintf(stderr, "Subscriptions\n");
+    for(i = 0; i < MAX_SUBSCRIPTIONS; i++) {
+        to_iso_date(iso_str, sizeof(iso_str), subs_evts->subscriptions[i].expire);
+        fprintf(stderr, "\tSubscription %d\n", i);
+        if (subs_evts->subscriptions[i].used) {
+            fprintf(stderr, "\t\treference: %s\n", subs_evts->subscriptions[i].reference);
+            fprintf(stderr, "\t\tused:      %d\n", subs_evts->subscriptions[i].used);
+            fprintf(stderr, "\t\texpire:    %s\n", iso_str);
+            fprintf(stderr, "\t\tneed_sync: %d\n", subs_evts->subscriptions[i].need_sync);
+        } else {
+            fprintf(stderr, "\t\treference:\n");
+            fprintf(stderr, "\t\tused:      0\n");
+            fprintf(stderr, "\t\texpire:\n");
+            fprintf(stderr, "\t\tneed_sync: 0\n");
+        }
+    }
+
+    fprintf(stderr, "Events\n");
+    for(i = 0; i < service_ctx.events_num; i++) {
+        to_iso_date(iso_str, sizeof(iso_str), subs_evts->events[i].e_time);
+        fprintf(stderr, "\tEvent %d\n", i);
+        fprintf(stderr, "\t\ttopic: %s\n", service_ctx.events[i].topic);
+        fprintf(stderr, "\t\te_time: %s\n", iso_str);
+        fprintf(stderr, "\t\tis_on: %d\n", subs_evts->events[i].is_on);
+        fprintf(stderr, "\t\tpull_notify: %08x\n", subs_evts->events[i].pull_notify);
+    }
+}
+
 void signal_handler(int signal)
 {
-    // Exit from main loop
-    exit_main = 1;
+    if (signal == SIGUSR1) {
+        print_subscriptions();
+    } else {
+        // Exit from main loop
+        exit_main = 1;
+    }
 }
 
 int send_notify(char *reference, int alarm_index, time_t e_time, char *property, char *value)
@@ -527,6 +564,7 @@ int main(int argc, char **argv)  {
     // Set signal handler
     signal(SIGTERM, signal_handler);
     signal(SIGINT, signal_handler);
+    signal(SIGUSR1, signal_handler);
 
     if (foreground == 0) {
         ret = daemonize(0);
