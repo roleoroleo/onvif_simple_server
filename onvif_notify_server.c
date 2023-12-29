@@ -383,7 +383,7 @@ int handle_events(int fd, char *dir)
     const struct inotify_event *event;
     ssize_t len;
     int i, j;
-    int sub_count = 0;
+    int sub_count;
     char input_file[1024], value[8];
     time_t now;
     char *ptr;
@@ -424,12 +424,19 @@ int handle_events(int fd, char *dir)
                 for (i = 0; i < service_ctx.events_num; i++) {
                     if (strcmp(service_ctx.events[i].input_file, input_file) == 0) {
                         now = time(NULL);
+                        sub_count = 0;
                         sem_memory_wait();
                         subs_evts->events[i].e_time = now;
-                        subs_evts->events[i].pull_notify = 0xffffffff;
+                        if (event->mask & IN_CREATE) {
+                            subs_evts->events[i].is_on = 1;
+                        } else if (event->mask & IN_DELETE) {
+                            subs_evts->events[i].is_on = 0;
+                        }
 
                         for(j = 0; j < MAX_SUBSCRIPTIONS; j++) {
-                            if (subs_evts->subscriptions[j].used == SUB_PUSH) {
+                            if (subs_evts->subscriptions[j].used == SUB_PULL) {
+                                subs_evts->events[i].pull_notify |= (1 << j);
+                            } else if (subs_evts->subscriptions[j].used == SUB_PUSH) {
                                 // Check if subscription is expired
                                 if (now > subs_evts->subscriptions[j].expire) continue;
                                 sub_count++;
@@ -437,7 +444,7 @@ int handle_events(int fd, char *dir)
                             }
                         }
                         sem_memory_post();
-                        log_debug("%d subscriptions for %s file", sub_count, service_ctx.events[i].input_file);
+                        log_debug("%d notification subscriptions for %s file", sub_count, service_ctx.events[i].input_file);
                     }
                 }
             }
@@ -476,6 +483,7 @@ int main(int argc, char **argv)  {
     int acc;
 
     time_t now;
+    int sub_count;
 
     conf_file = (char *) malloc((strlen(DEFAULT_CONF_FILE) + 1) * sizeof(char));
     strcpy(conf_file, DEFAULT_CONF_FILE);
@@ -735,39 +743,45 @@ int main(int argc, char **argv)  {
 
                 if ((subs_evts->events[i].is_on != ALARM_ON) && (acc == 0)) {
                     now = time(NULL);
+                    sub_count = 0;
                     log_info("File %s created", service_ctx.events[i].input_file);
 
                     sem_memory_wait();
-                    subs_evts->events[i].is_on = ALARM_ON;
                     subs_evts->events[i].e_time = now;
-                    subs_evts->events[i].pull_notify = 0xffffffff;
+                    subs_evts->events[i].is_on = ALARM_ON;
 
                     for(j = 0; j < MAX_SUBSCRIPTIONS; j++) {
-                        if (subs_evts->subscriptions[j].used == SUB_PUSH) {
+                        if (subs_evts->subscriptions[j].used == SUB_PULL) {
+                            subs_evts->events[i].pull_notify |= (1 << j);
+                        } else if (subs_evts->subscriptions[j].used == SUB_PUSH) {
                             // Check if subscription is expired
                             if (now > subs_evts->subscriptions[j].expire) continue;
                             send_notify(subs_evts->subscriptions[j].reference, i, subs_evts->events[i].e_time, "Changed", "true");
                         }
                     }
                     sem_memory_post();
+                    log_debug("%d notification subscriptions for %s file", sub_count, service_ctx.events[i].input_file);
 
                 } else if ((subs_evts->events[i].is_on != ALARM_OFF) && (acc != 0)) {
                     now = time(NULL);
+                    sub_count = 0;
                     log_info("File %s deleted", service_ctx.events[i].input_file);
 
                     sem_memory_wait();
-                    subs_evts->events[i].is_on = ALARM_OFF;
                     subs_evts->events[i].e_time = now;
-                    subs_evts->events[i].pull_notify = 0xffffffff;
+                    subs_evts->events[i].is_on = ALARM_OFF;
 
                     for(j = 0; j < MAX_SUBSCRIPTIONS; j++) {
-                        if (subs_evts->subscriptions[j].used == SUB_PUSH) {
+                        if (subs_evts->subscriptions[j].used == SUB_PULL) {
+                            subs_evts->events[i].pull_notify |= (1 << j);
+                        } else if (subs_evts->subscriptions[j].used == SUB_PUSH) {
                             // Check if subscription is expired
                             if (now > subs_evts->subscriptions[j].expire) continue;
                             send_notify(subs_evts->subscriptions[j].reference, i, subs_evts->events[i].e_time, "Changed", "false");
                         }
                     }
                     sem_memory_post();
+                    log_debug("%d notification subscriptions for %s file", sub_count, service_ctx.events[i].input_file);
                 }
             }
 

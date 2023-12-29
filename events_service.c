@@ -236,9 +236,12 @@ int events_pull_messages()
             }
             sem_memory_post();
         }
+        if (at_least_one_message == 1)
+            break;
         sleep(1);
         time(&now);
     }
+
 
 //    if (now > now_p_timeout) {
 //        send_pull_messages_fault((char *) timeout, (char *) message_limit);
@@ -246,6 +249,7 @@ int events_pull_messages()
 //    }
 
     // We need 1st step to evaluate content length
+    sem_memory_wait();
     for (c = 0; c < 2; c++) {
         if (c == 0) {
             dest = NULL;
@@ -264,7 +268,6 @@ int events_pull_messages()
         for (i = 0; i < service_ctx.events_num; i++) {
             if (count >= limit)
                 break;
-            sem_memory_wait();
             if ((subs_evts->events[i].pull_notify & (1 << sub_index))) {
                 if (subs_evts->events[i].is_on) {
                     strcpy(value, "true");
@@ -281,10 +284,12 @@ int events_pull_messages()
                     "%SOURCE_VALUE%", service_ctx.events[i].source_value,
                     "%VALUE%", value);
                 if (c == 0) total_size += size;
+
+                if (c == 1) subs_evts->events[i].pull_notify &= ~(1 << sub_index);
             }
-            sem_memory_post();
             count++;
         }
+        sem_memory_post();
 
         size = cat(dest, "events_service_files/PullMessages_3.xml", 0);
         if (c == 0) total_size += size;
@@ -611,7 +616,7 @@ int events_unsubscribe()
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -4;
     }
-    memset(&(subs_evts->subscriptions[sub_index]), '\0', sizeof (shm_t));
+    memset(&(subs_evts->subscriptions[sub_index]), '\0', sizeof (subscription_shm_t));
     sem_memory_post();
     destroy_shared_memory((void *) subs_evts, 0);
 
