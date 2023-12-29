@@ -35,12 +35,30 @@ shm_t *subs_evts;
 
 int events_get_service_capabilities()
 {
-    long size = cat(NULL, "events_service_files/GetServiceCapabilities.xml", 0);
+    char epush[8], epull[8];
+
+    if ((service_ctx.events_enable == EVENTS_PULL) || (service_ctx.events_enable == EVENTS_BOTH)) {
+        strcpy(epull, "true");
+    } else {
+        strcpy(epull, "false");
+    }
+    if ((service_ctx.events_enable == EVENTS_PUSH) || (service_ctx.events_enable == EVENTS_BOTH)) {
+        strcpy(epush, "true");
+    } else {
+        strcpy(epush, "false");
+    }
+
+    long size = cat(NULL, "events_service_files/GetServiceCapabilities.xml", 4,
+            "%EVENTS_PUSH%", epush,
+            "%EVENTS_PULL%", epull);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("stdout", "events_service_files/GetServiceCapabilities.xml", 0);
+    return cat("stdout", "events_service_files/GetServiceCapabilities.xml", 4,
+            "%EVENTS_PUSH%", epush,
+            "%EVENTS_PULL%", epull);
+
 }
 
 int events_create_pull_point_subscription()

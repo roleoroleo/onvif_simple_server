@@ -44,8 +44,8 @@
                                xmlns:xenc="http://www.w3.org/2001/04/xmlenc#"
                                xmlns:wsc="http://docs.oasis-open.org/ws-sx/ws-secureconversation/200512"
                                xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
-                               WSSubscriptionPolicySupport="true"
-                               WSPullPointSupport="true"
+                               WSSubscriptionPolicySupport="%EVENTS_PUSH%"
+                               WSPullPointSupport="%EVENTS_PULL%"
                                WSPausableSubscriptionManagerInterfaceSupport="false">
             </tev:Capabilities>
         </tev:GetServiceCapabilitiesResponse>

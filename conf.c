@@ -246,9 +246,15 @@ int process_conf_file(char *file)
             strcpy(service_ctx.ptz_node.get_presets, value);
 
         //Events Profile for ONVIF Events Service
-        } else if ((strcasecmp(param, "events") == 0) && (strcasecmp(value, "1") == 0)) {
-            service_ctx.events_enable = 1;
-        } else if ((strcasecmp(param, "topic") == 0) && (service_ctx.events_enable == 1)) {
+        } else if (strcasecmp(param, "events") == 0) {
+            if (strcasecmp(value, "1") == 0) {
+                service_ctx.events_enable = EVENTS_PULL; // Pull
+            } else if (strcasecmp(value, "2") == 0) {
+                service_ctx.events_enable = EVENTS_PUSH; // WS Base
+            } else if (strcasecmp(value, "3") == 0) {
+                service_ctx.events_enable = EVENTS_BOTH; // Pull and WS Base
+            }
+        } else if ((strcasecmp(param, "topic") == 0) && (service_ctx.events_enable != EVENTS_NONE)) {
             service_ctx.events_num++;
             if (service_ctx.events_num >= MAX_EVENTS) {
                 log_error("Too many events, max is: %d", MAX_EVENTS);
@@ -261,13 +267,13 @@ int process_conf_file(char *file)
             service_ctx.events[service_ctx.events_num - 1].input_file = NULL;
             service_ctx.events[service_ctx.events_num - 1].topic = (char *) malloc(strlen(value) + 1);
             strcpy(service_ctx.events[service_ctx.events_num - 1].topic, value);
-        } else if ((strcasecmp(param, "source_name") == 0) && (service_ctx.events_enable == 1)) {
+        } else if ((strcasecmp(param, "source_name") == 0) && (service_ctx.events_enable != EVENTS_NONE)) {
             service_ctx.events[service_ctx.events_num - 1].source_name = (char *) malloc(strlen(value) + 1);
             strcpy(service_ctx.events[service_ctx.events_num - 1].source_name, value);
-        } else if ((strcasecmp(param, "source_value") == 0) && (service_ctx.events_enable == 1)) {
+        } else if ((strcasecmp(param, "source_value") == 0) && (service_ctx.events_enable != EVENTS_NONE)) {
             service_ctx.events[service_ctx.events_num - 1].source_value = (char *) malloc(strlen(value) + 1);
             strcpy(service_ctx.events[service_ctx.events_num - 1].source_value, value);
-        } else if ((strcasecmp(param, "input_file") == 0) && (service_ctx.events_enable == 1)) {
+        } else if ((strcasecmp(param, "input_file") == 0) && (service_ctx.events_enable != EVENTS_NONE)) {
             service_ctx.events[service_ctx.events_num - 1].input_file = (char *) malloc(strlen(value) + 1);
             strcpy(service_ctx.events[service_ctx.events_num - 1].input_file, value);
 

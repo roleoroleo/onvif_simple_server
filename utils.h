@@ -30,6 +30,11 @@
 #define MAX_EVENTS        8 // MAX 32
 #define CONSUMER_REFERENCE_MAX_SIZE 256
 
+#define EVENTS_NONE 0
+#define EVENTS_PULL 1
+#define EVENTS_PUSH 2
+#define EVENTS_BOTH 3
+
 typedef enum {
     SUB_UNUSED,
     SUB_PULL,

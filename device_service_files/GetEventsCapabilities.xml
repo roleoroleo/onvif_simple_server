@@ -28,8 +28,8 @@
             <tds:Capabilities>
                 <tt:Events>
                     <tt:XAddr>%EVENTS_SERVICE_ADDRESS%</tt:XAddr>
-                    <tt:WSSubscriptionPolicySupport>true</tt:WSSubscriptionPolicySupport>
-                    <tt:WSPullPointSupport>true</tt:WSPullPointSupport>
+                    <tt:WSSubscriptionPolicySupport>%EVENTS_PUSH%</tt:WSSubscriptionPolicySupport>
+                    <tt:WSPullPointSupport>%EVENTS_PULL%</tt:WSPullPointSupport>
                     <tt:WSPausableSubscriptionManagerInterfaceSupport>false</tt:WSPausableSubscriptionManagerInterfaceSupport>
                 </tt:Events>
             </tds:Capabilities>
