@@ -54,6 +54,17 @@
                             <tt:Max>180</tt:Max>
                         </tt:YRange>
                     </tt:RelativePanTiltTranslationSpace>
+                    <tt:RelativePanTiltTranslationSpace>
+                        <tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationSpaceFov</tt:URI>
+                        <tt:XRange>
+                            <tt:Min>-100.0</tt:Min>
+                            <tt:Max>100.0</tt:Max>
+                        </tt:XRange>
+                        <tt:YRange>
+                            <tt:Min>-100.0</tt:Min>
+                            <tt:Max>100.0</tt:Max>
+                        </tt:YRange>
+                    </tt:RelativePanTiltTranslationSpace>
                     <tt:RelativeZoomTranslationSpace>
                         <tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:URI>
                         <tt:XRange>
