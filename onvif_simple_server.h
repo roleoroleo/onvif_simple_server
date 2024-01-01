@@ -50,6 +50,7 @@ typedef struct {
 typedef struct {
     int enable;
     char *get_position;
+    char *is_running;
     char *move_left;
     char *move_right;
     char *move_up;

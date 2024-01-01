@@ -626,7 +626,8 @@ int ptz_get_status()
     int ret = 0;
     FILE *fp;
     double x, y, z = 1.0;
-    char out[256], sx[128], sy[128], sz[128];
+    int i;
+    char out[256], sx[128], sy[128], sz[128], si[128];
     ezxml_t node;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
@@ -653,7 +654,22 @@ int ptz_get_status()
             ret = -4;
         } else {
             if (sscanf(out, "%lf,%lf,%lf", &x, &y, &z) < 2) {
-                ret = -4;
+                ret = -5;
+            }
+        }
+        pclose(fp);
+    }
+
+    // Run command that returns to stdout if PTZ is running (1) or not (0)
+    fp = popen(service_ctx.ptz_node.is_running, "r");
+    if (fp == NULL) {
+        ret = -6;
+    } else {
+        if (fgets(out, sizeof(out), fp) == NULL) {
+            ret = -7;
+        } else {
+            if (sscanf(out, "%d", &i) < 1) {
+                ret = -8;
             }
         }
         pclose(fp);
@@ -662,20 +678,29 @@ int ptz_get_status()
     sprintf(sx, "%f", x);
     sprintf(sy, "%f", y);
     sprintf(sz, "%f", z);
+    if (i == 1)
+        strcpy(si, "MOVING");
+    else
+        strcpy(si, "IDLE");
+
     if (ret == 0) {
-        long size = cat(NULL, "ptz_service_files/GetStatus.xml", 8,
+        long size = cat(NULL, "ptz_service_files/GetStatus.xml", 12,
                 "%X%", sx,
                 "%Y%", sy,
                 "%Z%", sz,
+                "%MOVE_STATUS_PT%", si,
+                "%MOVE_STATUS_ZOOM%", "IDLE",
                 "%TIME%", utctime);
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("stdout", "ptz_service_files/GetStatus.xml", 8,
+        return cat("stdout", "ptz_service_files/GetStatus.xml", 12,
                 "%X%", sx,
                 "%Y%", sy,
                 "%Z%", sz,
+                "%MOVE_STATUS_PT%", si,
+                "%MOVE_STATUS_ZOOM%", "IDLE",
                 "%TIME%", utctime);
     } else {
         send_fault("ptz_service", "Receiver", "ter:Action", "ter:NoStatus", "No status", "No PTZ status is available in the requested Media Profile");
