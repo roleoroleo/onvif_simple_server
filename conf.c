@@ -59,6 +59,7 @@ int process_conf_file(char *file)
     service_ctx.scopes_num = 0;
     service_ctx.ptz_node.enable = 0;
     service_ctx.events = NULL;
+    service_ctx.events_enable = EVENTS_NONE;
     service_ctx.events_num = 0;
 
     while(fgets(line, MAX_LEN, fF)) {
