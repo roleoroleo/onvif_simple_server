@@ -387,10 +387,12 @@ int main(int argc, char ** argv)
         security.enable = 0;
     }
 
-    if ((security.enable == 0) && (auth_error == 0))
-        log_info("Authentication ok");
-    else
-        log_info("Authentication error");
+    if (security.enable == 1) {
+        if (auth_error == 0)
+            log_info("Authentication ok");
+        else
+            log_error("Authentication error");
+    }
 
     if ((strcmp("GetSystemDateAndTime", method) == 0) || (strcmp("GetUsers", method) == 0)) {
         auth_error = 0;
