@@ -101,12 +101,22 @@ int check_debug_file(char *file_name)
     return debug_value;
 }
 
+// TODO
+// This function is not safe when multiple instances are executed
 void rotate_log()
 {
     char tmp_log_file[ROTATION_LOG_LENGTH][256];
     char *p;
     int i;
+    struct stat st;
 
+    if (stat(DEFAULT_LOG_FILE, &st) == 0) {
+        if (st.st_size == 0) {
+            return;
+        }
+    }
+
+    strcpy(tmp_log_file[0], DEFAULT_LOG_FILE);
     for (i = 1; i < ROTATION_LOG_LENGTH; i++) {
         sprintf(tmp_log_file[i], DEFAULT_LOG_FILE);
         p = strrchr(tmp_log_file[i], '.');
@@ -114,11 +124,10 @@ void rotate_log()
         sprintf(p, "%d.log", i);
     }
 
-    remove(tmp_log_file[i]);
-    for (i = ROTATION_LOG_LENGTH - 1; i > 1; i--) {
+    for (i = ROTATION_LOG_LENGTH - 1; i > 0; i--) {
+        remove(tmp_log_file[i]);
         rename(tmp_log_file[i - 1], tmp_log_file[i]);
     }
-    rename(DEFAULT_LOG_FILE, tmp_log_file[1]);
 }
 
 void print_usage(char *progname)
