@@ -149,6 +149,10 @@ int main(int argc, char ** argv)
     // Set default log file and conf file
     rotate_log();
     fLog = fopen(DEFAULT_LOG_FILE, "w");
+    if (fLog == NULL) {
+        fprintf(stderr, "Unable to open log file %s\n", DEFAULT_LOG_FILE);
+        exit(EXIT_FAILURE);
+    }
     conf_file = (char *) malloc((strlen(DEFAULT_CONF_FILE) + 1) * sizeof(char));
     strcpy(conf_file, DEFAULT_CONF_FILE);
 
