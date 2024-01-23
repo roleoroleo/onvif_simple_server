@@ -1,0 +1,75 @@
+model=Model
+manufacturer=Manufacturer
+firmware_ver=0.0.1
+hardware_id=HWID
+serial_num=SN1234567890
+ifs=wlan0
+port=8080
+scope=onvif://www.onvif.org/Profile/Streaming
+#user=admin
+#password=admin
+
+#Profile 0
+name=Profile_0
+width=1920
+height=1080
+url=rtsp://%s/ch0_0.h264
+snapurl=http://%s/cgi-bin/snapshot.sh
+type=H264
+
+#Profile 1
+name=Profile_1
+width=640
+height=360
+url=rtsp://%s/ch0_1.h264
+snapurl=http://%s/cgi-bin/snapshot.sh
+type=H264
+
+#PTZ
+ptz=1
+get_position=/usr/local/bin/get_position
+move_left=/usr/local/bin/ptz_move-m left
+move_right=/usr/local/bin/ptz_move-m right
+move_up=/usr/local/bin/ptz_move-m up
+move_down=/usr/local/bin/ptz_move-m down
+move_stop=/usr/local/bin/ptz_move-m stop
+move_preset=/usr/local/bin/ptz_move-p %d
+set_preset=/usr/local/bin/ptz_presets.sh -a add_preset -m %s
+set_home_position=/usr/local/bin/ptz_presets.sh -a set_home_position
+remove_preset=/usr/local/bin/ptz_presets.sh -a del_preset -n %d
+jump_to_abs=/usr/local/bin/ptz_move-j %f,%f
+jump_to_rel=/usr/local/bin/ptz_move-J %f,%f
+get_presets=/usr/local/bin/ptz_presets.sh -a get_presets
+
+#EVENT
+events=3
+#Event 0
+topic=tns1:VideoSource/MotionAlarm
+source_name=VideoSourceConfigurationToken
+source_value=VideoSourceToken
+input_file=/tmp/onvif_notify_server/motion_alarm
+#Event 1
+topic=tns1:RuleEngine/MyRuleDetector/PeopleDetect
+source_name=VideoSourceConfigurationToken
+source_value=VideoSourceToken
+input_file=/tmp/onvif_notify_server/human_detection
+#Event 2
+topic=tns1:RuleEngine/MyRuleDetector/VehicleDetect
+source_name=VideoSourceConfigurationToken
+source_value=VideoSourceToken
+input_file=/tmp/onvif_notify_server/vehicle_detection
+#Event 3
+topic=tns1:RuleEngine/MyRuleDetector/DogCatDetect
+source_name=VideoSourceConfigurationToken
+source_value=VideoSourceToken
+input_file=/tmp/onvif_notify_server/animal_detection
+#Event 4
+topic=tns1:RuleEngine/MyRuleDetector/BabyCryingDetect
+source_name=VideoSourceConfigurationToken
+source_value=VideoSourceToken
+input_file=/tmp/onvif_notify_server/baby_crying
+#Event 5
+topic=tns1:AudioAnalytics/Audio/DetectedSound
+source_name=VideoSourceConfigurationToken
+source_value=VideoSourceToken
+input_file=/tmp/onvif_notify_server/sound_detection
