@@ -92,7 +92,7 @@
                 <tds:Namespace>http://www.onvif.org/ver10/events/wsdl</tds:Namespace>
                 <tds:XAddr>%EVENTS_SERVICE_ADDRESS%</tds:XAddr>
                 <tds:Capabilities>
-                    <tevt:Capabilities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    <tev:Capabilities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                                        xmlns:xsd="http://www.w3.org/2001/XMLSchema"
                                        xmlns:tds="http://www.onvif.org/ver10/device/wsdl"
                                        xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope"
@@ -114,7 +114,7 @@
                                        WSSubscriptionPolicySupport="%EVENTS_PUSH%"
                                        WSPullPointSupport="%EVENTS_PULL%"
                                        WSPausableSubscriptionManagerInterfaceSupport="false">
-                    </tevt:Capabilities>
+                    </tev:Capabilities>
                 </tds:Capabilities>
                 <tds:Version>
                     <tt:Major>18</tt:Major>
@@ -151,6 +151,10 @@
                                                    RTP_RTSP_TCP="true"/>
                     </trt:Capabilities>
                 </tds:Capabilities>
+                <tds:Version>
+                    <tt:Major>19</tt:Major>
+                    <tt:Minor>6</tt:Minor>
+                </tds:Version>
             </tds:Service>
         </tds:GetServicesResponse>
     </SOAP-ENV:Body>
