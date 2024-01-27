@@ -362,7 +362,8 @@ int device_get_capabilities()
             return cat("stdout", "device_service_files/GetPTZCapabilities.xml", 2,
                     "%PTZ_SERVICE_ADDRESS%", ptz_service_address);
         } else {
-            // TODO
+            send_fault("device_service", "Receiver", "ter:ActionNotSupported", "ter:NoSuchService", "No such service", "The requested WSDL service category is not supported by the device");
+            return -2;
         }
     } else if (icategory == 8) {
         long size = cat(NULL, "device_service_files/GetEventsCapabilities.xml", 6,
