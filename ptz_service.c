@@ -662,7 +662,7 @@ int ptz_get_status()
         }
     } else {
         // If the cam doesn't know the status, return a fault
-        ret = -6
+        ret = -6;
     }
 
     // Run command that returns to stdout if PTZ is running (1) or not (0)
