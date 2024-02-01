@@ -646,44 +646,54 @@ int ptz_get_status()
             tm->tm_hour, tm->tm_min, tm->tm_sec);
 
     // Run command that returns to stdout x and y position in the form x,y
-    fp = popen(service_ctx.ptz_node.get_position, "r");
-    if (fp == NULL) {
-        ret = -3;
-    } else {
-        if (fgets(out, sizeof(out), fp) == NULL) {
-            ret = -4;
+    if (service_ctx.ptz_node.get_position == NULL) {
+        fp = popen(service_ctx.ptz_node.get_position, "r");
+        if (fp == NULL) {
+            ret = -3;
         } else {
-            if (sscanf(out, "%lf,%lf,%lf", &x, &y, &z) < 2) {
-                ret = -5;
+            if (fgets(out, sizeof(out), fp) == NULL) {
+                ret = -4;
+            } else {
+                if (sscanf(out, "%lf,%lf,%lf", &x, &y, &z) < 2) {
+                    ret = -5;
+                }
             }
+            pclose(fp);
         }
-        pclose(fp);
+    } else {
+        // If the cam doesn't know the status, return a fault
+        ret = -6
     }
 
     // Run command that returns to stdout if PTZ is running (1) or not (0)
-    fp = popen(service_ctx.ptz_node.is_running, "r");
-    if (fp == NULL) {
-        ret = -6;
-    } else {
-        if (fgets(out, sizeof(out), fp) == NULL) {
+    if (service_ctx.ptz_node.is_running != NULL) {
+        fp = popen(service_ctx.ptz_node.is_running, "r");
+        if (fp == NULL) {
             ret = -7;
         } else {
-            if (sscanf(out, "%d", &i) < 1) {
+            if (fgets(out, sizeof(out), fp) == NULL) {
                 ret = -8;
+            } else {
+                if (sscanf(out, "%d", &i) < 1) {
+                    ret = -9;
+                }
             }
+            pclose(fp);
         }
-        pclose(fp);
+    } else {
+        // If the cam doesn't know the status, return IDLE
+        i = 0;
     }
 
-    sprintf(sx, "%f", x);
-    sprintf(sy, "%f", y);
-    sprintf(sz, "%f", z);
-    if (i == 1)
-        strcpy(si, "MOVING");
-    else
-        strcpy(si, "IDLE");
-
     if (ret == 0) {
+        sprintf(sx, "%f", x);
+        sprintf(sy, "%f", y);
+        sprintf(sz, "%f", z);
+        if (i == 1)
+            strcpy(si, "MOVING");
+        else
+            strcpy(si, "IDLE");
+
         long size = cat(NULL, "ptz_service_files/GetStatus.xml", 12,
                 "%X%", sx,
                 "%Y%", sy,
