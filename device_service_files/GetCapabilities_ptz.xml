@@ -79,7 +79,7 @@
                     <tt:XAddr>%MEDIA_SERVICE_ADDRESS%</tt:XAddr>
                     <tt:StreamingCapabilities>
                         <tt:RTPMulticast>false</tt:RTPMulticast>
-                        <tt:RTP_TCP>false</tt:RTP_TCP>
+                        <tt:RTP_TCP>true</tt:RTP_TCP>
                         <tt:RTP_RTSP_TCP>true</tt:RTP_RTSP_TCP>
                     </tt:StreamingCapabilities>
                 </tt:Media>
