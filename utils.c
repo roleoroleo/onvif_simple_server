@@ -428,6 +428,8 @@ int html_escape(char *url, int max_len)
     int s_tmp[max_len];
     char *f, *t;
 
+    memset(s_tmp, '\0', max_len);
+
     // Count chars to escape
     for (i = 0; i < strlen(url); i++)
     {
