@@ -646,7 +646,7 @@ int ptz_get_status()
             tm->tm_hour, tm->tm_min, tm->tm_sec);
 
     // Run command that returns to stdout x and y position in the form x,y
-    if (service_ctx.ptz_node.get_position == NULL) {
+    if (service_ctx.ptz_node.get_position != NULL) {
         fp = popen(service_ctx.ptz_node.get_position, "r");
         if (fp == NULL) {
             ret = -3;
