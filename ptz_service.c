@@ -665,9 +665,9 @@ int ptz_get_status()
         ret = -6;
     }
 
-    // Run command that returns to stdout if PTZ is running (1) or not (0)
-    if (service_ctx.ptz_node.is_running != NULL) {
-        fp = popen(service_ctx.ptz_node.is_running, "r");
+    // Run command that returns to stdout if PTZ is moving (1) or not (0)
+    if (service_ctx.ptz_node.is_moving != NULL) {
+        fp = popen(service_ctx.ptz_node.is_moving, "r");
         if (fp == NULL) {
             ret = -7;
         } else {

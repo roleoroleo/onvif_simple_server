@@ -195,7 +195,7 @@ int process_conf_file(char *file)
         } else if ((strcasecmp(param, "ptz") == 0) && (strcasecmp(value, "1") == 0)) {
             service_ctx.ptz_node.enable = 1;
             service_ctx.ptz_node.get_position = NULL;
-            service_ctx.ptz_node.is_running = NULL;
+            service_ctx.ptz_node.is_moving = NULL;
             service_ctx.ptz_node.move_left = NULL;
             service_ctx.ptz_node.move_right = NULL;
             service_ctx.ptz_node.move_up = NULL;
@@ -210,9 +210,9 @@ int process_conf_file(char *file)
         } else if ((strcasecmp(param, "get_position") == 0) && (service_ctx.ptz_node.enable == 1)) {
             service_ctx.ptz_node.get_position = (char *) malloc(strlen(value) + 1);
             strcpy(service_ctx.ptz_node.get_position, value);
-        } else if ((strcasecmp(param, "is_running") == 0) && (service_ctx.ptz_node.enable == 1)) {
-            service_ctx.ptz_node.is_running = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.ptz_node.is_running, value);
+        } else if ((strcasecmp(param, "is_moving") == 0) && (service_ctx.ptz_node.enable == 1)) {
+            service_ctx.ptz_node.is_moving = (char *) malloc(strlen(value) + 1);
+            strcpy(service_ctx.ptz_node.is_moving, value);
         } else if ((strcasecmp(param, "move_left") == 0) && (service_ctx.ptz_node.enable == 1)) {
             service_ctx.ptz_node.move_left = (char *) malloc(strlen(value) + 1);
             strcpy(service_ctx.ptz_node.move_left, value);
@@ -313,7 +313,7 @@ void free_conf_file()
         if (service_ctx.ptz_node.move_up != NULL) free(service_ctx.ptz_node.move_up);
         if (service_ctx.ptz_node.move_right != NULL) free(service_ctx.ptz_node.move_right);
         if (service_ctx.ptz_node.move_left != NULL) free(service_ctx.ptz_node.move_left);
-        if (service_ctx.ptz_node.is_running != NULL) free(service_ctx.ptz_node.is_running);
+        if (service_ctx.ptz_node.is_moving != NULL) free(service_ctx.ptz_node.is_moving);
         if (service_ctx.ptz_node.get_position != NULL) free(service_ctx.ptz_node.get_position);
     }
 
@@ -398,7 +398,7 @@ void print_conf_help()
     fprintf(stderr, "\t#PTZ\n");
     fprintf(stderr, "\tptz=1\n");
     fprintf(stderr, "\tget_position=/tmp/sd/yi-hack/bin/ipc_cmd -g\n");
-    fprintf(stderr, "\tis_running=/tmp/sd/yi-hack/bin/ipc_cmd -u\n");
+    fprintf(stderr, "\tis_moving=/tmp/sd/yi-hack/bin/ipc_cmd -u\n");
     fprintf(stderr, "\tmove_left=/tmp/sd/yi-hack/bin/ipc_cmd -m left\n");
     fprintf(stderr, "\tmove_right=/tmp/sd/yi-hack/bin/ipc_cmd -m right\n");
     fprintf(stderr, "\tmove_up=/tmp/sd/yi-hack/bin/ipc_cmd -m up\n");

@@ -28,6 +28,7 @@ type=H264
 #PTZ
 ptz=1
 get_position=/usr/local/bin/get_position
+is_moving=/usr/local/bin/is_moving
 move_left=/usr/local/bin/ptz_move-m left
 move_right=/usr/local/bin/ptz_move-m right
 move_up=/usr/local/bin/ptz_move-m up
