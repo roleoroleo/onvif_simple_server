@@ -90,12 +90,29 @@ void destroy_presets()
 
 int ptz_get_service_capabilities()
 {
-    long size = cat(NULL, "ptz_service_files/GetServiceCapabilities.xml", 0);
+    char move_status[8], status_position[8];
+
+    if (service_ctx.ptz_node.is_moving != NULL) {
+        strcpy(move_status, "true");
+    } else {
+        strcpy(move_status, "false");
+    }
+    if (service_ctx.ptz_node.get_position != NULL) {
+        strcpy(status_position, "true");
+    } else {
+        strcpy(status_position, "false");
+    }
+
+    long size = cat(NULL, "ptz_service_files/GetServiceCapabilities.xml", 4,
+            "%MOVE_STATUS%", move_status,
+            "%STATUS_POSITION%", status_position);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("stdout", "ptz_service_files/GetServiceCapabilities.xml", 0);
+    return cat("stdout", "ptz_service_files/GetServiceCapabilities.xml", 4,
+            "%MOVE_STATUS%", move_status,
+            "%STATUS_POSITION%", status_position);
 }
 
 int ptz_get_configurations()
