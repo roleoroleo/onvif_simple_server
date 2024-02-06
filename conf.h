@@ -14,6 +14,13 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define DEFAULT_MANUFACTURER "Manufacturer"
+#define DEFAULT_MODEL        "Model"
+#define DEFAULT_FW_VER       "0.0.1"
+#define DEFAULT_SERIAL_NUM   "SN1234567890"
+#define DEFAULT_HW_ID        "HWID"
+#define DEFAULT_IFS          "wlan0"
+
 int process_conf_file(char *file);
 void free_conf_file();
 void print_conf_help();

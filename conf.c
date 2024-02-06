@@ -62,6 +62,20 @@ int process_conf_file(char *file)
     service_ctx.events_enable = EVENTS_NONE;
     service_ctx.events_num = 0;
 
+    service_ctx.ptz_node.get_position = NULL;
+    service_ctx.ptz_node.is_moving = NULL;
+    service_ctx.ptz_node.move_left = NULL;
+    service_ctx.ptz_node.move_right = NULL;
+    service_ctx.ptz_node.move_up = NULL;
+    service_ctx.ptz_node.move_down = NULL;
+    service_ctx.ptz_node.move_stop = NULL;
+    service_ctx.ptz_node.move_preset = NULL;
+    service_ctx.ptz_node.set_preset = NULL;
+    service_ctx.ptz_node.set_home_position = NULL;
+    service_ctx.ptz_node.remove_preset = NULL;
+    service_ctx.ptz_node.jump_to_abs = NULL;
+    service_ctx.ptz_node.jump_to_rel = NULL;
+
     while(fgets(line, MAX_LEN, fF)) {
         char *first = line;
         char *second;
@@ -285,6 +299,32 @@ int process_conf_file(char *file)
         } else {
             log_warn("Unrecognized option: %s", line);
         }
+    }
+
+    // If a string option is NULL, set a default value
+    if (service_ctx.manufacturer == NULL) {
+        service_ctx.manufacturer = (char *) malloc(strlen(DEFAULT_MANUFACTURER) + 1);
+        strcpy(service_ctx.user, DEFAULT_MANUFACTURER);
+    }
+    if (service_ctx.model == NULL) {
+        service_ctx.model = (char *) malloc(strlen(DEFAULT_MODEL) + 1);
+        strcpy(service_ctx.user, DEFAULT_MODEL);
+    }
+    if (service_ctx.firmware_ver == NULL) {
+        service_ctx.firmware_ver = (char *) malloc(strlen(DEFAULT_FW_VER) + 1);
+        strcpy(service_ctx.user, DEFAULT_FW_VER);
+    }
+    if (service_ctx.serial_num == NULL) {
+        service_ctx.serial_num = (char *) malloc(strlen(DEFAULT_SERIAL_NUM) + 1);
+        strcpy(service_ctx.user, DEFAULT_SERIAL_NUM);
+    }
+    if (service_ctx.hardware_id == NULL) {
+        service_ctx.hardware_id = (char *) malloc(strlen(DEFAULT_HW_ID) + 1);
+        strcpy(service_ctx.user, DEFAULT_HW_ID);
+    }
+    if (service_ctx.ifs == NULL) {
+        service_ctx.ifs = (char *) malloc(strlen(DEFAULT_IFS) + 1);
+        strcpy(service_ctx.user, DEFAULT_IFS);
     }
 }
 

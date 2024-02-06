@@ -43,9 +43,13 @@ int init_presets()
     presets.items = (preset_t *) malloc(sizeof(preset_t));
 
     // Run command that returns to stdout the list of the presets in the form number=name,pan,tilt,zoom (zoom is optional)
+    if (service_ctx.ptz_node.get_presets == NULL) {
+        pclose(fp);
+        return -1;
+    }
     fp = popen(service_ctx.ptz_node.get_presets, "r");
     if (fp == NULL) {
-        return -1;
+        return -2;
     } else {
         while (fgets(out, sizeof(out), fp)) {
             p = out;
@@ -58,7 +62,7 @@ int init_presets()
             }
             if (sscanf(out, "%d=%s %lf %lf %lf", &num, name, &x, &y, &z) == 0) {
                 pclose(fp);
-                return -2;
+                return -3;
             } else {
                 if (strlen(name) != 0) {
                     presets.count++;
@@ -258,6 +262,10 @@ int ptz_goto_preset()
     count = presets.count;
     destroy_presets();
 
+    if (service_ctx.ptz_node.move_preset == NULL) {
+        send_action_failed_fault(-4);
+        return -4;
+    }
     if ((preset_number >= 0) && (preset_number < count)) {
         sprintf(sys_command, service_ctx.ptz_node.move_preset, preset_number);
         system(sys_command);
@@ -270,7 +278,7 @@ int ptz_goto_preset()
         return cat("stdout", "ptz_service_files/GotoPreset.xml", 0);
     } else {
         send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
-        return -4;
+        return -5;
     }
 }
 
@@ -296,6 +304,10 @@ int ptz_goto_home_position()
         return -3;
     }
 
+    if (service_ctx.ptz_node.move_preset == NULL) {
+        send_action_failed_fault(-4);
+        return -4;
+    }
     sprintf(sys_command, service_ctx.ptz_node.move_preset, 0);
     system(sys_command);
 
@@ -347,10 +359,18 @@ int ptz_continuous_move()
         dx = atof(x);
 
         if (dx > 0.0) {
+            if (service_ctx.ptz_node.move_right == NULL) {
+                send_action_failed_fault(-3);
+                return -3;
+            }
             strcpy(sys_command, service_ctx.ptz_node.move_right);
             system(sys_command);
             ret = 0;
         } else if (dx < 0.0) {
+            if (service_ctx.ptz_node.move_left == NULL) {
+                send_action_failed_fault(-4);
+                return -4;
+            }
             strcpy(sys_command, service_ctx.ptz_node.move_left);
             system(sys_command);
             ret = 0;
@@ -361,10 +381,18 @@ int ptz_continuous_move()
         dy = atof(y);
 
         if (dy > 0.0) {
+            if (service_ctx.ptz_node.move_up == NULL) {
+                send_action_failed_fault(-5);
+                return -5;
+            }
             strcpy(sys_command, service_ctx.ptz_node.move_up);
             system(sys_command);
             ret = 0;
         } else if (dy < 0.0) {
+            if (service_ctx.ptz_node.move_down == NULL) {
+                send_action_failed_fault(-6);
+                return -6;
+            }
             strcpy(sys_command, service_ctx.ptz_node.move_down);
             system(sys_command);
             ret = 0;
@@ -406,6 +434,11 @@ int ptz_relative_move()
     if (service_ctx.ptz_node.enable == 0) {
         send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoPTZProfile", "No PTZ profile", "The requested profile token does not reference a PTZ configuration");
         return -2;
+    }
+
+    if (service_ctx.ptz_node.jump_to_rel == NULL) {
+        send_action_failed_fault(-3);
+        return -3;
     }
 
     node = get_element_ptr(NULL, "Translation", "Body");
@@ -545,6 +578,11 @@ int ptz_absolute_move()
         return -2;
     }
 
+    if (service_ctx.ptz_node.jump_to_abs == NULL) {
+        send_action_failed_fault(-3);
+        return -3;
+    }
+
     node = get_element_ptr(NULL, "Position", "Body");
     if (node != NULL) {
         node_c = get_element_in_element_ptr("PanTilt", node);
@@ -567,17 +605,17 @@ int ptz_absolute_move()
             ((x == NULL) && (y != NULL)) ||
             ((x != NULL) && (y == NULL))) {
 
-        ret = -3;
+        ret = -4;
 
     } else {
         if ((x != NULL) && (y != NULL)) {
             dx = atof(x);
             if ((dx > 360.0) || (dx < 0.0)) {
-                ret = -4;
+                ret = -5;
             }
             dy = atof(y);
             if ((dy > 180.0) || (dy < 0.0)) {
-                ret = -5;
+                ret = -6;
             } else {
                 sprintf(sys_command, service_ctx.ptz_node.jump_to_abs, dx, dy);
             }
@@ -585,7 +623,7 @@ int ptz_absolute_move()
         if (z != NULL) {
             dz = atof(z);
             if (dz != 1.0) {
-                ret = -6;
+                ret = -7;
             } else {
                 // do nothing
             }
@@ -622,6 +660,11 @@ int ptz_stop()
     if (service_ctx.ptz_node.enable == 0) {
         send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoPTZProfile", "No PTZ profile", "The requested profile token does not reference a PTZ configuration");
         return -2;
+    }
+
+    if (service_ctx.ptz_node.move_stop == NULL) {
+        send_action_failed_fault(-3);
+        return -3;
     }
 
     sprintf(sys_command, service_ctx.ptz_node.move_stop);
@@ -787,6 +830,11 @@ int ptz_set_preset()
     }
     destroy_presets();
 
+    if (service_ctx.ptz_node.set_preset == NULL) {
+        send_action_failed_fault(-7);
+        return -7;
+    }
+
     sprintf(sys_command, service_ctx.ptz_node.set_preset, (char *) preset_name_out);
     system(sys_command);
     sleep(1);
@@ -802,7 +850,7 @@ int ptz_set_preset()
     destroy_presets();
     if (preset_token_out[0] == '\0') {
         send_fault("ptz_service", "Receiver", "ter:Action", "ter:TooManyPresets", "Too many presets", "Maximum number of presets reached");
-        return -7;
+        return -8;
     }
 
     long size = cat(NULL, "ptz_service_files/SetPreset.xml", 2,
@@ -829,6 +877,11 @@ int ptz_set_home_position()
     if (service_ctx.ptz_node.enable == 0) {
         send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoPTZProfile", "No PTZ profile", "The requested profile token does not reference a PTZ configuration");
         return -2;
+    }
+
+    if (service_ctx.ptz_node.set_home_position == NULL) {
+        send_action_failed_fault(-3);
+        return -3;
     }
 
     strcpy(sys_command, service_ctx.ptz_node.set_home_position);
@@ -863,6 +916,11 @@ int ptz_remove_preset()
     if (sscanf(preset_token, "PresetToken_%d", &preset_number) != 1) {
         send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
         return -3;
+    }
+
+    if (service_ctx.ptz_node.remove_preset == NULL) {
+        send_action_failed_fault(-4);
+        return -4;
     }
 
     sprintf(sys_command, service_ctx.ptz_node.remove_preset, preset_number);
