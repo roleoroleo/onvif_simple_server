@@ -477,6 +477,37 @@ int media_get_video_encoder_configuration_options()
     }
 }
 
+int media_get_guaranteed_number_of_video_encoder_instances()
+{
+    char stmp[8];
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+
+    if ((service_ctx.profiles_num >= 0) && (service_ctx.profiles_num <= 2)) {
+        sprintf(stmp, "%d", service_ctx.profiles_num);
+    } else {
+        send_action_failed_fault(-1);
+        return -1;
+    }
+
+    if (strcasecmp("VideoSourceConfigToken", configuration_token) == 0) {
+
+        long size = cat(NULL, "media_service_files/GetGuaranteedNumberOfVideoEncoderInstances.xml", 4,
+                "%TOTAL_NUMBER%", stmp,
+                "%NUMBER_H264%", stmp);
+
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+        return cat("stdout", "media_service_files/GetGuaranteedNumberOfVideoEncoderInstances.xml", 4,
+                "%TOTAL_NUMBER%", stmp,
+                "%NUMBER_H264%", stmp);
+
+    } else {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
+        return -1;
+    }
+}
+
 int media_get_snapshot_uri()
 {
     char address[16];

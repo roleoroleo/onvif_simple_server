@@ -451,6 +451,8 @@ int main(int argc, char ** argv)
                 media_get_compatible_video_encoder_configurations();
             } else if (strcasecmp(method, "GetVideoEncoderConfigurationOptions") == 0) {
                 media_get_video_encoder_configuration_options();
+            } else if (strcasecmp(method, "GetGuaranteedNumberOfVideoEncoderInstances") == 0) {
+                media_get_guaranteed_number_of_video_encoder_instances();
             } else if (strcasecmp(method, "GetSnapshotUri") == 0) {
                 media_get_snapshot_uri();
             } else if (strcasecmp(method, "GetStreamUri") == 0) {
