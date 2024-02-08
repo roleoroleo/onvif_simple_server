@@ -81,6 +81,7 @@ type=H264
 #PTZ
 ptz=1
 get_position=/tmp/sd/yi-hack/bin/ipc_cmd -g
+is_moving=/tmp/sd/yi-hack/bin/ipc_cmd -u
 move_left=/tmp/sd/yi-hack/bin/ipc_cmd -m left
 move_right=/tmp/sd/yi-hack/bin/ipc_cmd -m right
 move_up=/tmp/sd/yi-hack/bin/ipc_cmd -m up
@@ -224,6 +225,72 @@ I tested this program with the following clients:
 - Onvifer (Android)
 
 If you test it with other clients or NVR, please let me know opening a issue.
+
+Below a list of the implemented functions, all other functions returns a generic soap fault.
+
+**Device**
+```
+GetServices
+GetServiceCapabilities
+GetDeviceInformation
+GetSystemDateAndTime
+SystemReboot
+GetScopes
+GetUsers
+GetWsdlUrl
+GetCapabilities
+GetNetworkInterfaces
+```
+**Media**
+```
+GetServiceCapabilities
+GetVideoSources
+GetVideoSourceConfigurations
+GetVideoSourceConfiguration
+GetCompatibleVideoSourceConfigurations
+GetVideoSourceConfigurationOptions
+GetProfiles
+GetProfile
+CreateProfile
+GetVideoEncoderConfigurations
+GetVideoEncoderConfiguration
+GetCompatibleVideoEncoderConfigurations
+GetVideoEncoderConfigurationOptions
+GetGuaranteedNumberOfVideoEncoderInstances
+GetSnapshotUri
+GetStreamUri
+```
+**PTZ**
+```
+GetServiceCapabilities
+GetConfigurations
+GetConfiguration
+GetConfigurationOptions
+GetNodes
+GetNode
+GetPresets
+GotoPreset
+GotoHomePosition
+ContinuousMove
+RelativeMove
+AbsoluteMove
+Stop
+GetStatus
+SetPreset
+SetHomePosition
+RemovePreset
+```
+**Events**
+```
+GetServiceCapabilities
+CreatePullPointSubscription
+PullMessages
+Subscribe
+Renew
+Unsubscribe
+GetEventProperties
+SetSynchronizationPoint
+```
 
 ## Credits
 Thanks to:
