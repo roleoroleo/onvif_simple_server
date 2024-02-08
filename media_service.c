@@ -427,7 +427,7 @@ int media_get_video_encoder_configuration_options()
 
     memset(token, '\0', sizeof(token));
     if (configuration_token != NULL) {
-        // Extract "Profile_x" from token Profile_x_VideoEncoder
+        // Extract "Profile_x" from token Profile_x_VideoEncoderConfig
         strncpy(token, configuration_token, 9);
     } else if (profile_token != NULL) {
         // Extract "Profile_x" from token Profile_x

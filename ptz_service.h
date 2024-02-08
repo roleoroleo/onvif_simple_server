@@ -30,8 +30,6 @@ typedef struct {
     preset_t *items;
 } presets_t;
 
-int init_presets();
-void destroy_presets();
 int ptz_get_service_capabilities();
 int ptz_get_configurations();
 int ptz_get_configuration();
