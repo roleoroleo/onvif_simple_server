@@ -1,9 +1,3 @@
-<p align="center">
-	<a target="_blank" href="https://github.com/roleoroleo/onvif_simple_server/releases">
-		<img src="https://img.shields.io/github/downloads/roleoroleo/onvif_simple_server/total.svg" alt="Releases Downloads">
-	</a>
-</p>
-
 onvif_simple_server_e is a C light implementation of an onvif server intended for use in resource-constrained devices.
 
 So:
