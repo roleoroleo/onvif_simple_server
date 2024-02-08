@@ -441,6 +441,8 @@ int main(int argc, char ** argv)
                 media_get_profiles();
             } else if (strcasecmp(method, "GetProfile") == 0) {
                 media_get_profile();
+            } else if (strcasecmp(method, "CreateProfile") == 0) {
+                media_create_profile();
             } else if (strcasecmp(method, "GetVideoEncoderConfigurations") == 0) {
                 media_get_video_encoder_configurations();
             } else if (strcasecmp(method, "GetVideoEncoderConfiguration") == 0) {

@@ -273,6 +273,12 @@ int media_get_profile()
     }
 }
 
+int media_create_profile()
+{
+    send_fault("media_service", "Receiver", "ter:Action", "ter:MaxNVTProfiles", "Max profile number reached", "The maximum number of supported profiles supported by the device has been reached");
+    return -1;
+}
+
 int media_get_video_encoder_configurations()
 {
     char stmp_w_l[16], stmp_h_l[16];
