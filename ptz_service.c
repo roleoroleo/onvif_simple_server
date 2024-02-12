@@ -34,7 +34,7 @@ int init_presets()
 {
     FILE *fp;
     char out[MAX_LEN];
-    int num;
+    int i, num;
     double x, y, z;
     char name[MAX_LEN];
     char *p;
@@ -77,6 +77,13 @@ int init_presets()
             }
         }
         pclose(fp);
+    }
+
+    for (i = 0; i < presets.count; i++) {
+        if (presets.items[i].name != NULL) {
+            log_debug("Preset %d - %d - %s - %f - %f", i, presets.items[i].number,
+                    presets.items[i].name, presets.items[i].x, presets.items[i].y);
+        }
     }
 
     return 0;
@@ -237,7 +244,7 @@ int ptz_get_presets()
 int ptz_goto_preset()
 {
     const char *preset_token;
-    int preset_number, count;
+    int i, preset_number, count, found;
     char sys_command[MAX_LEN];
     ezxml_t node;
 
@@ -260,26 +267,32 @@ int ptz_goto_preset()
 
     init_presets();
     count = presets.count;
+    found = 0;
+    for (i = 0; i < presets.count; i++) {
+        if (presets.items[i].number == preset_number) {
+            found = 1;
+            break;
+        }
+    }
     destroy_presets();
 
-    if (service_ctx.ptz_node.move_preset == NULL) {
-        send_action_failed_fault(-4);
+    if (found == 0) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
         return -4;
     }
-    if ((preset_number >= 0) && (preset_number < count)) {
-        sprintf(sys_command, service_ctx.ptz_node.move_preset, preset_number);
-        system(sys_command);
-
-        long size = cat(NULL, "ptz_service_files/GotoPreset.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "ptz_service_files/GotoPreset.xml", 0);
-    } else {
-        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
+    if (service_ctx.ptz_node.move_preset == NULL) {
+        send_action_failed_fault(-5);
         return -5;
     }
+
+    sprintf(sys_command, service_ctx.ptz_node.move_preset, preset_number);
+    system(sys_command);
+    long size = cat(NULL, "ptz_service_files/GotoPreset.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "ptz_service_files/GotoPreset.xml", 0);
 }
 
 int ptz_goto_home_position()
@@ -818,7 +831,7 @@ int ptz_set_preset()
     else
         strcpy(preset_name_out, preset_name);
 
-    if ((strchr(preset_name_out, ' ') != NULL) || (strlen(preset_name_out) > 64)) {
+    if ((strchr(preset_name_out, ' ') != NULL) || (strlen(preset_name_out) == 0) || (strlen(preset_name_out) > 64)) {
         send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:InvalidPresetName", "Invalid preset name", "The preset name is either too long or contains invalid characters");
         return -5;
     }
