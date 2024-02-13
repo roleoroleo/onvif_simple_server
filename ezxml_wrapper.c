@@ -263,30 +263,91 @@ ezxml_t get_element_ptr(ezxml_t start_from, char *name, char *first_node)
 }
 
 /**
- * Get the element with name "name" starting from node "father"
+ * Get the child element with name "name" starting from node "father"
  * @param name The name of the element to find
  * @param father The node where to find the element
  * @return A pointer to the value of the element, NULL if not found
  */
 const char *get_element_in_element(const char *name, ezxml_t father)
 {
-    ezxml_t child = ezxml_child(father, name);
-    if (child == NULL) {
-        return NULL;
-    } else {
-        return child->txt;
+    char name_copy[256];
+    ezxml_t child = father->child;
+    ezxml_t pk;
+
+    if (child != NULL) {
+        // Check if this node is "<name>"
+        if (strcmp(name, child->name) == 0) {
+            return child->txt;
+        }
+
+        // Check if this node is "<something:name>"
+        name_copy[0] = ':';
+        strcpy(&name_copy[1], name);
+        if (strcmp(name_copy, &(child->name)[strlen(child->name) - strlen(name_copy)]) == 0) {
+            return child->txt;
+        }
+
+        // Check brothers
+        while(pk = child->ordered) {
+            // Check if this node is "<name>"
+            if (strcmp(name, pk->name) == 0) {
+                return pk->txt;
+            }
+
+            // Check if this node is "<something:name>"
+            name_copy[0] = ':';
+            strcpy(&name_copy[1], name);
+            if (strcmp(name_copy, &(pk->name)[strlen(pk->name) - strlen(name_copy)]) == 0) {
+                return pk->txt;
+            }
+        }
     }
+
+    return NULL;
 }
 
 /**
- * Get the element with name "name" starting from node "father"
+ * Get the child element with name "name" starting from node "father"
  * @param name The name of the element to find
  * @param father The node where to find the element
  * @return ezxml_t type pointing to the element, NULL if not found
  */
 ezxml_t get_element_in_element_ptr(const char *name, ezxml_t father)
 {
-    return ezxml_child(father, name);
+    char name_copy[256];
+    ezxml_t child = father->child;
+    ezxml_t pk;
+
+    if (child != NULL) {
+        // Check if this node is "<name>"
+        if (strcmp(name, child->name) == 0) {
+            return child;
+        }
+
+        // Check if this node is "<something:name>"
+        name_copy[0] = ':';
+        strcpy(&name_copy[1], name);
+        if (strcmp(name_copy, &(child->name)[strlen(child->name) - strlen(name_copy)]) == 0) {
+            return child;
+        }
+
+        // Check brothers
+        while(pk = child->ordered) {
+            // Check if this node is "<name>"
+            if (strcmp(name, pk->name) == 0) {
+                return pk;
+            }
+
+            // Check if this node is "<something:name>"
+            name_copy[0] = ':';
+            strcpy(&name_copy[1], name);
+            if (strcmp(name_copy, &(pk->name)[strlen(pk->name) - strlen(name_copy)]) == 0) {
+                return pk;
+            }
+        }
+    }
+
+    return NULL;
 }
 
 /**
