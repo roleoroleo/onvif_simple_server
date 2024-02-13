@@ -500,7 +500,8 @@ int ptz_relative_move()
                 if (z != NULL) {
                     dz = atof(z);
                     if (dz != 0.0) {
-                        ret = -7;
+                        // Ignore wrong zoom values
+                        // It should be = 0.0
                     } else {
                         // do nothing
                     }
@@ -516,17 +517,17 @@ int ptz_relative_move()
                     ((x == NULL) && (y != NULL)) ||
                     ((x != NULL) && (y == NULL))) {
 
-                ret = -8;
+                ret = -7;
 
             } else {
                 if ((x != NULL) && (y != NULL)) {
                     dx = atof(x);
                     if ((dx > 100.0) || (dx < -100.0)) {
-                        ret = -9;
+                        ret = -8;
                     }
                     dy = atof(y);
                     if ((dy > 100.0) || (dy < -100.0)) {
-                        ret = -10;
+                        ret = -9;
                     } else {
                         // Convert -100/+100 to degrees values based on FOV
                         dx = (dx / 100.0) * (63.0 / 2.0);
@@ -537,7 +538,8 @@ int ptz_relative_move()
                 if (z != NULL) {
                     dz = atof(z);
                     if (dz != 0.0) {
-                        ret = -11;
+                        // Ignore wrong zoom values
+                        // It should be = 0.0
                     } else {
                         // do nothing
                     }
@@ -637,7 +639,8 @@ int ptz_absolute_move()
         if (z != NULL) {
             dz = atof(z);
             if (dz != 1.0) {
-                ret = -7;
+                // Ignore wrong zoom values
+                // It should be = 1.0
             } else {
                 // do nothing
             }
