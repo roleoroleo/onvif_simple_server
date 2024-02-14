@@ -304,5 +304,9 @@ Thanks to:
 **NOBODY BUT YOU IS RESPONSIBLE FOR ANY USE OR DAMAGE THIS SOFTWARE MAY CAUSE. THIS IS INTENDED FOR EDUCATIONAL PURPOSES ONLY. USE AT YOUR OWN RISK.**
 
 ## Donation
-If you like this project, you can buy roleo a beer :) 
-[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=JBYXDMR24FW7U&currency_code=EUR&source=url)
+If you like this project, you can buy me a beer :) 
+
+Click [here](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=JBYXDMR24FW7U&currency_code=EUR&source=url) or use the below QR code to donate via PayPal
+<p align="center">
+  <img src="https://github.com/roleoroleo/onvif_simple_server/assets/39277388/9cccaf46-3575-48ad-a8f4-8b3a5e4c9948"/>
+</p>
