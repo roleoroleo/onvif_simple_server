@@ -25,6 +25,25 @@
 
 extern service_context_t service_ctx;
 
+int send_empty_response(char *ns, char *method)
+{
+    int ret;
+    char *response = (char *) malloc(strlen(ns) + strlen(method) + 10);
+    sprintf(response, "%s:%sResponse", ns, method);
+
+    long size = cat(NULL, "generic_files/Empty.xml", 2,
+            "%METHOD%", response);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    ret = cat("stdout", "generic_files/Empty.xml", 2,
+            "%METHOD%", response);
+
+    free(response);
+    return ret;
+}
+
 int send_fault(char *service, char *rec_send, char *subcode, char *subcode_ex, char *reason, char *detail)
 {
     char msg_uuid[UUID_LEN + 1];

@@ -450,6 +450,7 @@ int device_get_network_interfaces()
 
 int device_unsupported(const char *method)
 {
-    send_action_failed_fault(-1);
+//    send_action_failed_fault(-1);
+    send_empty_response("tds", (char *) method);
     return -1;
 }

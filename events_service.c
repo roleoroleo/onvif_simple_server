@@ -701,6 +701,7 @@ int events_set_synchronization_point()
 
 int events_unsupported(const char *method)
 {
-    send_action_failed_fault(-1);
+//    send_action_failed_fault(-1);
+    send_empty_response("tev", (char *) method);
     return -1;
 }

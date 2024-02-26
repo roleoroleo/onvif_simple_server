@@ -953,6 +953,7 @@ int ptz_remove_preset()
 
 int ptz_unsupported(const char *method)
 {
-    send_action_failed_fault(-1);
+//    send_action_failed_fault(-1);
+    send_empty_response("tptz", (char *) method);
     return -1;
 }

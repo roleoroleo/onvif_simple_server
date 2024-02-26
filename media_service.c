@@ -646,6 +646,7 @@ int media_get_stream_uri()
 
 int media_unsupported(const char *method)
 {
-    send_action_failed_fault(-1);
+//    send_action_failed_fault(-1);
+    send_empty_response("trt", (char *) method);
     return -1;
 }
