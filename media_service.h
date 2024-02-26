@@ -33,6 +33,24 @@ int media_get_guaranteed_number_of_video_encoder_instances();
 int media_get_video_encoder_configuration_options();
 int media_get_snapshot_uri();
 int media_get_stream_uri();
+int media_get_audio_sources();
+int media_get_audio_source_configurations();
+int media_get_audio_source_configuration();
+int media_get_audio_source_configuration_options();
+int media_get_audio_encoder_configuration();
+int media_get_audio_encoder_configurations();
+int media_get_audio_encoder_configuration_options();
+int media_get_audio_decoder_configuration();
+int media_get_audio_decoder_configurations();
+int media_get_audio_decoder_configuration_options();
+int media_get_audio_outputs();
+int media_get_audio_output_configuration();
+int media_get_audio_output_configurations();
+int media_get_audio_output_configuration_options();
+int media_get_compatible_audio_source_configurations();
+int media_get_compatible_audio_encoder_configurations();
+int media_get_compatible_audio_decoder_configurations();
+int media_get_compatible_audio_output_configurations();
 
 int media_unsupported(const char *method);
 

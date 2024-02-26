@@ -644,6 +644,206 @@ int media_get_stream_uri()
     }
 }
 
+int media_get_audio_sources()
+{
+    long size = cat(NULL, "media_service_files/GetAudioSources.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "media_service_files/GetAudioSources.xml", 0);
+}
+
+int media_get_audio_source_configurations()
+{
+    char profiles_num[2], stmp_w[16], stmp_h[16];
+
+    sprintf(profiles_num, "%d", service_ctx.profiles_num);
+
+    long size = cat(NULL, "media_service_files/GetAudioSourceConfigurations.xml", 2,
+            "%PROFILES_NUM%", profiles_num);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "media_service_files/GetAudioSourceConfigurations.xml", 2,
+            "%PROFILES_NUM%", profiles_num);
+}
+
+int media_get_audio_source_configuration()
+{
+    // Ignore the requested token
+    char profiles_num[2];
+
+    sprintf(profiles_num, "%d", service_ctx.profiles_num);
+
+    long size = cat(NULL, "media_service_files/GetAudioSourceConfiguration.xml", 2,
+            "%PROFILES_NUM%", profiles_num);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "media_service_files/GetAudioSourceConfiguration.xml", 2,
+            "%PROFILES_NUM%", profiles_num);
+}
+
+int media_get_audio_source_configuration_options()
+{
+    long size = cat(NULL, "media_service_files/GetAudioSourceConfigurationOptions.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "media_service_files/GetAudioSourceConfigurationOptions.xml", 0);
+}
+
+int media_get_audio_encoder_configuration()
+{
+    long size = cat(NULL, "media_service_files/GetAudioEncoderConfiguration.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "media_service_files/GetAudioEncoderConfiguration.xml", 0);
+}
+
+int media_get_audio_encoder_configurations()
+{
+    long size = cat(NULL, "media_service_files/GetAudioEncoderConfigurations.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "media_service_files/GetAudioEncoderConfigurations.xml", 0);
+}
+
+int media_get_audio_encoder_configuration_options()
+{
+    long size = cat(NULL, "media_service_files/GetAudioEncoderConfigurationOptions.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "media_service_files/GetAudioEncoderConfigurationOptions.xml", 0);
+}
+
+int media_get_audio_decoder_configuration()
+{
+    long size = cat(NULL, "media_service_files/GetAudioDecoderConfiguration.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "media_service_files/GetAudioDecoderConfiguration.xml", 0);
+}
+
+int media_get_audio_decoder_configurations()
+{
+    long size = cat(NULL, "media_service_files/GetAudioDecoderConfigurations.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "media_service_files/GetAudioDecoderConfigurations.xml", 0);
+}
+
+int media_get_audio_decoder_configuration_options()
+{
+    long size = cat(NULL, "media_service_files/GetAudioDecoderConfigurationOptions.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "media_service_files/GetAudioDecoderConfigurationOptions.xml", 0);
+}
+
+int media_get_audio_outputs()
+{
+    long size = cat(NULL, "media_service_files/GetAudioOutputs.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "media_service_files/GetAudioOutputs.xml", 0);
+}
+
+int media_get_audio_output_configuration()
+{
+    long size = cat(NULL, "media_service_files/GetAudioOutputConfiguration.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "media_service_files/GetAudioOutputConfiguration.xml", 0);
+}
+
+int media_get_audio_output_configurations()
+{
+    long size = cat(NULL, "media_service_files/GetAudioOutputConfigurations.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "media_service_files/GetAudioOutputConfigurations.xml", 0);
+}
+
+int media_get_audio_output_configuration_options()
+{
+    long size = cat(NULL, "media_service_files/GetAudioOutputConfigurationOptions.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "media_service_files/GetAudioOutputConfigurationOptions.xml", 0);
+}
+
+int media_get_compatible_audio_source_configurations()
+{
+    // Ignore the requested token
+    char profiles_num[2];
+
+    sprintf(profiles_num, "%d", service_ctx.profiles_num);
+
+    long size = cat(NULL, "media_service_files/GetCompatibleAudioSourceConfigurations.xml", 2,
+            "%PROFILES_NUM%", profiles_num);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "media_service_files/GetCompatibleAudioSourceConfigurations.xml", 2,
+            "%PROFILES_NUM%", profiles_num);
+}
+
+int media_get_compatible_audio_encoder_configurations()
+{
+    long size = cat(NULL, "media_service_files/GetCompatibleAudioEncoderConfigurations.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "media_service_files/GetCompatibleAudioEncoderConfigurations.xml", 0);
+}
+
+int media_get_compatible_audio_decoder_configurations()
+{
+    long size = cat(NULL, "media_service_files/GetCompatibleAudioDecoderConfigurations.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "media_service_files/GetCompatibleAudioDecoderConfigurations.xml", 0);
+}
+
+int media_get_compatible_audio_output_configurations()
+{
+    long size = cat(NULL, "media_service_files/GetCompatibleAudioOutputConfigurations.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "media_service_files/GetCompatibleAudioOutputConfigurations.xml", 0);
+}
+
 int media_unsupported(const char *method)
 {
 //    send_action_failed_fault(-1);

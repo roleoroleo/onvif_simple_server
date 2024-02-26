@@ -457,6 +457,42 @@ int main(int argc, char ** argv)
                 media_get_snapshot_uri();
             } else if (strcasecmp(method, "GetStreamUri") == 0) {
                 media_get_stream_uri();
+            } else if (strcasecmp(method, "GetAudioSources") == 0) {
+                media_get_audio_sources();
+            } else if (strcasecmp(method, "GetAudioSourceConfigurations") == 0) {
+                media_get_audio_source_configurations();
+            } else if (strcasecmp(method, "GetAudioSourceConfiguration") == 0) {
+                media_get_audio_source_configuration();
+            } else if (strcasecmp(method, "GetAudioSourceConfigurationOptions") == 0) {
+                media_get_audio_source_configuration_options();
+            } else if (strcasecmp(method, "GetAudioEncoderConfigurations") == 0) {
+                media_get_audio_encoder_configurations();
+            } else if (strcasecmp(method, "GetAudioEncoderConfiguration") == 0) {
+                media_get_audio_encoder_configuration();
+            } else if (strcasecmp(method, "GetAudioEncoderConfigurationOptions") == 0) {
+                media_get_audio_encoder_configuration_options();
+            } else if (strcasecmp(method, "GetAudioDecoderConfigurations") == 0) {
+                media_get_audio_decoder_configurations();
+            } else if (strcasecmp(method, "GetAudioDecoderConfiguration") == 0) {
+                media_get_audio_decoder_configuration();
+            } else if (strcasecmp(method, "GetAudioDecoderConfigurationOptions") == 0) {
+                media_get_audio_decoder_configuration_options();
+            } else if (strcasecmp(method, "GetAudioOutputs") == 0) {
+                media_get_audio_outputs();
+            } else if (strcasecmp(method, "GetAudioOutputConfiguration") == 0) {
+                media_get_audio_output_configuration();
+            } else if (strcasecmp(method, "GetAudioOutputConfigurations") == 0) {
+                media_get_audio_output_configurations();
+            } else if (strcasecmp(method, "GetAudioOutputConfigurationOptions") == 0) {
+                media_get_audio_output_configuration_options();
+            } else if (strcasecmp(method, "GetCompatibleAudioSourceConfigurations") == 0) {
+                media_get_compatible_audio_source_configurations();
+            } else if (strcasecmp(method, "GetCompatibleAudioEncoderConfigurations") == 0) {
+                media_get_compatible_audio_encoder_configurations();
+            } else if (strcasecmp(method, "GetCompatibleAudioDecoderConfigurations") == 0) {
+                media_get_compatible_audio_decoder_configurations();
+            } else if (strcasecmp(method, "GetCompatibleAudioOutputConfigurations") == 0) {
+                media_get_compatible_audio_output_configurations();
             } else {
                 media_unsupported(method);
             }
