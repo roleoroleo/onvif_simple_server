@@ -298,7 +298,7 @@ Thanks to:
 - Aaron Voisine - for ezxml library https://ezxml.sourceforge.net/
 
 ## License
-[MIT](https://choosealicense.com/licenses/mit/)
+[GPLv3](https://choosealicense.com/licenses/gpl-3.0/)
 
 ## DISCLAIMER
 **NOBODY BUT YOU IS RESPONSIBLE FOR ANY USE OR DAMAGE THIS SOFTWARE MAY CAUSE. THIS IS INTENDED FOR EDUCATIONAL PURPOSES ONLY. USE AT YOUR OWN RISK.**
