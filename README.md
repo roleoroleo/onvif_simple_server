@@ -23,8 +23,14 @@ The onvif server instead runs as CGI and therefore needs an http server that sup
 - [Donation](#donation)
 
 ## Build
-- Open the Makefile and edit the path to the libtomcrypt library to suit your needs.
-- Run make.
+- Open the Makefile and edit the path to the libtomcrypt library to suit your needs
+- Run make
+
+Or:
+
+- Open the extras folder.
+- Customize build.sh script
+- Run build.sh
 
 ## Configuration
 ### onvif_simple_server
@@ -259,6 +265,24 @@ GetVideoEncoderConfigurationOptions
 GetGuaranteedNumberOfVideoEncoderInstances
 GetSnapshotUri
 GetStreamUri
+GetAudioSources
+GetAudioSourceConfigurations
+GetAudioSourceConfiguration
+GetAudioSourceConfigurationOptions
+GetAudioEncoderConfigurations
+GetAudioEncoderConfiguration
+GetAudioEncoderConfigurationOptions
+GetAudioDecoderConfigurations
+GetAudioDecoderConfiguration
+GetAudioDecoderConfigurationOptions
+GetAudioOutputs
+GetAudioOutputConfiguration
+GetAudioOutputConfigurations
+GetAudioOutputConfigurationOptions
+GetCompatibleAudioSourceConfigurations
+GetCompatibleAudioEncoderConfigurations
+GetCompatibleAudioDecoderConfigurations
+GetCompatibleAudioOutputConfigurations
 ```
 **PTZ**
 ```
