@@ -403,32 +403,8 @@ void free_conf_file()
 
 void print_conf_help()
 {
-    fprintf(stderr, "\nCreate a configuration file with the following parameters:\n\n");
-    fprintf(stderr, "\tport\n");
-    fprintf(stderr, "\tuser\n");
-    fprintf(stderr, "\tpassword\n");
-    fprintf(stderr, "\tmanufacturer\n");
-    fprintf(stderr, "\tmodel\n");
-    fprintf(stderr, "\tfirmware_ver\n");
-    fprintf(stderr, "\tserial_num\n");
-    fprintf(stderr, "\thardware_id\n");
-    fprintf(stderr, "\tscope\n");
-    fprintf(stderr, "\tifs\n");
-    fprintf(stderr, "\tname\n");
-    fprintf(stderr, "\twidth\n");
-    fprintf(stderr, "\theight\n");
-    fprintf(stderr, "\turl\n");
-    fprintf(stderr, "\tsnapurl\n");
-    fprintf(stderr, "\ttype\n");
-    fprintf(stderr, "\tptz\n");
-    fprintf(stderr, "\tmove_left\n");
-    fprintf(stderr, "\tmove_right\n");
-    fprintf(stderr, "\tmove_up\n");
-    fprintf(stderr, "\tmove_down\n");
-    fprintf(stderr, "\tmove_stop\n");
-    fprintf(stderr, "\tmove_preset\n");
-
-    fprintf(stderr, "\nExample:\n");
+    fprintf(stderr, "\nCreate a configuration file following this example:\n\n");
+    fprintf(stderr, "Example:\n");
     fprintf(stderr, "\tmodel=Yi Hack\n");
     fprintf(stderr, "\tmanufacturer=Yi\n");
     fprintf(stderr, "\tfirmware_ver=x.y.z\n");

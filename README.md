@@ -67,6 +67,9 @@ port=80
 scope=onvif://www.onvif.org/Profile/Streaming
 user=
 password=
+#Advanced options
+adv_fault_if_unknown=0
+adv_synology_nvr=0
 
 #Profile 0
 name=Profile_0
@@ -75,6 +78,7 @@ height=1080
 url=rtsp://%s/ch0_0.h264
 snapurl=http://%s/cgi-bin/snapshot.sh?res=high&watermark=yes
 type=H264
+decoder=G711
 
 #Profile 1
 name=Profile_1
@@ -83,6 +87,7 @@ height=360
 url=rtsp://%s/ch0_1.h264
 snapurl=http://%s/cgi-bin/snapshot.sh?res=low&watermark=yes
 type=H264
+decoder=NONE
 
 #PTZ
 ptz=1
@@ -150,8 +155,11 @@ Brief explanation of some parameters:
 | ifs | the network interface used by your http server |
 | port | the TCP port used by your http server |
 | user | the user you want to set for WS-UsernameToken authentication, if blank security is disabled |
+| adv_fault_if_unknown | set to 1 if your ONVIF client is not able to connect to the device |
+| adv_synology_nvr | set to 1 if you are using a Synology NVR |
 | url | the url of your streaming service (it is not provided by onvif server) |
 | snapurl | the url of your snapshot service (tipically an http url that provides a jpg image) |
+| decoder | set to G711 or AAC if your device support an audio back channel |
 | ptz | 1 if onvif_simple_server can control PTZ, 0 otherwise |
 | move_* | the binary that moves the PTZ controls, onvif_simple_server will run it with a system call |
 | events | 1 if you want to enable events handling |
@@ -159,6 +167,9 @@ Brief explanation of some parameters:
 | source_name | the source name inside the Notify message |
 | source_value | the source value inside the Notify message |
 | input_file | the file created when the event is fired |
+| events | set to 1 to enable ONVIF PullPoint, 2 to enable WS Base Notification or 3 to enable both |
+
+Check the code for other informations.
 
 ### wsd_simple_server
 wsd_simple server supports the following options
