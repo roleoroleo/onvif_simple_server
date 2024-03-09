@@ -87,6 +87,9 @@ typedef struct {
 
     char *ifs;
 
+    int adv_fault_if_unknown;
+    int adv_synology_nvr;
+
     stream_profile_t *profiles;
     int profiles_num;
 

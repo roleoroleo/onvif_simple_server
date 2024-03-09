@@ -701,7 +701,9 @@ int events_set_synchronization_point()
 
 int events_unsupported(const char *method)
 {
-//    send_action_failed_fault(-1);
-    send_empty_response("tev", (char *) method);
+    if (service_ctx.adv_fault_if_unknown == 1)
+        send_action_failed_fault(-1);
+    else
+        send_empty_response("tev", (char *) method);
     return -1;
 }
