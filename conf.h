@@ -21,6 +21,10 @@
 #define DEFAULT_HW_ID        "HWID"
 #define DEFAULT_IFS          "wlan0"
 
+#define DEC_NONE              0
+#define DEC_G711              1
+#define DEC_AAC               4
+
 int process_conf_file(char *file);
 void free_conf_file();
 void print_conf_help();

@@ -165,6 +165,12 @@ int process_conf_file(char *file)
 
             service_ctx.profiles[service_ctx.profiles_num - 1].name = (char *) malloc(strlen(value) + 1);
             strcpy(service_ctx.profiles[service_ctx.profiles_num - 1].name, value);
+            service_ctx.profiles[service_ctx.profiles_num - 1].width = 0;
+            service_ctx.profiles[service_ctx.profiles_num - 1].height = 0;
+            service_ctx.profiles[service_ctx.profiles_num - 1].url = NULL;
+            service_ctx.profiles[service_ctx.profiles_num - 1].snapurl = NULL;
+            service_ctx.profiles[service_ctx.profiles_num - 1].type = 0;
+            service_ctx.profiles[service_ctx.profiles_num - 1].decoder = 0;
         } else if (strcasecmp(param, "width") == 0) {
             errno = 0;
             service_ctx.profiles[service_ctx.profiles_num - 1].width = strtol(value, &endptr, 10);
@@ -204,6 +210,13 @@ int process_conf_file(char *file)
                 service_ctx.profiles[service_ctx.profiles_num - 1].type = MPEG4;
             else if (strcasecmp(value, "H264") == 0)
                 service_ctx.profiles[service_ctx.profiles_num - 1].type = H264;
+        } else if (strcasecmp(param, "decoder") == 0) {
+            if (strcasecmp(value, "NONE") == 0)
+                service_ctx.profiles[service_ctx.profiles_num - 1].decoder = DEC_NONE;
+            else if (strcasecmp(value, "G711") == 0)
+                service_ctx.profiles[service_ctx.profiles_num - 1].decoder = DEC_G711;
+            else if (strcasecmp(value, "AAC") == 0)
+                service_ctx.profiles[service_ctx.profiles_num - 1].decoder = DEC_AAC;
 
         //PTZ Profile for ONVIF PTZ Service
         } else if ((strcasecmp(param, "ptz") == 0) && (strcasecmp(value, "1") == 0)) {
@@ -358,9 +371,9 @@ void free_conf_file()
     }
 
     for (i = service_ctx.profiles_num - 1; i >= 0; i--) {
-        free(service_ctx.profiles[i].snapurl);
-        free(service_ctx.profiles[i].url);
-        free(service_ctx.profiles[i].name);
+        if (service_ctx.profiles[i].snapurl != NULL) free(service_ctx.profiles[i].snapurl);
+        if (service_ctx.profiles[i].url != NULL) free(service_ctx.profiles[i].url);
+        if (service_ctx.profiles[i].name != NULL) free(service_ctx.profiles[i].name);
     }
     if (service_ctx.profiles != NULL) free(service_ctx.profiles);
 
@@ -426,6 +439,7 @@ void print_conf_help()
     fprintf(stderr, "\turl=rtsp://%%s/ch0_0.h264\n");
     fprintf(stderr, "\tsnapurl=http://%%s/cgi-bin/snapshot.sh?res=high&watermark=yes\n");
     fprintf(stderr, "\ttype=H264\n");
+    fprintf(stderr, "\tdecoder=G711\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "\t#Profile 1\n");
     fprintf(stderr, "\tname=Profile_1\n");
@@ -434,6 +448,7 @@ void print_conf_help()
     fprintf(stderr, "\turl=rtsp://%%s/ch0_1.h264\n");
     fprintf(stderr, "\tsnapurl=http://%%s/cgi-bin/snapshot.sh?res=low&watermark=yes\n");
     fprintf(stderr, "\ttype=H264\n");
+    fprintf(stderr, "\tdecoder=NONE\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "\t#PTZ\n");
     fprintf(stderr, "\tptz=1\n");

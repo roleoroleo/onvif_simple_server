@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "media_service.h"
+#include "conf.h"
 #include "fault.h"
 #include "utils.h"
 #include "log.h"
@@ -749,12 +750,52 @@ int media_get_audio_decoder_configurations()
 
 int media_get_audio_decoder_configuration_options()
 {
-    long size = cat(NULL, "media_service_files/GetAudioDecoderConfigurationOptions.xml", 0);
+    int decoder_type;
+    const char *profile_token = get_element("ProfileToken", "Body");
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    if (profile_token == NULL) {
+        // Get the decoder from the 1st profile
+        if (service_ctx.profiles_num > 0) {
+            decoder_type = service_ctx.profiles[0].decoder;
+        }
+    } else {
+        if ((service_ctx.profiles_num > 0) && (strcasecmp(service_ctx.profiles[0].name, profile_token) == 0)) {
+            decoder_type = service_ctx.profiles[0].decoder;
+        } else if ((service_ctx.profiles_num > 1) && (strcasecmp(service_ctx.profiles[1].name, profile_token) == 0)) {
+            decoder_type = service_ctx.profiles[1].decoder;
+        } else {
+            decoder_type = DEC_NONE;
+        }
+    }
 
-    return cat("stdout", "media_service_files/GetAudioDecoderConfigurationOptions.xml", 0);
+    if (decoder_type == DEC_G711) {
+
+        long size = cat(NULL, "media_service_files/GetAudioDecoderConfigurationOptions_g711.xml", 0);
+
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+        return cat("stdout", "media_service_files/GetAudioDecoderConfigurationOptions_g711.xml", 0);
+
+    } else if (decoder_type == DEC_AAC) {
+
+        long size = cat(NULL, "media_service_files/GetAudioDecoderConfigurationOptions_aac.xml", 0);
+
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+        return cat("stdout", "media_service_files/GetAudioDecoderConfigurationOptions_aac.xml", 0);
+
+    } else {
+
+        long size = cat(NULL, "media_service_files/GetAudioDecoderConfigurationOptions_none.xml", 0);
+
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+        return cat("stdout", "media_service_files/GetAudioDecoderConfigurationOptions_none.xml", 0);
+
+    }
 }
 
 int media_get_audio_outputs()
