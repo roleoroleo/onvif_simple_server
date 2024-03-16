@@ -703,7 +703,7 @@ int ptz_get_status()
     int ret = 0;
     FILE *fp;
     double x, y, z = 1.0;
-    int i;
+    int i = 0;
     char out[256], sx[128], sy[128], sz[128], si[128];
     ezxml_t node;
 
