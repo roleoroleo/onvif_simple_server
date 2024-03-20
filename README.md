@@ -23,14 +23,16 @@ The onvif server instead runs as CGI and therefore needs an http server that sup
 - [Donation](#donation)
 
 ## Build
-- Open the Makefile and edit the path to the libtomcrypt library to suit your needs
-- Run make
+- Open the `Makefile` and edit the path to the libtomcrypt library to suit your needs
+- Run `make`
 
-Or:
-
-- Open the extras folder.
-- Customize build.sh script
-- Run build.sh
+## Create a working example with lighttpd
+- Open extras folder
+- Customize `build.sh` script, if you want
+- Run `./build.sh`
+- Copy the content of the `_install` folder to `/usr/local`
+- Run `/usr/local/bin/lighttpd -f /usr/local/etc/lighttpd.conf`
+- Run your preferred client and test the address `http://YOUR_IP:8080/onvif/device_service`
 
 ## Configuration
 ### onvif_simple_server
