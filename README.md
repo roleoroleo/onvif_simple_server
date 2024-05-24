@@ -171,7 +171,7 @@ Brief explanation of some parameters:
 | input_file | the file created when the event is fired |
 | events | set to 1 to enable ONVIF PullPoint, 2 to enable WS Base Notification or 3 to enable both |
 
-Check the code for other informations.
+Check the code for information.
 
 ### wsd_simple_server
 wsd_simple server supports the following options
@@ -251,7 +251,7 @@ Below a list of the implemented functions, all other functions returns a generic
 ```
 GetServices
 GetServiceCapabilities
-GetDeviceInformation
+GetDevicermation
 GetSystemDateAndTime
 SystemReboot
 GetScopes
