@@ -291,11 +291,12 @@ int main(int argc, char ** argv)
     }
     log_info("Completed.");
 
-    if (strcmp("POST", getenv("REQUEST_METHOD")) != 0) {
+    tmp = getenv("REQUEST_METHOD");
+    if ((tmp == NULL) || (strcmp("POST", tmp) != 0)) {
         fprintf(stdout, "Content-type: text/html\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", 89 + strlen(getenv("REQUEST_METHOD")));
-        fprintf(stdout, "<html><head><title>Error</title></head><body>HTTP %s method is not supported</body></html>\n", getenv("REQUEST_METHOD"));
-        log_fatal("HTTP %s method is not supported", getenv("REQUEST_METHOD"));
+        fprintf(stdout, "Content-Length: 86\r\n\r\n");
+        fprintf(stdout, "<html><head><title>Error</title></head><body>HTTP method not supported</body></html>\r\n");
+        log_fatal("HTTP method not supported");
         fclose(fLog);
         free(conf_file);
         exit(EXIT_FAILURE);
