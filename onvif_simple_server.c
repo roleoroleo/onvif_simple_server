@@ -317,7 +317,7 @@ int main(int argc, char ** argv)
         exit(EXIT_FAILURE);
     }
     if (realloc(input, input_size * sizeof(char)) == NULL) {
-        log_fatal("Memory error trying to allcate %d bytes", input_size);
+        log_fatal("Memory error trying to allocate %d bytes", input_size);
         free(input);
         fclose(fLog);
         free(conf_file);
