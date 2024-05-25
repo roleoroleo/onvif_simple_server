@@ -291,6 +291,15 @@ int main(int argc, char ** argv)
     }
     log_info("Completed.");
 
+    if (strcmp("POST", getenv("REQUEST_METHOD")) != 0) {
+        fprintf(stdout, "Content-type: text/html\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", 89 + strlen(getenv("REQUEST_METHOD")));
+        fprintf(stdout, "<html><head><title>Error</title></head><body>HTTP %s method is not supported</body></html>\n", getenv("REQUEST_METHOD"));
+        log_fatal("HTTP %s method is not supported", getenv("REQUEST_METHOD"));
+        fclose(fLog);
+        free(conf_file);
+        exit(EXIT_FAILURE);
+    }
     int input_size;
     char *input = (char *) malloc (16 * 1024 * sizeof(char));
     if (input == NULL) {
@@ -300,8 +309,15 @@ int main(int argc, char ** argv)
         exit(EXIT_FAILURE);
     }
     input_size = fread(input, 1, 16 * 1024 * sizeof(char), stdin);
+    if (input_size == 0) {
+        log_fatal("Error: input is empty");
+        free(input);
+        fclose(fLog);
+        free(conf_file);
+        exit(EXIT_FAILURE);
+    }
     if (realloc(input, input_size * sizeof(char)) == NULL) {
-        log_fatal("Memory error");
+        log_fatal("Memory error trying to allcate %d bytes", input_size);
         free(input);
         fclose(fLog);
         free(conf_file);
