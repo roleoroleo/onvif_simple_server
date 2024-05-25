@@ -302,6 +302,7 @@ int main(int argc, char ** argv)
     }
     int input_size;
     char *input = (char *) malloc (16 * 1024 * sizeof(char));
+    log_debug("Malloc finished,input pointer points to %p",input);
     if (input == NULL) {
         log_fatal("Memory error");
         fclose(fLog);
@@ -316,7 +317,10 @@ int main(int argc, char ** argv)
         free(conf_file);
         exit(EXIT_FAILURE);
     }
-    if (realloc(input, input_size * sizeof(char)) == NULL) {
+    input = (char *) realloc(input, input_size * sizeof(char));
+    //realloc returns new address which is not always the same as "input", if not updated the old pointer address causes segmentation fault when trying to use teh variable
+    log_debug("Realloc finished,input pointer is now pointing to %p",input);
+    if (input == NULL) {
         log_fatal("Memory error trying to allocate %d bytes", input_size);
         free(input);
         fclose(fLog);
