@@ -321,8 +321,11 @@ int get_mac_address(char *address, char *name)
                 (unsigned char) ifr.ifr_hwaddr.sa_data[4],
                 (unsigned char) ifr.ifr_hwaddr.sa_data[5]);
     } else {
+        log_error("Unable to get  mac address");
         return -4;
     }
+
+    log_debug("MAC address: <%s>", address);
 
     return 0;
 }
@@ -338,6 +341,8 @@ int netmask2prefixlen(char *netmask)
             n = n >> 1;
             i++;
     }
+
+    log_debug("Prefix length: %d", i);
 
     return i;
 }
