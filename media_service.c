@@ -279,7 +279,7 @@ int media_create_profile()
 
     if (service_ctx.adv_synology_nvr == 0) {
         if (service_ctx.adv_fault_if_unknown == 1)
-            send_action_failed_fault(-1);
+            send_action_failed_fault("media_service", -1);
         else
             send_fault("media_service", "Receiver", "ter:Action", "ter:MaxNVTProfiles", "Max profile number reached", "The maximum number of supported profiles supported by the device has been reached");
     }
@@ -492,7 +492,7 @@ int media_get_guaranteed_number_of_video_encoder_instances()
     if ((service_ctx.profiles_num >= 0) && (service_ctx.profiles_num <= 2)) {
         sprintf(stmp, "%d", service_ctx.profiles_num);
     } else {
-        send_action_failed_fault(-1);
+        send_action_failed_fault("media_service", -1);
         return -1;
     }
 
@@ -894,7 +894,7 @@ int media_get_compatible_audio_output_configurations()
 int media_unsupported(const char *method)
 {
     if (service_ctx.adv_fault_if_unknown == 1)
-        send_action_failed_fault(-1);
+        send_action_failed_fault("media_service", -1);
     else
         send_empty_response("trt", (char *) method);
     return -1;

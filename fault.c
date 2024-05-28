@@ -107,11 +107,11 @@ int send_pull_messages_fault(char *timeout, char *message_limit)
         "%MAX_MESSAGE_LIMIT%", message_limit);
 }
 
-int send_action_failed_fault(int code)
+int send_action_failed_fault(char *service, int code)
 {
     char error_string[1024];
     sprintf(error_string, "The requested SOAP action failed: error %d", code);
-    send_fault("ptz_service", "Receiver", "ter:Action", "ter:ActionFailed", "Action failed", error_string);
+    send_fault(service, "Receiver", "ter:Action", "ter:ActionFailed", "Action failed", error_string);
 }
 
 int send_authentication_error()

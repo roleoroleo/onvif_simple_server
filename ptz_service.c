@@ -281,7 +281,7 @@ int ptz_goto_preset()
         return -4;
     }
     if (service_ctx.ptz_node.move_preset == NULL) {
-        send_action_failed_fault(-5);
+        send_action_failed_fault("ptz_service", -5);
         return -5;
     }
 
@@ -318,7 +318,7 @@ int ptz_goto_home_position()
     }
 
     if (service_ctx.ptz_node.move_preset == NULL) {
-        send_action_failed_fault(-4);
+        send_action_failed_fault("ptz_service", -4);
         return -4;
     }
     sprintf(sys_command, service_ctx.ptz_node.move_preset, 0);
@@ -373,7 +373,7 @@ int ptz_continuous_move()
 
         if (dx > 0.0) {
             if (service_ctx.ptz_node.move_right == NULL) {
-                send_action_failed_fault(-3);
+                send_action_failed_fault("ptz_service", -3);
                 return -3;
             }
             strcpy(sys_command, service_ctx.ptz_node.move_right);
@@ -381,7 +381,7 @@ int ptz_continuous_move()
             ret = 0;
         } else if (dx < 0.0) {
             if (service_ctx.ptz_node.move_left == NULL) {
-                send_action_failed_fault(-4);
+                send_action_failed_fault("ptz_service", -4);
                 return -4;
             }
             strcpy(sys_command, service_ctx.ptz_node.move_left);
@@ -395,7 +395,7 @@ int ptz_continuous_move()
 
         if (dy > 0.0) {
             if (service_ctx.ptz_node.move_up == NULL) {
-                send_action_failed_fault(-5);
+                send_action_failed_fault("ptz_service", -5);
                 return -5;
             }
             strcpy(sys_command, service_ctx.ptz_node.move_up);
@@ -403,7 +403,7 @@ int ptz_continuous_move()
             ret = 0;
         } else if (dy < 0.0) {
             if (service_ctx.ptz_node.move_down == NULL) {
-                send_action_failed_fault(-6);
+                send_action_failed_fault("ptz_service", -6);
                 return -6;
             }
             strcpy(sys_command, service_ctx.ptz_node.move_down);
@@ -451,7 +451,7 @@ int ptz_relative_move()
     }
 
     if (service_ctx.ptz_node.jump_to_rel == NULL) {
-        send_action_failed_fault(-3);
+        send_action_failed_fault("ptz_service", -3);
         return -3;
     }
 
@@ -595,7 +595,7 @@ int ptz_absolute_move()
     }
 
     if (service_ctx.ptz_node.jump_to_abs == NULL) {
-        send_action_failed_fault(-3);
+        send_action_failed_fault("ptz_service", -3);
         return -3;
     }
 
@@ -680,7 +680,7 @@ int ptz_stop()
     }
 
     if (service_ctx.ptz_node.move_stop == NULL) {
-        send_action_failed_fault(-3);
+        send_action_failed_fault("ptz_service", -3);
         return -3;
     }
 
@@ -824,7 +824,7 @@ int ptz_set_preset()
             return -3;
         }
         // Update of an existing preset is not supported
-        send_action_failed_fault(-4);
+        send_action_failed_fault("ptz_service", -4);
         return -4;
     }
 
@@ -848,7 +848,7 @@ int ptz_set_preset()
     destroy_presets();
 
     if (service_ctx.ptz_node.set_preset == NULL) {
-        send_action_failed_fault(-7);
+        send_action_failed_fault("ptz_service", -7);
         return -7;
     }
 
@@ -897,7 +897,7 @@ int ptz_set_home_position()
     }
 
     if (service_ctx.ptz_node.set_home_position == NULL) {
-        send_action_failed_fault(-3);
+        send_action_failed_fault("ptz_service", -3);
         return -3;
     }
 
@@ -936,7 +936,7 @@ int ptz_remove_preset()
     }
 
     if (service_ctx.ptz_node.remove_preset == NULL) {
-        send_action_failed_fault(-4);
+        send_action_failed_fault("ptz_service", -4);
         return -4;
     }
 
@@ -954,7 +954,7 @@ int ptz_remove_preset()
 int ptz_unsupported(const char *method)
 {
     if (service_ctx.adv_fault_if_unknown == 1)
-        send_action_failed_fault(-1);
+        send_action_failed_fault("ptz_service", -1);
     else
         send_empty_response("tptz", (char *) method);
     return -1;

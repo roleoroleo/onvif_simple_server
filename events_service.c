@@ -195,7 +195,7 @@ int events_pull_messages()
     subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
-        send_action_failed_fault(-3);
+        send_action_failed_fault("events_service", -3);
         return -3;
     }
     sem_memory_wait();
@@ -214,7 +214,7 @@ int events_pull_messages()
     if (timeout == NULL) {
         log_error("No Timeout element for PullMessages method");
         destroy_shared_memory((void *) subs_evts, 0);
-        send_action_failed_fault(-5);
+        send_action_failed_fault("events_service", -5);
         return -5;
     }
     time(&now);
@@ -226,7 +226,7 @@ int events_pull_messages()
     if (message_limit == NULL) {
         log_error("No MessageLimit element for PullMessages method");
         destroy_shared_memory((void *) subs_evts, 0);
-        send_action_failed_fault(-6);
+        send_action_failed_fault("events_service", -6);
         return -6;
     }
 
@@ -235,7 +235,7 @@ int events_pull_messages()
     if ((errno == ERANGE && (limit == LONG_MAX || limit == LONG_MIN)) || (errno != 0 && limit == 0)) {
         log_error("Wrong MessageLimit value for PullMessages method");
         destroy_shared_memory((void *) subs_evts, 0);
-        send_action_failed_fault(-7);
+        send_action_failed_fault("events_service", -7);
         return -7;
     }
 
@@ -376,7 +376,7 @@ int events_subscribe()
     subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
-        send_action_failed_fault(-4);
+        send_action_failed_fault("events_service", -4);
         return -4;
     }
     sem_memory_wait();
@@ -402,7 +402,7 @@ int events_subscribe()
     relates_to_uuid = get_element("MessageID", "Header");
     if (relates_to_uuid == NULL) {
         log_error("No MessageID element for Subscribe method");
-        send_action_failed_fault(-5);
+        send_action_failed_fault("events_service", -5);
         return -5;
     }
 
@@ -476,7 +476,7 @@ int events_renew()
     subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
-        send_action_failed_fault(-4);
+        send_action_failed_fault("events_service", -4);
         return -4;
     }
     sem_memory_wait();
@@ -495,7 +495,7 @@ int events_renew()
     relates_to_uuid = get_element("MessageID", "Header");
     if (relates_to_uuid == NULL) {
         log_error("No MessageID element for Renew method");
-        send_action_failed_fault(-6);
+        send_action_failed_fault("events_service", -6);
         return -6;
     }
 
@@ -570,7 +570,7 @@ int events_get_event_properties()
             }
             if ((c == 0) && (j == 3) && (token != NULL)) {
                 log_error("The topic has too many levels");
-                send_action_failed_fault(-1);
+                send_action_failed_fault("events_service", -1);
                 return -1;
             }
 
@@ -624,7 +624,7 @@ int events_unsubscribe()
     subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
-        send_action_failed_fault(-3);
+        send_action_failed_fault("events_service", -3);
         return -3;
     }
     sem_memory_wait();
@@ -679,7 +679,7 @@ int events_set_synchronization_point()
     subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
-        send_action_failed_fault(-3);
+        send_action_failed_fault("events_service", -3);
         return -3;
     }
     sem_memory_wait();
@@ -702,7 +702,7 @@ int events_set_synchronization_point()
 int events_unsupported(const char *method)
 {
     if (service_ctx.adv_fault_if_unknown == 1)
-        send_action_failed_fault(-1);
+        send_action_failed_fault("events_service", -1);
     else
         send_empty_response("tev", (char *) method);
     return -1;

@@ -451,7 +451,7 @@ int device_get_network_interfaces()
 int device_unsupported(const char *method)
 {
     if (service_ctx.adv_fault_if_unknown == 1)
-        send_action_failed_fault(-1);
+        send_action_failed_fault("device_service", -1);
     else
         send_empty_response("tds", (char *) method);
     return -1;
