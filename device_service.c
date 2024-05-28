@@ -426,11 +426,19 @@ int device_get_network_interfaces()
     char mac_address[18];
     int prefix_len;
     char sprefix_len[3];
+    int ret;
 
-    get_ip_address(address, netmask, service_ctx.ifs);
+    ret = get_ip_address(address, netmask, service_ctx.ifs);
+    if (ret < 0) {
+        address[0] = '\0';
+        netmask[0] = '\0';
+    }
     prefix_len = netmask2prefixlen(netmask);
     sprintf(sprefix_len, "%d", prefix_len);
-    get_mac_address(mac_address, service_ctx.ifs);
+    ret = get_mac_address(mac_address, service_ctx.ifs);
+    if (ret < 0) {
+        mac_address[0] = '\0';
+    }
 
     long size = cat(NULL, "device_service_files/GetNetworkInterfaces.xml", 8,
             "%INTERFACE%", service_ctx.ifs,
