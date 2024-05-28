@@ -314,11 +314,13 @@ int get_mac_address(char *address, char *name)
 
     if (success) {
         sprintf(address, "%02x:%02x:%02x:%02x:%02x:%02x",
-                ifr.ifr_hwaddr.sa_data[0], ifr.ifr_hwaddr.sa_data[1],
-                ifr.ifr_hwaddr.sa_data[2], ifr.ifr_hwaddr.sa_data[3],
-                ifr.ifr_hwaddr.sa_data[4], ifr.ifr_hwaddr.sa_data[5]);
+                (unsigned char) ifr.ifr_hwaddr.sa_data[0],
+                (unsigned char) ifr.ifr_hwaddr.sa_data[1],
+                (unsigned char) ifr.ifr_hwaddr.sa_data[2],
+                (unsigned char) ifr.ifr_hwaddr.sa_data[3],
+                (unsigned char) ifr.ifr_hwaddr.sa_data[4],
+                (unsigned char) ifr.ifr_hwaddr.sa_data[5]);
     } else {
-        address = NULL;
         return -4;
     }
 
