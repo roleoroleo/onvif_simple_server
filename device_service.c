@@ -423,7 +423,7 @@ int device_get_network_interfaces()
 {
     char address[16];
     char netmask[16];
-    char mac_address[16];
+    char mac_address[18];
     int prefix_len;
     char sprefix_len[3];
 
