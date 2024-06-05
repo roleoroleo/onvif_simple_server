@@ -72,6 +72,7 @@ int process_conf_file(char *file)
     service_ctx.ptz_node.move_down = NULL;
     service_ctx.ptz_node.move_stop = NULL;
     service_ctx.ptz_node.move_preset = NULL;
+    service_ctx.ptz_node.goto_home_position = NULL;
     service_ctx.ptz_node.set_preset = NULL;
     service_ctx.ptz_node.set_home_position = NULL;
     service_ctx.ptz_node.remove_preset = NULL;
@@ -237,6 +238,7 @@ int process_conf_file(char *file)
             service_ctx.ptz_node.move_down = NULL;
             service_ctx.ptz_node.move_stop = NULL;
             service_ctx.ptz_node.move_preset = NULL;
+            service_ctx.ptz_node.goto_home_position = NULL;
             service_ctx.ptz_node.set_preset = NULL;
             service_ctx.ptz_node.set_home_position = NULL;
             service_ctx.ptz_node.remove_preset = NULL;
@@ -266,6 +268,9 @@ int process_conf_file(char *file)
         } else if ((strcasecmp(param, "move_preset") == 0) && (service_ctx.ptz_node.enable == 1)) {
             service_ctx.ptz_node.move_preset = (char *) malloc(strlen(value) + 1);
             strcpy(service_ctx.ptz_node.move_preset, value);
+        } else if ((strcasecmp(param, "goto_home_position") == 0) && (service_ctx.ptz_node.enable == 1)) {
+            service_ctx.ptz_node.goto_home_position = (char *) malloc(strlen(value) + 1);
+            strcpy(service_ctx.ptz_node.goto_home_position, value);
         } else if ((strcasecmp(param, "set_preset") == 0) && (service_ctx.ptz_node.enable == 1)) {
             service_ctx.ptz_node.set_preset = (char *) malloc(strlen(value) + 1);
             strcpy(service_ctx.ptz_node.set_preset, value);
@@ -368,6 +373,7 @@ void free_conf_file()
         if (service_ctx.ptz_node.remove_preset != NULL) free(service_ctx.ptz_node.remove_preset);
         if (service_ctx.ptz_node.set_home_position != NULL) free(service_ctx.ptz_node.set_home_position);
         if (service_ctx.ptz_node.set_preset != NULL) free(service_ctx.ptz_node.set_preset);
+        if (service_ctx.ptz_node.goto_home_position != NULL) free(service_ctx.ptz_node.goto_home_position);
         if (service_ctx.ptz_node.move_preset != NULL) free(service_ctx.ptz_node.move_preset);
         if (service_ctx.ptz_node.move_stop != NULL) free(service_ctx.ptz_node.move_stop);
         if (service_ctx.ptz_node.move_down != NULL) free(service_ctx.ptz_node.move_down);
@@ -447,6 +453,7 @@ void print_conf_help()
     fprintf(stderr, "\tmove_down=/tmp/sd/yi-hack/bin/ipc_cmd -m down\n");
     fprintf(stderr, "\tmove_stop=/tmp/sd/yi-hack/bin/ipc_cmd -m stop\n");
     fprintf(stderr, "\tmove_preset=/tmp/sd/yi-hack/bin/ipc_cmd -p %%d\n");
+    fprintf(stderr, "\tgoto_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -p 0\n");
     fprintf(stderr, "\tset_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a add_preset -m %%s\n");
     fprintf(stderr, "\tset_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -H\n");
     fprintf(stderr, "\tremove_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a del_preset -n %%d\n");

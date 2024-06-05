@@ -321,7 +321,7 @@ int ptz_goto_home_position()
         send_action_failed_fault("ptz_service", -4);
         return -4;
     }
-    sprintf(sys_command, service_ctx.ptz_node.move_preset, 0);
+    strcpy(sys_command, service_ctx.ptz_node.goto_home_position);
     system(sys_command);
 
     destroy_presets();
