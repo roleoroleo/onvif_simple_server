@@ -101,6 +101,7 @@ move_up=/tmp/sd/yi-hack/bin/ipc_cmd -m up
 move_down=/tmp/sd/yi-hack/bin/ipc_cmd -m down
 move_stop=/tmp/sd/yi-hack/bin/ipc_cmd -m stop
 move_preset=/tmp/sd/yi-hack/bin/ipc_cmd -p %d
+goto_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -p 0
 set_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a add_preset -m %s
 set_home_position=/tmp/sd/yi-hack/script/ptz_presets.sh -a set_home_position
 remove_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a del_preset -n %d
