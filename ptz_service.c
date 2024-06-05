@@ -297,7 +297,6 @@ int ptz_goto_preset()
 
 int ptz_goto_home_position()
 {
-    char sys_command[MAX_LEN];
     ezxml_t node;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
@@ -311,20 +310,11 @@ int ptz_goto_home_position()
         return -2;
     }
 
-    init_presets();
-    if (presets.count == 0) {
-        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoHomePosition", "No home position", "No home position has been defined for this profile");
+    if (service_ctx.ptz_node.goto_home_position == NULL) {
+        send_action_failed_fault("ptz_service", -3);
         return -3;
     }
-
-    if (service_ctx.ptz_node.move_preset == NULL) {
-        send_action_failed_fault("ptz_service", -4);
-        return -4;
-    }
-    strcpy(sys_command, service_ctx.ptz_node.goto_home_position);
-    system(sys_command);
-
-    destroy_presets();
+    system(service_ctx.ptz_node.goto_home_position);
 
     long size = cat(NULL, "ptz_service_files/GotoHomePosition.xml", 0);
 
