@@ -225,7 +225,7 @@ int device_system_reboot()
     sleep(1);
 
     pthread_create(&reboot_pthread, NULL, reboot_thread, NULL);
-    pthread_detach(reboot_pthread);
+    pthread_join(reboot_pthread, NULL);
 
     return ret;
 }
