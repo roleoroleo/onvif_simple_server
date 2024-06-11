@@ -146,6 +146,11 @@ input_file=/tmp/onvif_notify_server/sound_detection
 Note:
 - you can use 1 or 2 profiles.
 - ipc_cmd is just an example of a local binary that handles ptz, use the specific program of your cam
+
+  **If the external command uses stdout, please append a redirect to /dev/null to avoid garbage in the html content**
+
+  example: move_right=/tmp/sd/yi-hack/bin/ipc_cmd -m right > /dev/null
+
 - %s, %d and %f are placeholders replaced runtime with the proper parameter
 - use the same folder for the input files of the events
 
