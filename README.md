@@ -34,6 +34,28 @@ The onvif server instead runs as CGI and therefore needs an http server that sup
 - Run `/usr/local/bin/lighttpd -f /usr/local/etc/lighttpd.conf`
 - Run your preferred client and test the address `http://YOUR_IP:8080/onvif/device_service`
 
+## Use httpd from busybox
+If you are using busybox I prepared a patch to use it with onvif_simple_server. The patch is valid for version 1.36.1.
+```
+diff -Naur busybox-1.36.1.ori/networking/httpd.c busybox-1.36.1/networking/httpd.c
+--- busybox-1.36.1.ori/networking/httpd.c	2024-01-08 16:45:49.504118695 +0100
++++ busybox-1.36.1/networking/httpd.c	2024-01-08 16:52:14.701167800 +0100
+@@ -2406,6 +2406,13 @@
+ 		}
+ 		cgi_type = CGI_NORMAL;
+ 	}
++	else if (is_prefixed_with(tptr, "onvif/")) {
++		if (tptr[6] == '\0') {
++			/* protect listing "cgi-bin/" */
++			send_headers_and_exit(HTTP_FORBIDDEN);
++		}
++		cgi_type = CGI_NORMAL;
++	}
+ #endif
+ 
+ 	if (urlp[-1] == '/') {
+```
+
 ## Configuration
 ### onvif_simple_server
 onvif_simple server supports the following options but you should use them just for debugging purpose
