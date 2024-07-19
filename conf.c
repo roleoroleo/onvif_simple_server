@@ -64,6 +64,8 @@ int process_conf_file(char *file)
     service_ctx.events_enable = EVENTS_NONE;
     service_ctx.events_num = 0;
 
+    service_ctx.ptz_node.max_step_x = 360.0;
+    service_ctx.ptz_node.max_step_y = 180.0;
     service_ctx.ptz_node.get_position = NULL;
     service_ctx.ptz_node.is_moving = NULL;
     service_ctx.ptz_node.move_left = NULL;
@@ -230,6 +232,8 @@ int process_conf_file(char *file)
         //PTZ Profile for ONVIF PTZ Service
         } else if ((strcasecmp(param, "ptz") == 0) && (strcasecmp(value, "1") == 0)) {
             service_ctx.ptz_node.enable = 1;
+            service_ctx.ptz_node.max_step_x = 360.0;
+            service_ctx.ptz_node.max_step_y = 180.0;
             service_ctx.ptz_node.get_position = NULL;
             service_ctx.ptz_node.is_moving = NULL;
             service_ctx.ptz_node.move_left = NULL;
@@ -244,6 +248,32 @@ int process_conf_file(char *file)
             service_ctx.ptz_node.remove_preset = NULL;
             service_ctx.ptz_node.jump_to_abs = NULL;
             service_ctx.ptz_node.jump_to_rel = NULL;
+        } else if (strcasecmp(param, "max_step_x") == 0) {
+            errno = 0;
+            service_ctx.ptz_node.max_step_x = strtod(value, &endptr);
+
+            /* Check for various possible errors */
+            if (errno == ERANGE || (errno != 0 && service_ctx.ptz_node.max_step_x == 0.0)) {
+                log_error("Wrong option: %s", line);
+                return -1;
+            }
+            if (endptr == value) {
+                log_error("Wrong option: %s", line);
+                return -1;
+            }
+        } else if (strcasecmp(param, "max_step_y") == 0) {
+            errno = 0;
+            service_ctx.ptz_node.max_step_y = strtod(value, &endptr);
+
+            /* Check for various possible errors */
+            if (errno == ERANGE || (errno != 0 && service_ctx.ptz_node.max_step_y == 0.0)) {
+                log_error("Wrong option: %s", line);
+                return -1;
+            }
+            if (endptr == value) {
+                log_error("Wrong option: %s", line);
+                return -1;
+            }
         } else if ((strcasecmp(param, "get_position") == 0) && (service_ctx.ptz_node.enable == 1)) {
             service_ctx.ptz_node.get_position = (char *) malloc(strlen(value) + 1);
             strcpy(service_ctx.ptz_node.get_position, value);
@@ -445,6 +475,8 @@ void print_conf_help()
     fprintf(stderr, "\n");
     fprintf(stderr, "\t#PTZ\n");
     fprintf(stderr, "\tptz=1\n");
+    fprintf(stderr, "\tmax_step_x=360\n");
+    fprintf(stderr, "\tmax_step_y=180\n");
     fprintf(stderr, "\tget_position=/tmp/sd/yi-hack/bin/ipc_cmd -g\n");
     fprintf(stderr, "\tis_moving=/tmp/sd/yi-hack/bin/ipc_cmd -u\n");
     fprintf(stderr, "\tmove_left=/tmp/sd/yi-hack/bin/ipc_cmd -m left\n");

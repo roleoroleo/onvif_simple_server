@@ -50,6 +50,8 @@ typedef struct {
 
 typedef struct {
     int enable;
+    double max_step_x;
+    double max_step_y;
     char *get_position;
     char *is_moving;
     char *move_left;

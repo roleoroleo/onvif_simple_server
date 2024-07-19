@@ -46,12 +46,12 @@
                     <tt:Range>
                         <tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
                         <tt:XRange>
-                            <tt:Min>0</tt:Min>
-                            <tt:Max>360</tt:Max>
+                            <tt:Min>%MIN_X%</tt:Min>
+                            <tt:Max>%MAX_X%</tt:Max>
                         </tt:XRange>
                         <tt:YRange>
-                            <tt:Min>0</tt:Min>
-                            <tt:Max>180</tt:Max>
+                            <tt:Min>%MIN_Y%</tt:Min>
+                            <tt:Max>%MAX_Y%</tt:Max>
                         </tt:YRange>
                     </tt:Range>
                 </tt:PanTiltLimits>
