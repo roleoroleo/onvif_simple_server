@@ -547,11 +547,11 @@ int ptz_relative_move()
             } else {
                 if ((x != NULL) && (y != NULL)) {
                     dx = atof(x);
-                    if ((dx > 360.0) || (dx < -360.0)) {
+                    if ((dx > service_ctx.ptz_node.max_step_x) || (dx < -service_ctx.ptz_node.max_step_x)) {
                         ret = -5;
                     }
                     dy = atof(y);
-                    if ((dy > 180.0) || (dy < -180.0)) {
+                    if ((dy > service_ctx.ptz_node.max_step_y) || (dy < -service_ctx.ptz_node.max_step_y)) {
                         ret = -6;
                     } else {
                         sprintf(sys_command, service_ctx.ptz_node.jump_to_rel, dx, dy);
@@ -686,11 +686,11 @@ int ptz_absolute_move()
     } else {
         if ((x != NULL) && (y != NULL)) {
             dx = atof(x);
-            if ((dx > 360.0) || (dx < 0.0)) {
+            if ((dx > service_ctx.ptz_node.max_step_x) || (dx < 0.0)) {
                 ret = -5;
             }
             dy = atof(y);
-            if ((dy > 180.0) || (dy < 0.0)) {
+            if ((dy > service_ctx.ptz_node.max_step_y) || (dy < 0.0)) {
                 ret = -6;
             } else {
                 sprintf(sys_command, service_ctx.ptz_node.jump_to_abs, dx, dy);
