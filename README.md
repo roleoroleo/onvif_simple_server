@@ -115,6 +115,8 @@ decoder=NONE
 
 #PTZ
 ptz=1
+max_step_x=360
+tmax_step_y=180
 get_position=/tmp/sd/yi-hack/bin/ipc_cmd -g
 is_moving=/tmp/sd/yi-hack/bin/ipc_cmd -u
 move_left=/tmp/sd/yi-hack/bin/ipc_cmd -m left
@@ -186,11 +188,12 @@ Brief explanation of some parameters:
 | port | the TCP port used by your http server |
 | user | the user you want to set for WS-UsernameToken authentication, if blank security is disabled |
 | adv_fault_if_unknown | set to 1 if your ONVIF client is not able to connect to the device |
-| adv_synology_nvr | set to 1 if you are using a Synology NVR |
+| adv_synology_nvr | set to 1 to improve compatibility if you are using a Synology NVR |
 | url | the url of your streaming service (it is not provided by onvif server) |
 | snapurl | the url of your snapshot service (tipically an http url that provides a jpg image) |
 | decoder | set to G711 or AAC if your device support an audio back channel |
 | ptz | 1 if onvif_simple_server can control PTZ, 0 otherwise |
+| max_step_* | max values of x and y movements reported by the cam (min = 0) |
 | move_* | the binary that moves the PTZ controls, onvif_simple_server will run it with a system call |
 | events | 1 if you want to enable events handling |
 | topic | the topic of the event |

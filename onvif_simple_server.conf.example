@@ -32,6 +32,8 @@ decoder=NONE
 
 #PTZ
 ptz=1
+max_step_x=360
+max_step_y=180
 get_position=/usr/local/bin/get_position
 is_moving=/usr/local/bin/is_moving
 move_left=/usr/local/bin/ptz_move -m left
