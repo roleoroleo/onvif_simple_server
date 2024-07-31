@@ -360,27 +360,27 @@ int process_conf_file(char *file)
     // If a string option is NULL, set a default value
     if (service_ctx.manufacturer == NULL) {
         service_ctx.manufacturer = (char *) malloc(strlen(DEFAULT_MANUFACTURER) + 1);
-        strcpy(service_ctx.user, DEFAULT_MANUFACTURER);
+        strcpy(service_ctx.manufacturer, DEFAULT_MANUFACTURER);
     }
     if (service_ctx.model == NULL) {
         service_ctx.model = (char *) malloc(strlen(DEFAULT_MODEL) + 1);
-        strcpy(service_ctx.user, DEFAULT_MODEL);
+        strcpy(service_ctx.model, DEFAULT_MODEL);
     }
     if (service_ctx.firmware_ver == NULL) {
         service_ctx.firmware_ver = (char *) malloc(strlen(DEFAULT_FW_VER) + 1);
-        strcpy(service_ctx.user, DEFAULT_FW_VER);
+        strcpy(service_ctx.firmware_ver, DEFAULT_FW_VER);
     }
     if (service_ctx.serial_num == NULL) {
         service_ctx.serial_num = (char *) malloc(strlen(DEFAULT_SERIAL_NUM) + 1);
-        strcpy(service_ctx.user, DEFAULT_SERIAL_NUM);
+        strcpy(service_ctx.serial_num, DEFAULT_SERIAL_NUM);
     }
     if (service_ctx.hardware_id == NULL) {
         service_ctx.hardware_id = (char *) malloc(strlen(DEFAULT_HW_ID) + 1);
-        strcpy(service_ctx.user, DEFAULT_HW_ID);
+        strcpy(service_ctx.hardware_id, DEFAULT_HW_ID);
     }
     if (service_ctx.ifs == NULL) {
         service_ctx.ifs = (char *) malloc(strlen(DEFAULT_IFS) + 1);
-        strcpy(service_ctx.user, DEFAULT_IFS);
+        strcpy(service_ctx.ifs, DEFAULT_IFS);
     }
 }
 
