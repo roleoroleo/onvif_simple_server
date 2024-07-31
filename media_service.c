@@ -277,12 +277,11 @@ int media_get_profile()
 int media_create_profile()
 {
 
-    if (service_ctx.adv_synology_nvr == 0) {
-        if (service_ctx.adv_fault_if_unknown == 1)
-            send_action_failed_fault("media_service", -1);
-        else
-            send_fault("media_service", "Receiver", "ter:Action", "ter:MaxNVTProfiles", "Max profile number reached", "The maximum number of supported profiles supported by the device has been reached");
-    }
+    if (service_ctx.adv_fault_if_unknown == 1)
+        send_action_failed_fault("media_service", -1);
+    else
+        send_fault("media_service", "Receiver", "ter:Action", "ter:MaxNVTProfiles", "Max profile number reached", "The maximum number of supported profiles supported by the device has been reached");
+
     return -1;
 }
 

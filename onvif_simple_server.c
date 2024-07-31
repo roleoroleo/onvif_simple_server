@@ -577,7 +577,15 @@ int main(int argc, char ** argv)
             }
         }
     } else {
-        send_authentication_error();
+        // hack to handle a bug with Synology
+        if ((service_ctx.adv_synology_nvr == 1) && 
+                (strcasecmp("media_service", prog_name) == 0) &&
+                (strcasecmp("CreateProfile", method) == 0)) {
+
+            send_fault("media_service", "Receiver", "ter:Action", "ter:MaxNVTProfiles", "Max profile number reached", "The maximum number of supported profiles supported by the device has been reached");
+        } else {
+            send_authentication_error();
+        }
     }
 
     close_xml();
