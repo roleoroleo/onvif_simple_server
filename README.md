@@ -1,4 +1,4 @@
-onvif_simple_server_e is a C light implementation of an onvif server intended for use in resource-constrained devices.
+onvif_simple_server is a C light implementation of an onvif server intended for use in resource-constrained devices.
 
 So:
 - no gsoap
