@@ -104,9 +104,9 @@ int process_conf_file(char *file)
         second = strchr(line, '=');
         //first has index of start of token
         //second has index of end of token + 1;
-        if(second == NULL) {
-            log_error("Wrong option: %s", line);
-            return -1;
+        if (second == NULL) {
+            log_warn("Unrecognized option: %s", line);
+            continue;
         }
         strncpy(param, first, second - first);
         if (second == &line[line_len - 1]) {
@@ -121,17 +121,21 @@ int process_conf_file(char *file)
 
         //ONVIF Service options (context)
         if (strcasecmp(param, "port") == 0) {
-            errno = 0;    /* To distinguish success/failure after call */
-            service_ctx.port = strtol(value, &endptr, 10);
+            if (value[0] == '\0') {
+                log_warn("Wrong value %s, use default", param);
+            } else {
+                errno = 0;    /* To distinguish success/failure after call */
+                service_ctx.port = strtol(value, &endptr, 10);
 
-            /* Check for various possible errors */
-            if ((errno == ERANGE && (service_ctx.port == LONG_MAX || service_ctx.port == LONG_MIN)) || (errno != 0 && service_ctx.port == 0)) {
-                log_error("Wrong option: %s", line);
-                return -1;
-            }
-            if (endptr == value) {
-                log_error("Wrong option: %s", line);
-                return -1;
+                /* Check for various possible errors */
+                if ((errno == ERANGE && (service_ctx.port == LONG_MAX || service_ctx.port == LONG_MIN)) || (errno != 0 && service_ctx.port == 0)) {
+                    log_error("Wrong option: %s", line);
+                    return -2;
+                }
+                if (endptr == value) {
+                    log_error("Wrong option: %s", line);
+                    return -2;
+                }
             }
         } else if (strcasecmp(param, "user") == 0) {
             service_ctx.user = (char *) malloc(strlen(value) + 1);
@@ -189,11 +193,11 @@ int process_conf_file(char *file)
             /* Check for various possible errors */
             if ((errno == ERANGE && (service_ctx.profiles[service_ctx.profiles_num - 1].width == LONG_MAX || service_ctx.profiles[service_ctx.profiles_num - 1].width == LONG_MIN)) || (errno != 0 && service_ctx.profiles[service_ctx.profiles_num - 1].width == 0)) {
                 log_error("Wrong option: %s", line);
-                return -1;
+                return -2;
             }
             if (endptr == value) {
                 log_error("Wrong option: %s", line);
-                return -1;
+                return -2;
             }
         } else if (strcasecmp(param, "height") == 0) {
             errno = 0;
@@ -202,11 +206,11 @@ int process_conf_file(char *file)
             /* Check for various possible errors */
             if ((errno == ERANGE && (service_ctx.profiles[service_ctx.profiles_num - 1].height == LONG_MAX || service_ctx.profiles[service_ctx.profiles_num - 1].height == LONG_MIN)) || (errno != 0 && service_ctx.profiles[service_ctx.profiles_num - 1].height == 0)) {
                 log_error("Wrong option: %s", line);
-                return -1;
+                return -2;
             }
             if (endptr == value) {
                 log_error("Wrong option: %s", line);
-                return -1;
+                return -2;
             }
         } else if (strcasecmp(param, "url") == 0) {
             service_ctx.profiles[service_ctx.profiles_num - 1].url = (char *) malloc(strlen(value) + 1);
@@ -230,8 +234,10 @@ int process_conf_file(char *file)
                 service_ctx.profiles[service_ctx.profiles_num - 1].decoder = DEC_AAC;
 
         //PTZ Profile for ONVIF PTZ Service
-        } else if ((strcasecmp(param, "ptz") == 0) && (strcasecmp(value, "1") == 0)) {
-            service_ctx.ptz_node.enable = 1;
+        } else if (strcasecmp(param, "ptz") == 0) {
+            if (strcasecmp(value, "1") == 0) {
+                service_ctx.ptz_node.enable = 1;
+            }
             service_ctx.ptz_node.max_step_x = 360.0;
             service_ctx.ptz_node.max_step_y = 180.0;
             service_ctx.ptz_node.get_position = NULL;
@@ -249,76 +255,118 @@ int process_conf_file(char *file)
             service_ctx.ptz_node.jump_to_abs = NULL;
             service_ctx.ptz_node.jump_to_rel = NULL;
         } else if (strcasecmp(param, "max_step_x") == 0) {
-            errno = 0;
-            service_ctx.ptz_node.max_step_x = strtod(value, &endptr);
+            if (service_ctx.ptz_node.enable == 1) {
+                if (value[0] == '\0') {
+                    log_warn("Empty value for %s, use default", param);
+                } else {
+                    errno = 0;
+                    service_ctx.ptz_node.max_step_x = strtod(value, &endptr);
 
-            /* Check for various possible errors */
-            if (errno == ERANGE || (errno != 0 && service_ctx.ptz_node.max_step_x == 0.0)) {
-                log_error("Wrong option: %s", line);
-                return -1;
-            }
-            if (endptr == value) {
-                log_error("Wrong option: %s", line);
-                return -1;
+                    /* Check for various possible errors */
+                    if (errno == ERANGE || (errno != 0 && service_ctx.ptz_node.max_step_x == 0.0)) {
+                        log_error("Wrong option: %s", line);
+                        return -2;
+                    }
+                    if (endptr == value) {
+                        log_error("Wrong option: %s", line);
+                        return -2;
+                    }
+                }
             }
         } else if (strcasecmp(param, "max_step_y") == 0) {
-            errno = 0;
-            service_ctx.ptz_node.max_step_y = strtod(value, &endptr);
+            if (service_ctx.ptz_node.enable == 1) {
+                if (value[0] == '\0') {
+                    log_warn("Empty value for %s, use default", param);
+                } else {
+                    errno = 0;
+                    service_ctx.ptz_node.max_step_y = strtod(value, &endptr);
 
-            /* Check for various possible errors */
-            if (errno == ERANGE || (errno != 0 && service_ctx.ptz_node.max_step_y == 0.0)) {
-                log_error("Wrong option: %s", line);
-                return -1;
+                    /* Check for various possible errors */
+                    if (errno == ERANGE || (errno != 0 && service_ctx.ptz_node.max_step_y == 0.0)) {
+                        log_error("Wrong option: %s", line);
+                        return -2;
+                    }
+                    if (endptr == value) {
+                        log_error("Wrong option: %s", line);
+                        return -2;
+                    }
+                }
             }
-            if (endptr == value) {
-                log_error("Wrong option: %s", line);
-                return -1;
+        } else if (strcasecmp(param, "get_position") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                service_ctx.ptz_node.get_position = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.ptz_node.get_position, value);
             }
-        } else if ((strcasecmp(param, "get_position") == 0) && (service_ctx.ptz_node.enable == 1)) {
-            service_ctx.ptz_node.get_position = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.ptz_node.get_position, value);
-        } else if ((strcasecmp(param, "is_moving") == 0) && (service_ctx.ptz_node.enable == 1)) {
-            service_ctx.ptz_node.is_moving = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.ptz_node.is_moving, value);
-        } else if ((strcasecmp(param, "move_left") == 0) && (service_ctx.ptz_node.enable == 1)) {
-            service_ctx.ptz_node.move_left = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.ptz_node.move_left, value);
-        } else if ((strcasecmp(param, "move_right") == 0) && (service_ctx.ptz_node.enable == 1)) {
-            service_ctx.ptz_node.move_right = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.ptz_node.move_right, value);
-        } else if ((strcasecmp(param, "move_up") == 0) && (service_ctx.ptz_node.enable == 1)) {
-            service_ctx.ptz_node.move_up = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.ptz_node.move_up, value);
-        } else if ((strcasecmp(param, "move_down") == 0) && (service_ctx.ptz_node.enable == 1)) {
-            service_ctx.ptz_node.move_down = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.ptz_node.move_down, value);
-        } else if ((strcasecmp(param, "move_stop") == 0) && (service_ctx.ptz_node.enable == 1)) {
-            service_ctx.ptz_node.move_stop = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.ptz_node.move_stop, value);
-        } else if ((strcasecmp(param, "move_preset") == 0) && (service_ctx.ptz_node.enable == 1)) {
-            service_ctx.ptz_node.move_preset = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.ptz_node.move_preset, value);
-        } else if ((strcasecmp(param, "goto_home_position") == 0) && (service_ctx.ptz_node.enable == 1)) {
-            service_ctx.ptz_node.goto_home_position = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.ptz_node.goto_home_position, value);
-        } else if ((strcasecmp(param, "set_preset") == 0) && (service_ctx.ptz_node.enable == 1)) {
-            service_ctx.ptz_node.set_preset = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.ptz_node.set_preset, value);
-        } else if ((strcasecmp(param, "set_home_position") == 0) && (service_ctx.ptz_node.enable == 1)) {
-            service_ctx.ptz_node.set_home_position = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.ptz_node.set_home_position, value);
-        } else if ((strcasecmp(param, "remove_preset") == 0) && (service_ctx.ptz_node.enable == 1)) {
-            service_ctx.ptz_node.remove_preset = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.ptz_node.remove_preset, value);
-        } else if ((strcasecmp(param, "jump_to_abs") == 0) && (service_ctx.ptz_node.enable == 1)) {
-            service_ctx.ptz_node.jump_to_abs = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.ptz_node.jump_to_abs, value);
-        } else if ((strcasecmp(param, "jump_to_rel") == 0) && (service_ctx.ptz_node.enable == 1)) {
-            service_ctx.ptz_node.jump_to_rel = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.ptz_node.jump_to_rel, value);
-        } else if ((strcasecmp(param, "get_presets") == 0) && (service_ctx.ptz_node.enable == 1)) {
-            service_ctx.ptz_node.get_presets = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.ptz_node.get_presets, value);
+        } else if (strcasecmp(param, "is_moving") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                service_ctx.ptz_node.is_moving = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.ptz_node.is_moving, value);
+            }
+        } else if (strcasecmp(param, "move_left") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                service_ctx.ptz_node.move_left = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.ptz_node.move_left, value);
+            }
+        } else if (strcasecmp(param, "move_right") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                service_ctx.ptz_node.move_right = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.ptz_node.move_right, value);
+            }
+        } else if (strcasecmp(param, "move_up") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                service_ctx.ptz_node.move_up = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.ptz_node.move_up, value);
+            }
+        } else if (strcasecmp(param, "move_down") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                service_ctx.ptz_node.move_down = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.ptz_node.move_down, value);
+            }
+        } else if (strcasecmp(param, "move_stop") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                service_ctx.ptz_node.move_stop = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.ptz_node.move_stop, value);
+            }
+        } else if (strcasecmp(param, "move_preset") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                service_ctx.ptz_node.move_preset = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.ptz_node.move_preset, value);
+            }
+        } else if (strcasecmp(param, "goto_home_position") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                service_ctx.ptz_node.goto_home_position = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.ptz_node.goto_home_position, value);
+            }
+        } else if (strcasecmp(param, "set_preset") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                service_ctx.ptz_node.set_preset = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.ptz_node.set_preset, value);
+            }
+        } else if (strcasecmp(param, "set_home_position") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                service_ctx.ptz_node.set_home_position = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.ptz_node.set_home_position, value);
+            }
+        } else if (strcasecmp(param, "remove_preset") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                service_ctx.ptz_node.remove_preset = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.ptz_node.remove_preset, value);
+            }
+        } else if (strcasecmp(param, "jump_to_abs") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                service_ctx.ptz_node.jump_to_abs = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.ptz_node.jump_to_abs, value);
+            }
+        } else if (strcasecmp(param, "jump_to_rel") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                service_ctx.ptz_node.jump_to_rel = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.ptz_node.jump_to_rel, value);
+            }
+        } else if (strcasecmp(param, "get_presets") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                service_ctx.ptz_node.get_presets = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.ptz_node.get_presets, value);
+            }
 
         //Events Profile for ONVIF Events Service
         } else if (strcasecmp(param, "events") == 0) {
@@ -329,29 +377,36 @@ int process_conf_file(char *file)
             } else if (strcasecmp(value, "3") == 0) {
                 service_ctx.events_enable = EVENTS_BOTH; // Pull and WS Base
             }
-        } else if ((strcasecmp(param, "topic") == 0) && (service_ctx.events_enable != EVENTS_NONE)) {
-            service_ctx.events_num++;
-            if (service_ctx.events_num >= MAX_EVENTS) {
-                log_error("Too many events, max is: %d", MAX_EVENTS);
-                return -1;
+        } else if (strcasecmp(param, "topic") == 0) {
+            if (service_ctx.events_enable != EVENTS_NONE) {
+                service_ctx.events_num++;
+                if (service_ctx.events_num >= MAX_EVENTS) {
+                    log_error("Too many events, max is: %d", MAX_EVENTS);
+                    return -2;
+                }
+                service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
+                service_ctx.events[service_ctx.events_num - 1].topic = NULL;
+                service_ctx.events[service_ctx.events_num - 1].source_name = NULL;
+                service_ctx.events[service_ctx.events_num - 1].source_value = NULL;
+                service_ctx.events[service_ctx.events_num - 1].input_file = NULL;
+                service_ctx.events[service_ctx.events_num - 1].topic = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.events[service_ctx.events_num - 1].topic, value);
             }
-            service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
-            service_ctx.events[service_ctx.events_num - 1].topic = NULL;
-            service_ctx.events[service_ctx.events_num - 1].source_name = NULL;
-            service_ctx.events[service_ctx.events_num - 1].source_value = NULL;
-            service_ctx.events[service_ctx.events_num - 1].input_file = NULL;
-            service_ctx.events[service_ctx.events_num - 1].topic = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.events[service_ctx.events_num - 1].topic, value);
-        } else if ((strcasecmp(param, "source_name") == 0) && (service_ctx.events_enable != EVENTS_NONE)) {
-            service_ctx.events[service_ctx.events_num - 1].source_name = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.events[service_ctx.events_num - 1].source_name, value);
-        } else if ((strcasecmp(param, "source_value") == 0) && (service_ctx.events_enable != EVENTS_NONE)) {
-            service_ctx.events[service_ctx.events_num - 1].source_value = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.events[service_ctx.events_num - 1].source_value, value);
-        } else if ((strcasecmp(param, "input_file") == 0) && (service_ctx.events_enable != EVENTS_NONE)) {
-            service_ctx.events[service_ctx.events_num - 1].input_file = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.events[service_ctx.events_num - 1].input_file, value);
-
+        } else if (strcasecmp(param, "source_name") == 0) {
+            if (service_ctx.events_enable != EVENTS_NONE) {
+                service_ctx.events[service_ctx.events_num - 1].source_name = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.events[service_ctx.events_num - 1].source_name, value);
+            }
+        } else if (strcasecmp(param, "source_value") == 0) {
+            if (service_ctx.events_enable != EVENTS_NONE) {
+                service_ctx.events[service_ctx.events_num - 1].source_value = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.events[service_ctx.events_num - 1].source_value, value);
+            }
+        } else if (strcasecmp(param, "input_file") == 0) {
+            if (service_ctx.events_enable != EVENTS_NONE) {
+                service_ctx.events[service_ctx.events_num - 1].input_file = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.events[service_ctx.events_num - 1].input_file, value);
+            }
         } else {
             log_warn("Unrecognized option: %s", line);
         }
