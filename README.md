@@ -274,9 +274,9 @@ I tested this program with the following clients:
 - Synology Surveillance Station (DSM 6.x and 7.x)
 - Onvifer (Android)
 
-If you test it with other clients or NVR, please let me know opening a issue.
+If you test it with other clients or NVR, please let me know opening a issue or a pull request.
 
-Below a list of the implemented functions, all other functions returns a generic soap fault.
+Below a list of the implemented functions, all other functions return a generic soap fault.
 
 **Device**
 ```
