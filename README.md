@@ -195,12 +195,11 @@ Brief explanation of some parameters:
 | ptz | 1 if onvif_simple_server can control PTZ, 0 otherwise |
 | max_step_* | max values of x and y movements reported by the cam (min = 0) |
 | move_* | the binary that moves the PTZ controls, onvif_simple_server will run it with a system call |
-| events | 0 events handling disabled, 1 Pull mode enabled, 2 WS Base mode enabled, 3 both |
+| events | set to 1 to enable ONVIF PullPoint, 2 to enable WS Base Notification or 3 to enable both |
 | topic | the topic of the event |
 | source_name | the source name inside the Notify message |
 | source_value | the source value inside the Notify message |
 | input_file | the file created when the event is fired |
-| events | set to 1 to enable ONVIF PullPoint, 2 to enable WS Base Notification or 3 to enable both |
 
 Check the code for information.
 
