@@ -9,7 +9,7 @@
             <wsa5:Address>%ADDRESS%</wsa5:Address>
         </wsa5:ReplyTo>
         <wsa5:To SOAP-ENV:mustUnderstand="true">%SERVICE%</wsa5:To>
-        <wsa5:Action SOAP-ENV:mustUnderstand="true">http://www.w3.org/2005/08/addressing/soap/fault"</wsa5:Action>
+        <wsa5:Action SOAP-ENV:mustUnderstand="true">http://www.w3.org/2005/08/addressing/soap/fault</wsa5:Action>
     </SOAP-ENV:Header>
     <SOAP-ENV:Body>
         <SOAP-ENV:Fault>
