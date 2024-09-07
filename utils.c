@@ -117,7 +117,7 @@ void *create_shared_memory(int create) {
         return NULL;
     }
 
-    /* requesting the shared segment */    
+    /* requesting the shared segment */
     shared_area = (char *)mmap(NULL, shared_seg_size, PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0);
     if (shared_area == MAP_FAILED /* is ((void*)-1) */ ) {
         log_error("mmap() failed");
@@ -647,6 +647,33 @@ int to_iso_date(char *iso_date, int size, time_t timestamp)
             my_tm.tm_hour, my_tm.tm_min, my_tm.tm_sec);
 
     return 0;
+}
+
+time_t from_iso_date(const char *date)
+{
+    struct tm tt = {0};
+    double seconds = 0;
+
+    // Try date with seconds
+    if (sscanf(date, "%04d-%02d-%02dT%02d:%02d:%lfZ",
+               &tt.tm_year, &tt.tm_mon, &tt.tm_mday,
+               &tt.tm_hour, &tt.tm_min, &seconds) != 6) {
+
+        // Try date without seconds
+        if (sscanf(date, "%04d-%02d-%02dT%02d:%02dZ",
+                   &tt.tm_year, &tt.tm_mon, &tt.tm_mday,
+                   &tt.tm_hour, &tt.tm_min) != 5) {
+
+            return 0;
+        }
+    }
+
+    tt.tm_sec   = (int) seconds;
+    tt.tm_mon  -= 1;
+    tt.tm_year -= 1900;
+    tt.tm_isdst =-1;
+
+    return timegm(&tt);
 }
 
 int gen_uuid(char *g_uuid)

@@ -42,6 +42,7 @@ typedef enum {
 } subscription_type;
 
 typedef struct {
+    int id;
     char reference[CONSUMER_REFERENCE_MAX_SIZE];
     subscription_type used;
     time_t expire;
@@ -75,6 +76,7 @@ void b64_decode(unsigned char *input, unsigned int input_size, unsigned char *ou
 void b64_encode(unsigned char *input, unsigned int input_size, unsigned char *output, unsigned long *output_size);
 int interval2sec(const char *interval);
 int to_iso_date(char *iso_date, int size, time_t timestamp);
+time_t from_iso_date(const char *date);
 int gen_uuid(char *g_uuid);
 int get_from_query_string(char **ret, int *ret_size, char *par);
 void *reboot_thread(void *arg);

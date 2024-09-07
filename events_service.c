@@ -58,17 +58,16 @@ int events_get_service_capabilities()
     return cat("stdout", "events_service_files/GetServiceCapabilities.xml", 4,
             "%EVENTS_PUSH%", epush,
             "%EVENTS_PULL%", epull);
-
 }
 
 int events_create_pull_point_subscription()
 {
     const char *element;
     const char *itt;
-    time_t now;
+    time_t now, expire_time;
     char iso_str[21];
     char iso_str_2[21];
-    int i, subsel;
+    int i, subscription_id;
 
     char my_address[16];
     char my_netmask[16];
@@ -89,7 +88,7 @@ int events_create_pull_point_subscription()
 //        if ((element != NULL) && (strstr(element, "VideoSource/MotionAlarm") == NULL) && (strlen(element) > 0)) {
 //            log_error("Invalid filter");
 //            send_fault("events_service", "Receiver", "wsrf-rw:InvalidFilterFault", "wsrf-rw:ResourceUnknownFault", "Invalid filter", "");
-//            return -2;
+//            return -1;
 //        }
         element = get_element("MessageContent", "Body");
 //        if ((element != NULL) && (strlen(element) > 0)) {
@@ -99,40 +98,57 @@ int events_create_pull_point_subscription()
 //        }
     }
 
+    time(&now);
     itt = get_element("InitialTerminationTime", "Body");
     if (itt == NULL) {
-        log_error("No InitialTerminationTime element for Subscribe method");
-        send_fault("events_service", "Receiver", "wsntw:UnacceptableInitialTerminationTimeFault", "wsntw:UnacceptableInitialTerminationTimeFault", "Unacceptable initial termination time", "");
-        return -3;
+        // Use NotificationProducer termination time = 1 minute
+        expire_time = now + 60;
+    } else {
+        if (strncmp("PT", itt, 2) == 0) {
+            expire_time = now + interval2sec(itt);
+        } else {
+            expire_time = from_iso_date(itt);
+        }
     }
 
-    time(&now);
     subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
         send_fault("events_service", "Receiver", "wsntw:UnableToCreatePullPointFault", "wsntw:UnableToCreatePullPointFault", "Unable to create pull point", "");
-        return -4;
+        return -3;
     }
     sem_memory_wait();
+    subscription_id = 0;
+    for (i = 0; i < MAX_SUBSCRIPTIONS; i++) {
+        if (subscription_id < subs_evts->subscriptions[i].id) {
+            subscription_id = subs_evts->subscriptions[i].id;
+        }
+    }
+    subscription_id = (subscription_id == 65535) ? 1 : subscription_id + 1;
     for (i = 0; i < MAX_SUBSCRIPTIONS; i++) {
         if (subs_evts->subscriptions[i].used == SUB_UNUSED) {
+            subs_evts->subscriptions[i].id = subscription_id;
             memset(subs_evts->subscriptions[i].reference, '\0', CONSUMER_REFERENCE_MAX_SIZE);
             subs_evts->subscriptions[i].used = SUB_PULL;
-            subs_evts->subscriptions[i].expire = now + interval2sec(itt);
+            subs_evts->subscriptions[i].expire = expire_time;
             break;
         }
     }
     sem_memory_post();
     destroy_shared_memory((void *) subs_evts, 0);
 
-    subsel = i + 1;
-    sprintf(events_service_address, "http://%s%s/onvif/events_service?sub=%d", my_address, my_port, subsel);
+    if (i == MAX_SUBSCRIPTIONS) {
+        log_error("Reached the maximum number of subscriptions");
+        send_fault("events_service", "Receiver", "wsntw:SubscribeCreationFailedFault", "wsntw:SubscribeCreationFailedFault", "Subscribe creation failed fault", "");
+        return -4;
+    }
+
+    sprintf(events_service_address, "http://%s%s/onvif/events_service?sub=%d", my_address, my_port, subscription_id);
 
     to_iso_date(iso_str, sizeof(iso_str), now);
-    now += interval2sec(itt);
-    to_iso_date(iso_str_2, sizeof(iso_str_2), now);
+    to_iso_date(iso_str_2, sizeof(iso_str_2), expire_time);
 
-    log_debug("Subscription data: expire %s - subscription index %d", iso_str_2, subsel);
+    log_debug("Subscription data: expire %s - subscription id %d", iso_str_2, subscription_id);
 
     long size = cat(NULL, "events_service_files/CreatePullPointSubscription.xml", 6,
         "%ADDRESS%", events_service_address,
@@ -160,8 +176,8 @@ int events_pull_messages()
 
     int qs_size;
     char *qs_string;
-    char *sub_index_s;
-    int sub_index;
+    char *sub_id_s;
+    int sub_id, sub_index;
 
     int at_least_one_message;
     int i, c;
@@ -174,60 +190,39 @@ int events_pull_messages()
     // Subscription manager replies to address http://%s%s/onvif/events_service?sub=%d
     log_info("PullMessages request received");
 
+    // Get parameters from query string
     get_from_query_string(&qs_string, &qs_size, "sub");
     if ((qs_size == -1) || (qs_string == NULL)) {
         log_error("No sub parameter in query string for PullMessages method");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -1;
     }
-    sub_index_s = (char *) malloc((qs_size + 1) * sizeof(char));
-    memset(sub_index_s, '\0', qs_size + 1);
-    strncpy(sub_index_s, qs_string, qs_size);
-    sub_index = atoi(sub_index_s);
-    free(sub_index_s);
-    if ((sub_index <= 0) || (sub_index > MAX_SUBSCRIPTIONS)) {
+    sub_id_s = (char *) malloc((qs_size + 1) * sizeof(char));
+    memset(sub_id_s, '\0', qs_size + 1);
+    strncpy(sub_id_s, qs_string, qs_size);
+    sub_id = atoi(sub_id_s);
+    free(sub_id_s);
+    if ((sub_id <= 0) || (sub_id > 65535)) {
         log_error("sub index out of range for PullMessages method");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -2;
     }
-    sub_index--;
 
-    subs_evts = (shm_t *) create_shared_memory(0);
-    if (subs_evts == NULL) {
-        log_error("No shared memory found, is onvif_notify_server running?");
-        send_action_failed_fault("events_service", -3);
-        return -3;
-    }
-    sem_memory_wait();
-    if (subs_evts->subscriptions[sub_index].used != SUB_PULL) {
-        sem_memory_post();
-        destroy_shared_memory((void *) subs_evts, 0);
-        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
-        return -4;
-    }
-//    subs_evts->subscriptions[sub_index].used = SUB_PUSH;
-//    subs_evts->subscriptions[sub_index].expire = now + interval2sec(tt);
-    expire_time = subs_evts->subscriptions[sub_index].expire;
-    sem_memory_post();
-
+    // Get parameters from xml content
     timeout = get_element("Timeout", "Body");
     if (timeout == NULL) {
         log_error("No Timeout element for PullMessages method");
         destroy_shared_memory((void *) subs_evts, 0);
-        send_action_failed_fault("events_service", -5);
-        return -5;
+        send_action_failed_fault("events_service", -3);
+        return -3;
     }
-    time(&now);
-    to_iso_date(iso_str, sizeof(iso_str), now);
-    to_iso_date(iso_str_2, sizeof(iso_str_2), expire_time);
-    now_p_timeout = now + interval2sec(timeout);
 
     message_limit = get_element("MessageLimit", "Body");
     if (message_limit == NULL) {
         log_error("No MessageLimit element for PullMessages method");
         destroy_shared_memory((void *) subs_evts, 0);
-        send_action_failed_fault("events_service", -6);
-        return -6;
+        send_action_failed_fault("events_service", -4);
+        return -4;
     }
 
     limit = strtol(message_limit, &endptr, 10);
@@ -235,11 +230,53 @@ int events_pull_messages()
     if ((errno == ERANGE && (limit == LONG_MAX || limit == LONG_MIN)) || (errno != 0 && limit == 0)) {
         log_error("Wrong MessageLimit value for PullMessages method");
         destroy_shared_memory((void *) subs_evts, 0);
-        send_action_failed_fault("events_service", -7);
-        return -7;
+        send_action_failed_fault("events_service", -5);
+        return -5;
     }
 
     log_debug("Pull message request with timeout %d seconds and message limit %d", interval2sec(timeout), limit);
+
+    subs_evts = (shm_t *) create_shared_memory(0);
+    if (subs_evts == NULL) {
+        log_error("No shared memory found, is onvif_notify_server running?");
+        send_action_failed_fault("events_service", -6);
+        return -6;
+    }
+
+    // Find subscription
+    sem_memory_wait();
+    sub_index = -1;
+    for (i = 0; i < MAX_SUBSCRIPTIONS; i++) {
+        if (subs_evts->subscriptions[i].id == sub_id) {
+            sub_index = i;
+            break;
+        }
+    }
+    if ((sub_index < 0) || (sub_index >= MAX_SUBSCRIPTIONS)) {
+        sem_memory_post();
+        destroy_shared_memory((void *) subs_evts, 0);
+        log_error("sub index out of range for PullMessages method");
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
+        return -7;
+    }
+
+    if (subs_evts->subscriptions[sub_index].used != SUB_PULL) {
+        sem_memory_post();
+        destroy_shared_memory((void *) subs_evts, 0);
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
+        return -8;
+    }
+
+    time(&now);
+    if (subs_evts->subscriptions[sub_index].expire < now + interval2sec(timeout)) {
+        subs_evts->subscriptions[sub_index].expire = now + interval2sec(timeout);
+    }
+    expire_time = subs_evts->subscriptions[sub_index].expire;
+    sem_memory_post();
+    to_iso_date(iso_str, sizeof(iso_str), now);
+    to_iso_date(iso_str_2, sizeof(iso_str_2), expire_time);
+    now_p_timeout = now + interval2sec(timeout);
+
 
     // Check if at least 1 message was triggered
     // or SetSynchronizationPoint request is received
@@ -254,17 +291,14 @@ int events_pull_messages()
             }
             sem_memory_post();
         }
-        if (at_least_one_message == 1)
+        if (at_least_one_message == 1) {
+            usleep(500000);
             break;
+        }
         sleep(1);
         time(&now);
     }
 
-
-//    if (now > now_p_timeout) {
-//        send_pull_messages_fault((char *) timeout, (char *) message_limit);
-//        return -8;
-//    }
 
     // We need 1st step to evaluate content length
     sem_memory_wait();
@@ -307,11 +341,11 @@ int events_pull_messages()
             }
             count++;
         }
-        sem_memory_post();
 
         size = cat(dest, "events_service_files/PullMessages_3.xml", 0);
         if (c == 0) total_size += size;
     }
+    sem_memory_post();
     destroy_shared_memory((void *) subs_evts, 0);
 
     return total_size;
@@ -324,10 +358,11 @@ int events_subscribe()
     const char *itt;
     char msg_uuid[UUID_LEN + 1];
     const char *relates_to_uuid;
-    time_t now;
+    time_t now, expire_time;
     char iso_str[21];
     char iso_str_2[21];
     int i, subsel;
+    int subscription_id;
 
     char my_address[16];
     char my_netmask[16];
@@ -361,18 +396,23 @@ int events_subscribe()
 //        if ((element != NULL) && (strlen(element) > 0)) {
 //            log_error("Invalid filter");
 //            send_fault("events_service", "Receiver", "wsrf-rw:InvalidFilterFault", "", "Invalid filter", "");
-//            return -2;
+//            return -3;
 //        }
     }
 
+    time(&now);
     itt = get_element("InitialTerminationTime", "Body");
     if (itt == NULL) {
-        log_error("No InitialTerminationTime element for Subscribe method");
-        send_fault("events_service", "Receiver", "wsntw:UnacceptableInitialTerminationTimeFault", "", "Unacceptable initial termination time", "");
-        return -3;
+        // Use NotificationProducer termination time = 10 minutes
+        expire_time = now + 600;
+    } else {
+        if (strncmp("PT", itt, 2) == 0) {
+            expire_time = now + interval2sec(itt);
+        } else {
+            expire_time = from_iso_date(itt);
+        }
     }
 
-    time(&now);
     subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
@@ -380,13 +420,21 @@ int events_subscribe()
         return -4;
     }
     sem_memory_wait();
+    subscription_id = 0;
+    for (i = 0; i < MAX_SUBSCRIPTIONS; i++) {
+        if (subscription_id < subs_evts->subscriptions[i].id) {
+            subscription_id = subs_evts->subscriptions[i].id;
+        }
+    }
+    subscription_id = (subscription_id == 65535) ? 1 : subscription_id + 1;
     for (i = 0; i < MAX_SUBSCRIPTIONS; i++) {
         if (subs_evts->subscriptions[i].used == SUB_UNUSED) {
             if (strlen(address) < CONSUMER_REFERENCE_MAX_SIZE) {
+                subs_evts->subscriptions[i].id = subscription_id;
                 memset(subs_evts->subscriptions[i].reference, '\0', CONSUMER_REFERENCE_MAX_SIZE);
                 strcpy(subs_evts->subscriptions[i].reference, address);
                 subs_evts->subscriptions[i].used = SUB_PUSH;
-                subs_evts->subscriptions[i].expire = now + interval2sec(itt);
+                subs_evts->subscriptions[i].expire = expire_time;
             }
             break;
         }
@@ -394,23 +442,27 @@ int events_subscribe()
     sem_memory_post();
     destroy_shared_memory((void *) subs_evts, 0);
 
-    subsel = i + 1;
-    sprintf(events_service_address, "http://%s%s/onvif/events_service?sub=%d", my_address, my_port, subsel);
+    if (i == MAX_SUBSCRIPTIONS) {
+        log_error("Reached the maximum number of subscriptions");
+        send_fault("events_service", "Receiver", "wsntw:SubscribeCreationFailedFault", "wsntw:SubscribeCreationFailedFault", "Subscribe creation failed fault", "");
+        return -5;
+    }
+
+    sprintf(events_service_address, "http://%s%s/onvif/events_service?sub=%d", my_address, my_port, subscription_id);
 
     gen_uuid(msg_uuid);
 
     relates_to_uuid = get_element("MessageID", "Header");
     if (relates_to_uuid == NULL) {
         log_error("No MessageID element for Subscribe method");
-        send_action_failed_fault("events_service", -5);
-        return -5;
+        send_action_failed_fault("events_service", -6);
+        return -6;
     }
 
     to_iso_date(iso_str, sizeof(iso_str), now);
-    now += interval2sec(itt);
-    to_iso_date(iso_str_2, sizeof(iso_str_2), now);
+    to_iso_date(iso_str_2, sizeof(iso_str_2), expire_time);
 
-    log_debug("Subscription data: reference %s - expire %s - subscription index %d", address, iso_str_2, subsel);
+    log_debug("Subscription data: reference %s - expire %s - subscription index %d", address, iso_str_2, subscription_id);
 
     long size = cat(NULL, "events_service_files/Subscribe.xml", 10,
         "%MSG_UUID%", msg_uuid,
@@ -435,59 +487,83 @@ int events_renew()
     const char *tt;
     char msg_uuid[UUID_LEN + 1];
     const char *relates_to_uuid;
-    time_t now;
+    time_t now, expire_time;
     char iso_str[21];
     char iso_str_2[21];
 
+    int i;
     int qs_size;
     char *qs_string;
-    char *sub_index_s;
-    int sub_index;
+    char *sub_id_s;
+    int sub_id, sub_index;
 
     // Subscription manager replies to address http://%s%s/onvif/events_service?sub=%d
     log_info("Renew request received");
 
+    // Get parameters from query string
     get_from_query_string(&qs_string, &qs_size, "sub");
     if ((qs_size == -1) || (qs_string == NULL)) {
         log_error("No sub parameter in query string for Renew method");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -1;
     }
-    sub_index_s = (char *) malloc((qs_size + 1) * sizeof(char));
-    memset(sub_index_s, '\0', qs_size + 1);
-    strncpy(sub_index_s, qs_string, qs_size);
-    sub_index = atoi(sub_index_s);
-    free(sub_index_s);
-    if ((sub_index <= 0) || (sub_index > MAX_SUBSCRIPTIONS)) {
+    sub_id_s = (char *) malloc((qs_size + 1) * sizeof(char));
+    memset(sub_id_s, '\0', qs_size + 1);
+    strncpy(sub_id_s, qs_string, qs_size);
+    sub_id = atoi(sub_id_s);
+    free(sub_id_s);
+    if ((sub_id <= 0) || (sub_id > 65535)) {
         log_error("sub index out of range for Renew method");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -2;
     }
-    sub_index--;
 
+    // Get parameters from xml content
+    time(&now);
     tt = get_element("TerminationTime", "Body");
     if (tt == NULL) {
         log_error("No TerminationTime element for Renew method");
-        send_fault("events_service", "Receiver", "wsntw:UnacceptableInitialTerminationTimeFault", "", "Unacceptable initial termination time", "");
+        send_fault("events_service", "Receiver", "wsntw:UnacceptableTerminationTimeFault", "wsntw:UnacceptableTerminationTimeFault", "Unacceptable termination time", "");
         return -3;
+    } else {
+        if (strncmp("PT", tt, 2) == 0) {
+            expire_time = now + interval2sec(tt);
+        } else {
+            expire_time = from_iso_date(tt);
+        }
     }
 
-    time(&now);
     subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
         send_action_failed_fault("events_service", -4);
         return -4;
     }
+
+    // Find subscription
     sem_memory_wait();
+    sub_index = -1;
+    for (i = 0; i < MAX_SUBSCRIPTIONS; i++) {
+        if (subs_evts->subscriptions[i].id == sub_id) {
+            sub_index = i;
+            break;
+        }
+    }
+    if ((sub_index < 0) || (sub_index >= MAX_SUBSCRIPTIONS)) {
+        sem_memory_post();
+        destroy_shared_memory((void *) subs_evts, 0);
+        log_error("sub index out of range for PullMessages method");
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
+        return -5;
+    }
+
     if (subs_evts->subscriptions[sub_index].used == SUB_UNUSED) {
         sem_memory_post();
         destroy_shared_memory((void *) subs_evts, 0);
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
-        return -5;
+        return -6;
     }
-//    subs_evts->subscriptions[sub_index].used = SUB_PUSH;
-    subs_evts->subscriptions[sub_index].expire = now + interval2sec(tt);
+    subs_evts->subscriptions[sub_index].expire = expire_time;
     sem_memory_post();
     destroy_shared_memory((void *) subs_evts, 0);
 
@@ -495,13 +571,12 @@ int events_renew()
     relates_to_uuid = get_element("MessageID", "Header");
     if (relates_to_uuid == NULL) {
         log_error("No MessageID element for Renew method");
-        send_action_failed_fault("events_service", -6);
-        return -6;
+        send_action_failed_fault("events_service", -8);
+        return -7;
     }
 
     to_iso_date(iso_str, sizeof(iso_str), now);
-    now += interval2sec(tt);
-    to_iso_date(iso_str_2, sizeof(iso_str_2), now);
+    to_iso_date(iso_str_2, sizeof(iso_str_2), expire_time);
 
     log_debug("Subscription data: expire %s - subscription index %d", iso_str_2, sub_index);
 
@@ -596,30 +671,31 @@ int events_unsubscribe()
 {
     int qs_size;
     char *qs_string;
-    char *sub_index_s;
-    int sub_index;
+    char *sub_id_s;
+    int sub_id, sub_index;
+    int i;
 
     // Subscription manager replies to address http://%s%s/onvif/events_service?sub=%d
     log_info("Unsubscribe request received");
 
+    // Get parameters from query string
     get_from_query_string(&qs_string, &qs_size, "sub");
     if ((qs_size == -1) || (qs_string == NULL)) {
         log_error("No sub parameter in query string for Unsubscribe method");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
-        return 1;
+        return -1;
     }
 
-    sub_index_s = (char *) malloc((qs_size + 1) * sizeof(char));
-    memset(sub_index_s, '\0', qs_size + 1);
-    strncpy(sub_index_s, qs_string, qs_size);
-    sub_index = atoi(sub_index_s);
-    free(sub_index_s);
-    if ((sub_index <= 0) || (sub_index > MAX_SUBSCRIPTIONS)) {
+    sub_id_s = (char *) malloc((qs_size + 1) * sizeof(char));
+    memset(sub_id_s, '\0', qs_size + 1);
+    strncpy(sub_id_s, qs_string, qs_size);
+    sub_id = atoi(sub_id_s);
+    free(sub_id_s);
+    if ((sub_id <= 0) || (sub_id > 65535)) {
         log_error("sub index out of range for Unsubscribe method");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -2;
     }
-    sub_index--;
 
     subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
@@ -627,12 +703,29 @@ int events_unsubscribe()
         send_action_failed_fault("events_service", -3);
         return -3;
     }
+
+    // Find subscription
     sem_memory_wait();
+    sub_index = -1;
+    for (i = 0; i < MAX_SUBSCRIPTIONS; i++) {
+        if (subs_evts->subscriptions[i].id == sub_id) {
+            sub_index = i;
+            break;
+        }
+    }
+    if ((sub_index < 0) || (sub_index >= MAX_SUBSCRIPTIONS)) {
+        sem_memory_post();
+        destroy_shared_memory((void *) subs_evts, 0);
+        log_error("sub index out of range for PullMessages method");
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
+        return -4;
+    }
+
     if (subs_evts->subscriptions[sub_index].used == SUB_UNUSED) {
         sem_memory_post();
         destroy_shared_memory((void *) subs_evts, 0);
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
-        return -4;
+        return -5;
     }
     memset(&(subs_evts->subscriptions[sub_index]), '\0', sizeof (subscription_shm_t));
     sem_memory_post();
@@ -653,28 +746,28 @@ int events_set_synchronization_point()
     int i;
     int qs_size;
     char *qs_string;
-    char *sub_index_s;
-    int sub_index;
+    char *sub_id_s;
+    int sub_id, sub_index;
 
+    // Subscription manager replies to address http://%s%s/onvif/events_service?sub=%d
+
+    // Get parameters from query string
     get_from_query_string(&qs_string, &qs_size, "sub");
     if ((qs_size == -1) || (qs_string == NULL)) {
         log_error("No sub parameter in query string for Renew method");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -1;
     }
-    sub_index_s = (char *) malloc((qs_size + 1) * sizeof(char));
-    memset(sub_index_s, '\0', qs_size + 1);
-    strncpy(sub_index_s, qs_string, qs_size);
-    sub_index = atoi(sub_index_s);
-    free(sub_index_s);
-    if ((sub_index <= 0) || (sub_index > MAX_SUBSCRIPTIONS)) {
+    sub_id_s = (char *) malloc((qs_size + 1) * sizeof(char));
+    memset(sub_id_s, '\0', qs_size + 1);
+    strncpy(sub_id_s, qs_string, qs_size);
+    sub_id = atoi(sub_id_s);
+    free(sub_id_s);
+    if ((sub_id <= 0) || (sub_id > MAX_SUBSCRIPTIONS)) {
         log_error("sub index out of range for Renew method");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -2;
     }
-    sub_index--;
-
-    log_info("SetSynchronizationPoint request received for subscription %d", sub_index);
 
     subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
@@ -682,7 +775,26 @@ int events_set_synchronization_point()
         send_action_failed_fault("events_service", -3);
         return -3;
     }
+
+    // Find subscription
     sem_memory_wait();
+    sub_index = -1;
+    for (i = 0; i < MAX_SUBSCRIPTIONS; i++) {
+        if (subs_evts->subscriptions[i].id == sub_id) {
+            sub_index = i;
+            break;
+        }
+    }
+    if ((sub_index < 0) || (sub_index >= MAX_SUBSCRIPTIONS)) {
+        sem_memory_post();
+        destroy_shared_memory((void *) subs_evts, 0);
+        log_error("sub index out of range for PullMessages method");
+        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
+        return -4;
+    }
+
+    log_info("SetSynchronizationPoint request received for subscription id=%d, index=%d", sub_id, sub_index);
+
     subs_evts->subscriptions[sub_index].need_sync = 1;
 
     for (i = 0; i < service_ctx.events_num; i++) {

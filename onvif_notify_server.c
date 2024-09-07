@@ -172,11 +172,13 @@ void print_subscriptions()
         to_iso_date(iso_str, sizeof(iso_str), subs_evts->subscriptions[i].expire);
         fprintf(stderr, "\tSubscription %d\n", i);
         if (subs_evts->subscriptions[i].used) {
+            fprintf(stderr, "\t\tid:        %d\n", subs_evts->subscriptions[i].id);
             fprintf(stderr, "\t\treference: %s\n", subs_evts->subscriptions[i].reference);
             fprintf(stderr, "\t\tused:      %d\n", subs_evts->subscriptions[i].used);
             fprintf(stderr, "\t\texpire:    %s\n", iso_str);
             fprintf(stderr, "\t\tneed_sync: %d\n", subs_evts->subscriptions[i].need_sync);
         } else {
+            fprintf(stderr, "\t\tid:        0\n");
             fprintf(stderr, "\t\treference:\n");
             fprintf(stderr, "\t\tused:      0\n");
             fprintf(stderr, "\t\texpire:\n");
