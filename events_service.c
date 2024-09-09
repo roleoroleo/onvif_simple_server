@@ -268,16 +268,11 @@ int events_pull_messages()
         return -8;
     }
 
+    // Set temporary termination time = 2 * timeout (bigger than timeout)
     time(&now);
-    if (subs_evts->subscriptions[sub_index].expire < now + interval2sec(timeout)) {
-        subs_evts->subscriptions[sub_index].expire = now + interval2sec(timeout);
-    }
-    expire_time = subs_evts->subscriptions[sub_index].expire;
+    subs_evts->subscriptions[sub_index].expire = now + (2 * interval2sec(timeout));
     sem_memory_post();
-    to_iso_date(iso_str, sizeof(iso_str), now);
-    to_iso_date(iso_str_2, sizeof(iso_str_2), expire_time);
     now_p_timeout = now + interval2sec(timeout);
-
 
     // Check if at least 1 message was triggered
     // or SetSynchronizationPoint request is received
@@ -300,6 +295,14 @@ int events_pull_messages()
         time(&now);
     }
 
+    // Set correct termination time
+    time(&now);
+    sem_memory_wait();
+    subs_evts->subscriptions[sub_index].expire = now + interval2sec(timeout);
+    expire_time = subs_evts->subscriptions[sub_index].expire;
+    sem_memory_post();
+    to_iso_date(iso_str, sizeof(iso_str), now);
+    to_iso_date(iso_str_2, sizeof(iso_str_2), expire_time);
 
     // We need 1st step to evaluate content length
     sem_memory_wait();
