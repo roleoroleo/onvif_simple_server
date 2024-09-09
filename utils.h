@@ -31,9 +31,9 @@
 #define CONSUMER_REFERENCE_MAX_SIZE 256
 
 #define EVENTS_NONE 0
-#define EVENTS_PULL 1
-#define EVENTS_PUSH 2
-#define EVENTS_BOTH 3
+#define EVENTS_PULLPOINT 1        // PullPoint
+#define EVENTS_BASESUBSCRIPTION 2 // Base Subscription
+#define EVENTS_BOTH 3             // PullPoint and Base Subscription
 
 typedef enum {
     SUB_UNUSED,

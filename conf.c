@@ -371,11 +371,11 @@ int process_conf_file(char *file)
         //Events Profile for ONVIF Events Service
         } else if (strcasecmp(param, "events") == 0) {
             if (strcasecmp(value, "1") == 0) {
-                service_ctx.events_enable = EVENTS_PULL; // Pull
+                service_ctx.events_enable = EVENTS_PULLPOINT;        // PullPoint
             } else if (strcasecmp(value, "2") == 0) {
-                service_ctx.events_enable = EVENTS_PUSH; // WS Base
+                service_ctx.events_enable = EVENTS_BASESUBSCRIPTION; // Base Subscription
             } else if (strcasecmp(value, "3") == 0) {
-                service_ctx.events_enable = EVENTS_BOTH; // Pull and WS Base
+                service_ctx.events_enable = EVENTS_BOTH;             // PullPoint and Base Subscription
             }
         } else if (strcasecmp(param, "topic") == 0) {
             if (service_ctx.events_enable != EVENTS_NONE) {

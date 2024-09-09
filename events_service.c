@@ -35,29 +35,29 @@ shm_t *subs_evts;
 
 int events_get_service_capabilities()
 {
-    char epush[8], epull[8];
+    char ebasesubscription[8], epullpoint[8];
 
-    if ((service_ctx.events_enable == EVENTS_PULL) || (service_ctx.events_enable == EVENTS_BOTH)) {
-        strcpy(epull, "true");
+    if ((service_ctx.events_enable == EVENTS_PULLPOINT) || (service_ctx.events_enable == EVENTS_BOTH)) {
+        strcpy(epullpoint, "true");
     } else {
-        strcpy(epull, "false");
+        strcpy(epullpoint, "false");
     }
-    if ((service_ctx.events_enable == EVENTS_PUSH) || (service_ctx.events_enable == EVENTS_BOTH)) {
-        strcpy(epush, "true");
+    if ((service_ctx.events_enable == EVENTS_BASESUBSCRIPTION) || (service_ctx.events_enable == EVENTS_BOTH)) {
+        strcpy(ebasesubscription, "true");
     } else {
-        strcpy(epush, "false");
+        strcpy(ebasesubscription, "false");
     }
 
     long size = cat(NULL, "events_service_files/GetServiceCapabilities.xml", 4,
-            "%EVENTS_PUSH%", epush,
-            "%EVENTS_PULL%", epull);
+            "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
+            "%EVENTS_PULLPOINT%", epullpoint);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
     return cat("stdout", "events_service_files/GetServiceCapabilities.xml", 4,
-            "%EVENTS_PUSH%", epush,
-            "%EVENTS_PULL%", epull);
+            "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
+            "%EVENTS_PULLPOINT%", epullpoint);
 }
 
 int events_create_pull_point_subscription()

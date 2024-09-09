@@ -43,7 +43,7 @@ int device_get_services()
     char port[8];
     const char *cap;
 
-    char epush[8], epull[8];
+    char ebasesubscription[8], epullpoint[8];
 
     port[0] = '\0';
     if (service_ctx.port != 80)
@@ -53,15 +53,15 @@ int device_get_services()
     sprintf(ptz_service_address, "http://%s%s/onvif/ptz_service", address, port);
     sprintf(events_service_address, "http://%s%s/onvif/events_service", address, port);
 
-    if ((service_ctx.events_enable == EVENTS_PULL) || (service_ctx.events_enable == EVENTS_BOTH)) {
-        strcpy(epull, "true");
+    if ((service_ctx.events_enable == EVENTS_PULLPOINT) || (service_ctx.events_enable == EVENTS_BOTH)) {
+        strcpy(epullpoint, "true");
     } else {
-        strcpy(epull, "false");
+        strcpy(epullpoint, "false");
     }
-    if ((service_ctx.events_enable == EVENTS_PUSH) || (service_ctx.events_enable == EVENTS_BOTH)) {
-        strcpy(epush, "true");
+    if ((service_ctx.events_enable == EVENTS_BASESUBSCRIPTION) || (service_ctx.events_enable == EVENTS_BOTH)) {
+        strcpy(ebasesubscription, "true");
     } else {
-        strcpy(epush, "false");
+        strcpy(ebasesubscription, "false");
     }
 
     cap = get_element("IncludeCapability", "Body");
@@ -71,8 +71,8 @@ int device_get_services()
                     "%DEVICE_SERVICE_ADDRESS%", device_service_address,
                     "%MEDIA_SERVICE_ADDRESS%", media_service_address,
                     "%EVENTS_SERVICE_ADDRESS%", events_service_address,
-                    "%EVENTS_PUSH%", epush,
-                    "%EVENTS_PULL%", epull);
+                    "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
+                    "%EVENTS_PULLPOINT%", epullpoint);
 
             fprintf(stdout, "Content-type: application/soap+xml\r\n");
             fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
@@ -81,16 +81,16 @@ int device_get_services()
                     "%DEVICE_SERVICE_ADDRESS%", device_service_address,
                     "%MEDIA_SERVICE_ADDRESS%", media_service_address,
                     "%EVENTS_SERVICE_ADDRESS%", events_service_address,
-                    "%EVENTS_PUSH%", epush,
-                    "%EVENTS_PULL%", epull);
+                    "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
+                    "%EVENTS_PULLPOINT%", epullpoint);
         } else {
             long size = cat(NULL, "device_service_files/GetServices_with_capabilities_ptz.xml", 12,
                     "%DEVICE_SERVICE_ADDRESS%", device_service_address,
                     "%MEDIA_SERVICE_ADDRESS%", media_service_address,
                     "%PTZ_SERVICE_ADDRESS%", ptz_service_address,
                     "%EVENTS_SERVICE_ADDRESS%", events_service_address,
-                    "%EVENTS_PUSH%", epush,
-                    "%EVENTS_PULL%", epull);
+                    "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
+                    "%EVENTS_PULLPOINT%", epullpoint);
 
             fprintf(stdout, "Content-type: application/soap+xml\r\n");
             fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
@@ -100,8 +100,8 @@ int device_get_services()
                     "%MEDIA_SERVICE_ADDRESS%", media_service_address,
                     "%PTZ_SERVICE_ADDRESS%", ptz_service_address,
                     "%EVENTS_SERVICE_ADDRESS%", events_service_address,
-                    "%EVENTS_PUSH%", epush,
-                    "%EVENTS_PULL%", epull);
+                    "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
+                    "%EVENTS_PULLPOINT%", epullpoint);
         }
     } else {
         if (service_ctx.ptz_node.enable == 0) {
@@ -292,7 +292,7 @@ int device_get_capabilities()
     int icategory;
     const char *category;
 
-    char epush[8], epull[8];
+    char ebasesubscription[8], epullpoint[8];
 
     category = get_element("Category", "Body");
     if (category != NULL) {
@@ -322,15 +322,15 @@ int device_get_capabilities()
     sprintf(ptz_service_address, "http://%s%s/onvif/ptz_service", address, port);
     sprintf(events_service_address, "http://%s%s/onvif/events_service", address, port);
 
-    if ((service_ctx.events_enable == EVENTS_PULL) || (service_ctx.events_enable == EVENTS_BOTH)) {
-        strcpy(epull, "true");
+    if ((service_ctx.events_enable == EVENTS_PULLPOINT) || (service_ctx.events_enable == EVENTS_BOTH)) {
+        strcpy(epullpoint, "true");
     } else {
-        strcpy(epull, "false");
+        strcpy(epullpoint, "false");
     }
-    if ((service_ctx.events_enable == EVENTS_PUSH) || (service_ctx.events_enable == EVENTS_BOTH)) {
-        strcpy(epush, "true");
+    if ((service_ctx.events_enable == EVENTS_BASESUBSCRIPTION) || (service_ctx.events_enable == EVENTS_BOTH)) {
+        strcpy(ebasesubscription, "true");
     } else {
-        strcpy(epush, "false");
+        strcpy(ebasesubscription, "false");
     }
 
     if (icategory == 1) {
@@ -368,24 +368,24 @@ int device_get_capabilities()
     } else if (icategory == 8) {
         long size = cat(NULL, "device_service_files/GetEventsCapabilities.xml", 6,
                 "%EVENTS_SERVICE_ADDRESS%", events_service_address,
-                "%EVENTS_PUSH%", epush,
-                "%EVENTS_PULL%", epull);
+                "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
+                "%EVENTS_PULLPOINT%", epullpoint);
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
         return cat("stdout", "device_service_files/GetEventsCapabilities.xml", 6,
                 "%EVENTS_SERVICE_ADDRESS%", events_service_address,
-                "%EVENTS_PUSH%", epush,
-                "%EVENTS_PULL%", epull);
+                "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
+                "%EVENTS_PULLPOINT%", epullpoint);
     } else {
         if (service_ctx.ptz_node.enable == 0) {
             long size = cat(NULL, "device_service_files/GetCapabilities_no_ptz.xml", 10,
                     "%DEVICE_SERVICE_ADDRESS%", device_service_address,
                     "%MEDIA_SERVICE_ADDRESS%", media_service_address,
                     "%EVENTS_SERVICE_ADDRESS%", events_service_address,
-                    "%EVENTS_PUSH%", epush,
-                    "%EVENTS_PULL%", epull);
+                    "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
+                    "%EVENTS_PULLPOINT%", epullpoint);
 
             fprintf(stdout, "Content-type: application/soap+xml\r\n");
             fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
@@ -394,16 +394,16 @@ int device_get_capabilities()
                     "%DEVICE_SERVICE_ADDRESS%", device_service_address,
                     "%MEDIA_SERVICE_ADDRESS%", media_service_address,
                     "%EVENTS_SERVICE_ADDRESS%", events_service_address,
-                    "%EVENTS_PUSH%", epush,
-                    "%EVENTS_PULL%", epull);
+                    "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
+                    "%EVENTS_PULLPOINT%", epullpoint);
         } else {
             long size = cat(NULL, "device_service_files/GetCapabilities_ptz.xml", 12,
                     "%DEVICE_SERVICE_ADDRESS%", device_service_address,
                     "%MEDIA_SERVICE_ADDRESS%", media_service_address,
                     "%PTZ_SERVICE_ADDRESS%", ptz_service_address,
                     "%EVENTS_SERVICE_ADDRESS%", events_service_address,
-                    "%EVENTS_PUSH%", epush,
-                    "%EVENTS_PULL%", epull);
+                    "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
+                    "%EVENTS_PULLPOINT%", epullpoint);
 
             fprintf(stdout, "Content-type: application/soap+xml\r\n");
             fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
@@ -413,8 +413,8 @@ int device_get_capabilities()
                     "%MEDIA_SERVICE_ADDRESS%", media_service_address,
                     "%PTZ_SERVICE_ADDRESS%", ptz_service_address,
                     "%EVENTS_SERVICE_ADDRESS%", events_service_address,
-                    "%EVENTS_PUSH%", epush,
-                    "%EVENTS_PULL%", epull);
+                    "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
+                    "%EVENTS_PULLPOINT%", epullpoint);
         }
     }
 }
