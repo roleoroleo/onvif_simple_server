@@ -255,7 +255,7 @@ int events_pull_messages()
     if ((sub_index < 0) || (sub_index >= MAX_SUBSCRIPTIONS)) {
         sem_memory_post();
         destroy_shared_memory((void *) subs_evts, 0);
-        log_error("sub index out of range for PullMessages method");
+        log_error("Sub index out of range for PullMessages method");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -7;
     }
@@ -263,6 +263,7 @@ int events_pull_messages()
     if (subs_evts->subscriptions[sub_index].used != SUB_PULL) {
         sem_memory_post();
         destroy_shared_memory((void *) subs_evts, 0);
+        log_error("This subscription is not a Real-time Pull-Point Notification Interface");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -8;
     }
@@ -513,7 +514,7 @@ int events_renew()
     sub_id = atoi(sub_id_s);
     free(sub_id_s);
     if ((sub_id <= 0) || (sub_id > 65535)) {
-        log_error("sub index out of range for Renew method");
+        log_error("Sub index out of range for Renew method");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -2;
     }
@@ -552,7 +553,7 @@ int events_renew()
     if ((sub_index < 0) || (sub_index >= MAX_SUBSCRIPTIONS)) {
         sem_memory_post();
         destroy_shared_memory((void *) subs_evts, 0);
-        log_error("sub index out of range for PullMessages method");
+        log_error("Sub index (%d) out of range for Renew method", sub_index);
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -5;
     }
@@ -560,6 +561,7 @@ int events_renew()
     if (subs_evts->subscriptions[sub_index].used == SUB_UNUSED) {
         sem_memory_post();
         destroy_shared_memory((void *) subs_evts, 0);
+        log_error("This subscription is empty or expired");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -6;
     }
