@@ -54,6 +54,7 @@ int process_conf_file(char *file)
     service_ctx.hardware_id = NULL;
     service_ctx.ifs = NULL;
     service_ctx.adv_fault_if_unknown = 0;
+    service_ctx.adv_fault_if_set = 0;
     service_ctx.adv_synology_nvr = 0;
     service_ctx.profiles = NULL;
     service_ctx.profiles_num = 0;
@@ -169,6 +170,9 @@ int process_conf_file(char *file)
         } else if (strcasecmp(param, "adv_fault_if_unknown") == 0) {
             if (strcasecmp(value, "1") == 0)
                 service_ctx.adv_fault_if_unknown = 1;
+        } else if (strcasecmp(param, "adv_fault_if_set") == 0) {
+            if (strcasecmp(value, "1") == 0)
+                service_ctx.adv_fault_if_set = 1;
         } else if (strcasecmp(param, "adv_synology_nvr") == 0) {
             if (strcasecmp(value, "1") == 0)
                 service_ctx.adv_synology_nvr = 1;
@@ -520,6 +524,7 @@ void print_conf_help()
     fprintf(stderr, "\tpassword=\n");
     fprintf(stderr, "\t#Advanced options\n");
     fprintf(stderr, "\tadv_fault_if_unknown=0\n");
+    fprintf(stderr, "\tadv_fault_if_set=0\n");
     fprintf(stderr, "\tadv_synology_nvr=0\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "\t#Profile 0\n");

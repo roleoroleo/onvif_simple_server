@@ -52,6 +52,12 @@ int media_get_compatible_audio_encoder_configurations();
 int media_get_compatible_audio_decoder_configurations();
 int media_get_compatible_audio_output_configurations();
 
+int media_set_video_source_configuration();
+int media_set_audio_source_configuration();
+int media_set_video_encoder_configuration();
+int media_set_audio_encoder_configuration();
+int media_set_audio_output_configuration();
+
 int media_unsupported(const char *method);
 
 #endif //MEDIA_SERVICE_H

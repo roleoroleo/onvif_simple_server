@@ -1048,6 +1048,88 @@ int media_get_compatible_audio_output_configurations()
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
     return cat("stdout", "media_service_files/GetCompatibleAudioOutputConfigurations.xml", 0);
+int media_set_video_source_configuration()
+{
+    const char *token = NULL;
+    ezxml_t node;
+
+    node = get_element_ptr(NULL, "Configuration", "Body");
+    if (node != NULL) {
+        token = get_attribute(node, "token");
+    }
+
+    if ((node == NULL) || (token == NULL)) {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The configuration does not exist");
+        return -1;
+    }
+
+    if (strcasecmp("VideoSourceConfigToken", token) == 0) {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:ConfigModify", "Config modify", "The configuration parameters are not possible to set");
+        return -2;
+    } else {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The configuration does not exist");
+        return -1;
+    }
+}
+
+int media_set_audio_source_configuration()
+{
+    const char *token = NULL;
+    ezxml_t node;
+
+    node = get_element_ptr(NULL, "Configuration", "Body");
+    if (node != NULL) {
+        token = get_attribute(node, "token");
+    }
+
+    if ((node == NULL) || (token == NULL)) {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The configuration does not exist");
+        return -1;
+    }
+
+    if (strcasecmp("AudioSourceConfigToken", token) == 0) {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:ConfigModify", "Config modify", "The configuration parameters are not possible to set");
+        return -2;
+    } else {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The configuration does not exist");
+        return -1;
+    }
+}
+
+int media_set_video_encoder_configuration()
+{
+    send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:ConfigModify", "Config modify", "The configuration parameters are not possible to set");
+    return -1;
+}
+
+int media_set_audio_encoder_configuration()
+{
+    send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:ConfigModify", "Config modify", "The configuration parameters are not possible to set");
+    return -1;
+}
+
+int media_set_audio_output_configuration()
+{
+    const char *token = NULL;
+    ezxml_t node;
+
+    node = get_element_ptr(NULL, "Configuration", "Body");
+    if (node != NULL) {
+        token = get_attribute(node, "token");
+    }
+
+    if ((node == NULL) || (token == NULL)) {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The configuration does not exist");
+        return -1;
+    }
+
+    if (strcasecmp("AudioOutputConfigToken", token) == 0) {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:ConfigModify", "Config modify", "The configuration parameters are not possible to set");
+        return -2;
+    } else {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The configuration does not exist");
+        return -1;
+    }
 }
 
 int media_unsupported(const char *method)

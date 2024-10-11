@@ -514,6 +514,16 @@ int main(int argc, char ** argv)
                 media_get_compatible_audio_decoder_configurations();
             } else if (strcasecmp(method, "GetCompatibleAudioOutputConfigurations") == 0) {
                 media_get_compatible_audio_output_configurations();
+            } else if ((service_ctx.adv_fault_if_set == 1) && (strcasecmp(method, "SetVideoSourceConfiguration") == 0)) {
+                media_set_video_source_configuration();
+            } else if ((service_ctx.adv_fault_if_set == 1) && (strcasecmp(method, "SetAudioSourceConfiguration") == 0)) {
+                media_set_audio_source_configuration();
+            } else if ((service_ctx.adv_fault_if_set == 1) && (strcasecmp(method, "SetVideoEncoderConfiguration") == 0)) {
+                media_set_video_encoder_configuration();
+            } else if ((service_ctx.adv_fault_if_set == 1) && (strcasecmp(method, "SetAudioEncoderConfiguration") == 0)) {
+                media_set_audio_encoder_configuration();
+            } else if ((service_ctx.adv_fault_if_set == 1) && (strcasecmp(method, "SetAudioOutputConfiguration") == 0)) {
+                media_set_audio_output_configuration();
             } else {
                 media_unsupported(method);
             }

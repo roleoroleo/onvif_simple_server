@@ -10,6 +10,7 @@ scope=onvif://www.onvif.org/Profile/Streaming
 #password=admin
 #Advanced options
 adv_fault_if_unknown=0
+adv_fault_if_set=0
 adv_synology_nvr=0
 
 #Profile 0

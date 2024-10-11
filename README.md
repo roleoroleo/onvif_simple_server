@@ -93,6 +93,7 @@ user=
 password=
 #Advanced options
 adv_fault_if_unknown=0
+adv_fault_if_set=0
 adv_synology_nvr=0
 
 #Profile 0
@@ -189,8 +190,9 @@ Brief explanation of some parameters:
 | ifs | the network interface used by your http server |
 | port | the TCP port used by your http server |
 | user | the user you want to set for WS-UsernameToken authentication, if blank security is disabled |
-| adv_fault_if_unknown | set to 1 if your ONVIF client is not able to connect to the device |
-| adv_synology_nvr | set to 1 to improve compatibility if you are using a Synology NVR |
+| adv_fault_if_unknown | try to set to 1 if your ONVIF client is not able to connect to the device |
+| adv_fault_if_set | try to set to 1 if your ONVIF client is not able to connect to the device |
+| adv_synology_nvr | try to set to 1 to improve compatibility, if you are using a Synology NVR |
 | url | the url of your streaming service (it is not provided by onvif server) |
 | snapurl | the url of your snapshot service (tipically an http url that provides a jpg image) |
 | audio_decoder | set to G711 or AAC if your device support an audio back channel |
