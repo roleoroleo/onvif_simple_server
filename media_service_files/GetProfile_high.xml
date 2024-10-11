@@ -33,6 +33,11 @@
                                width="%VSC_WIDTH%"
                                height="%VSC_HEIGHT%"/>
                 </tt:VideoSourceConfiguration>
+                <tt:AudioSourceConfiguration token="AudioSourceConfigToken">
+                    <tt:Name>AudioSourceConfig</tt:Name>
+                    <tt:UseCount>%PROFILES_NUM%</tt:UseCount>
+                    <tt:SourceToken>AudioSourceToken</tt:SourceToken>
+                </tt:AudioSourceConfiguration>
                 <tt:VideoEncoderConfiguration token="Profile_0_VideoEncoderToken">
                     <tt:Name>Profile_0_VideoEncoder</tt:Name>
                     <tt:UseCount>1</tt:UseCount>
@@ -61,6 +66,22 @@
                     </tt:Multicast>
                     <tt:SessionTimeout>PT0S</tt:SessionTimeout>
                 </tt:VideoEncoderConfiguration>
+                <tt:AudioEncoderConfiguration token="Profile_0_AudioEncoderToken">
+                    <tt:Name>Profile_0_AudioEncoder</tt:Name>
+                    <tt:UseCount>1</tt:UseCount>
+                    <tt:Encoding>%AUDIO_ENCODING%</tt:Encoding>
+                    <tt:Bitrate>50</tt:Bitrate>
+                    <tt:SampleRate>16</tt:SampleRate>
+                    <tt:Multicast>
+                        <tt:Address>
+                            <tt:Type>IPv4</tt:Type>
+                        </tt:Address>
+                        <tt:Port>0</tt:Port>
+                        <tt:TTL>0</tt:TTL>
+                        <tt:AutoStart>false</tt:AutoStart>
+                    </tt:Multicast>
+                    <tt:SessionTimeout>PT0S</tt:SessionTimeout>
+                </tt:AudioEncoderConfiguration>
                 <tt:PTZConfiguration token="PTZCfgToken"
                                      MoveRamp="0"
                                      PresetRamp="0"
@@ -80,7 +101,7 @@
                                     space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace"/>
                         <tt:Zoom x="0.0"
                                  space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace"/>
-                        </tt:DefaultPTZSpeed>
+                    </tt:DefaultPTZSpeed>
                     <tt:DefaultPTZTimeout>PT00H00M05S</tt:DefaultPTZTimeout>
                     <tt:PanTiltLimits>
                         <tt:Range>

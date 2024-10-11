@@ -20,35 +20,15 @@
                    xmlns:wsc="http://docs.oasis-open.org/ws-sx/ws-secureconversation/200512"
                    xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
     <SOAP-ENV:Body>
-        <trt:GetVideoEncoderConfigurationResponse>
-            <trt:Configuration token="Profile_0_VideoEncoderToken">
-                <tt:Name>Profile_0_VideoEncoder</tt:Name>
+        <trt:GetAudioDecoderConfigurationsResponse>
+            <trt:Configurations token="Profile_0_AudioDecoderToken">
+                <tt:Name>Profile_0_AudioDecoder</tt:Name>
                 <tt:UseCount>1</tt:UseCount>
-                <tt:Encoding>H264</tt:Encoding>
-                <tt:Resolution>
-                    <tt:Width>%WIDTH_HIGH%</tt:Width>
-                    <tt:Height>%HEIGHT_HIGH%</tt:Height>
-                </tt:Resolution>
-                <tt:Quality>0</tt:Quality>
-                <tt:RateControl>
-                    <tt:FrameRateLimit>0</tt:FrameRateLimit>
-                    <tt:EncodingInterval>0</tt:EncodingInterval>
-                    <tt:BitrateLimit>0</tt:BitrateLimit>
-                </tt:RateControl>
-                <tt:H264>
-                    <tt:GovLength>40</tt:GovLength>
-                    <tt:H264Profile>High</tt:H264Profile>
-                </tt:H264>
-                <tt:Multicast>
-                    <tt:Address>
-                    <tt:Type>IPv4</tt:Type>
-                    </tt:Address>
-                    <tt:Port>0</tt:Port>
-                    <tt:TTL>0</tt:TTL>
-                    <tt:AutoStart>false</tt:AutoStart>
-                </tt:Multicast>
-                <tt:SessionTimeout>PT0S</tt:SessionTimeout>
-            </trt:Configuration>
-        </trt:GetVideoEncoderConfigurationResponse>
+            </trt:Configurations>
+            <trt:Configurations token="Profile_1_AudioDecoderToken">
+                <tt:Name>Profile_1_AudioDecoder</tt:Name>
+                <tt:UseCount>1</tt:UseCount>
+            </trt:Configurations>
+        </trt:GetAudioDecoderConfigurationsResponse>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>

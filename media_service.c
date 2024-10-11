@@ -58,11 +58,9 @@ int media_get_video_sources()
 
 int media_get_video_source_configurations()
 {
-    // Get the video source configuration from the 1st profile
     char profiles_num[2], stmp_w[16], stmp_h[16];
 
     sprintf(profiles_num, "%d", service_ctx.profiles_num);
-
     sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
     sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
     long size = cat(NULL, "media_service_files/GetVideoSourceConfigurations.xml", 6,
@@ -81,66 +79,102 @@ int media_get_video_source_configurations()
 
 int media_get_video_source_configuration()
 {
-    // Get the video source configuration from the 1st profile
-    // Ignore the requested token
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
     char profiles_num[2], stmp_w[16], stmp_h[16];
 
-    sprintf(profiles_num, "%d", service_ctx.profiles_num);
+    if (configuration_token == NULL) {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
+        return -1;
+    }
 
-    sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
-    sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
-    long size = cat(NULL, "media_service_files/GetVideoSourceConfiguration.xml", 6,
-            "%PROFILES_NUM%", profiles_num,
-            "%WIDTH%", stmp_w,
-            "%HEIGHT%", stmp_h);
+    if (strncasecmp("VideoSourceConfigToken", configuration_token, 22) == 0) {
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        sprintf(profiles_num, "%d", service_ctx.profiles_num);
+        sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
+        sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
+        long size = cat(NULL, "media_service_files/GetVideoSourceConfiguration.xml", 6,
+                "%PROFILES_NUM%", profiles_num,
+                "%WIDTH%", stmp_w,
+                "%HEIGHT%", stmp_h);
 
-    return cat("stdout", "media_service_files/GetVideoSourceConfiguration.xml", 6,
-            "%PROFILES_NUM%", profiles_num,
-            "%WIDTH%", stmp_w,
-            "%HEIGHT%", stmp_h);
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+        return cat("stdout", "media_service_files/GetVideoSourceConfiguration.xml", 6,
+                "%PROFILES_NUM%", profiles_num,
+                "%WIDTH%", stmp_w,
+                "%HEIGHT%", stmp_h);
+
+    } else {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
+        return -2;
+    }
 }
 
 int media_get_compatible_video_source_configurations()
 {
     // Get the video source configuration from the 1st profile
     // Ignore the requested token
+    char profiles_num[2];
     char stmp_w[16], stmp_h[16];
 
+    sprintf(profiles_num, "%d", service_ctx.profiles_num);
     sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
     sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
-    long size = cat(NULL, "media_service_files/GetCompatibleVideoSourceConfigurations.xml", 4,
+    long size = cat(NULL, "media_service_files/GetCompatibleVideoSourceConfigurations.xml", 8,
+            "%PROFILES_NUM%", profiles_num,
             "%WIDTH%", stmp_w,
-            "%HEIGHT%", stmp_h);
+            "%HEIGHT%", stmp_h,
+            "%PROFILE_TYPE", "High");
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("stdout", "media_service_files/GetCompatibleVideoSourceConfigurations.xml", 4,
+    return cat("stdout", "media_service_files/GetCompatibleVideoSourceConfigurations.xml", 8,
+            "%PROFILES_NUM%", profiles_num,
             "%WIDTH%", stmp_w,
-            "%HEIGHT%", stmp_h);
+            "%HEIGHT%", stmp_h,
+            "%PROFILE_TYPE", "High");
 }
 
 int media_get_video_source_configuration_options()
 {
-    // Get the video source configuration from the 1st profile
-    // Ignore the requested tokens
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
+    char token[23];
     char stmp_w[16], stmp_h[16];
 
-    sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
-    sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
-    long size = cat(NULL, "media_service_files/GetVideoSourceConfigurationOptions.xml", 4,
-            "%WIDTH%", stmp_w,
-            "%HEIGHT%", stmp_h);
+    memset(token, '\0', sizeof(token));
+    if (profile_token != NULL) {
+        // Extract "Profile_x" from token Profile_x
+        strncpy(token, profile_token, 9);
+    } else if (configuration_token != NULL) {
+        strncpy(token, configuration_token, 22);
+    } else {
+        strncpy(token, service_ctx.profiles[0].name, 9);
+    }
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    if ((strcasecmp(service_ctx.profiles[0].name, token) == 0) ||
+            (strcasecmp(service_ctx.profiles[1].name, token) == 0) ||
+            (strcasecmp("VideoSourceConfigToken", token) == 0)) {
 
-    return cat("stdout", "media_service_files/GetVideoSourceConfigurationOptions.xml", 4,
-            "%WIDTH%", stmp_w,
-            "%HEIGHT%", stmp_h);
+        sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
+        sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
+        long size = cat(NULL, "media_service_files/GetVideoSourceConfigurationOptions.xml", 4,
+                "%WIDTH%", stmp_w,
+                "%HEIGHT%", stmp_h);
+
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+        return cat("stdout", "media_service_files/GetVideoSourceConfigurationOptions.xml", 4,
+                "%WIDTH%", stmp_w,
+                "%HEIGHT%", stmp_h);
+
+    } else {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
+        return -2;
+    }
 }
 
 int media_get_profiles()
@@ -364,32 +398,40 @@ int media_get_video_encoder_configuration()
 
         sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
-        long size = cat(NULL, "media_service_files/GetVideoEncoderConfiguration_high.xml", 4,
-                "%WIDTH_HIGH%", stmp_w_h,
-                "%HEIGHT_HIGH%", stmp_h_h);
+        long size = cat(NULL, "media_service_files/GetVideoEncoderConfiguration.xml", 8,
+                "%PROFILE%", token,
+                "%WIDTH%", stmp_w_h,
+                "%HEIGHT%", stmp_h_h,
+                "%PROFILE_TYPE%", "High");
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("stdout", "media_service_files/GetVideoEncoderConfiguration_high.xml", 4,
-                "%WIDTH_HIGH%", stmp_w_h,
-                "%HEIGHT_HIGH%", stmp_h_h);
+        return cat("stdout", "media_service_files/GetVideoEncoderConfiguration.xml", 8,
+                "%PROFILE%", token,
+                "%WIDTH%", stmp_w_h,
+                "%HEIGHT%", stmp_h_h,
+                "%PROFILE_TYPE%", "High");
 
     } else if ((service_ctx.profiles_num == 2) &&
             (strcasecmp(service_ctx.profiles[1].name, token) == 0)) {
 
         sprintf(stmp_w_l, "%d", service_ctx.profiles[1].width);
         sprintf(stmp_h_l, "%d", service_ctx.profiles[1].height);
-        long size = cat(NULL, "media_service_files/GetVideoEncoderConfiguration_low.xml", 4,
-                    "%WIDTH_LOW%", stmp_w_l,
-                    "%HEIGHT_LOW%", stmp_h_l);
+        long size = cat(NULL, "media_service_files/GetVideoEncoderConfiguration.xml", 8,
+                "%PROFILE%", token,
+                "%WIDTH%", stmp_w_l,
+                "%HEIGHT%", stmp_h_l,
+                "%PROFILE_TYPE%", "Main");
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("stdout", "media_service_files/GetVideoEncoderConfiguration_low.xml", 4,
-                    "%WIDTH_LOW%", stmp_w_l,
-                    "%HEIGHT_LOW%", stmp_h_l);
+        return cat("stdout", "media_service_files/GetVideoEncoderConfiguration.xml", 8,
+                "%PROFILE%", token,
+                "%WIDTH%", stmp_w_l,
+                "%HEIGHT%", stmp_h_l,
+                "%PROFILE_TYPE%", "Main");
     } else {
         send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
         return -2;
@@ -411,32 +453,40 @@ int media_get_compatible_video_encoder_configurations()
 
         sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
-        long size = cat(NULL, "media_service_files/GetCompatibleVideoEncoderConfigurations_high.xml", 4,
-                "%WIDTH_HIGH%", stmp_w_h,
-                "%HEIGHT_HIGH%", stmp_h_h);
+        long size = cat(NULL, "media_service_files/GetCompatibleVideoEncoderConfigurations.xml", 8,
+                "%PROFILE%", profile_token,
+                "%WIDTH%", stmp_w_h,
+                "%HEIGHT%", stmp_h_h,
+                "%PROFILE_TYPE%", "High");
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("stdout", "media_service_files/GetCompatibleVideoEncoderConfigurations_high.xml", 4,
-                "%WIDTH_HIGH%", stmp_w_h,
-                "%HEIGHT_HIGH%", stmp_h_h);
+        return cat("stdout", "media_service_files/GetCompatibleVideoEncoderConfigurations.xml", 8,
+                "%PROFILE%", profile_token,
+                "%WIDTH%", stmp_w_h,
+                "%HEIGHT%", stmp_h_h,
+                "%PROFILE_TYPE%", "High");
 
     } else if ((service_ctx.profiles_num == 2) &&
             (strcasecmp(service_ctx.profiles[1].name, profile_token) == 0)) {
 
         sprintf(stmp_w_l, "%d", service_ctx.profiles[1].width);
         sprintf(stmp_h_l, "%d", service_ctx.profiles[1].height);
-        long size = cat(NULL, "media_service_files/GetCompatibleVideoEncoderConfigurations_low.xml", 4,
-                "%WIDTH_LOW%", stmp_w_l,
-                "%HEIGHT_LOW%", stmp_h_l);
+        long size = cat(NULL, "media_service_files/GetCompatibleVideoEncoderConfigurations.xml", 8,
+                "%PROFILE%", profile_token,
+                "%WIDTH%", stmp_w_l,
+                "%HEIGHT%", stmp_h_l,
+                "%PROFILE_TYPE%", "Main");
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("stdout", "media_service_files/GetCompatibleVideoEncoderConfigurations_low.xml", 4,
-                "%WIDTH_LOW%", stmp_w_l,
-                "%HEIGHT_LOW%", stmp_h_l);
+        return cat("stdout", "media_service_files/GetCompatibleVideoEncoderConfigurations.xml", 8,
+                "%PROFILE%", profile_token,
+                "%WIDTH%", stmp_w_l,
+                "%HEIGHT%", stmp_h_l,
+                "%PROFILE_TYPE%", "Main");
     } else {
         send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile does not exist");
         return -2;
@@ -514,7 +564,7 @@ int media_get_guaranteed_number_of_video_encoder_instances()
         return -1;
     }
 
-    if (strcasecmp("VideoSourceConfigToken", configuration_token) == 0) {
+    if (strncasecmp("VideoSourceConfigToken", configuration_token, 22) == 0) {
 
         long size = cat(NULL, "media_service_files/GetGuaranteedNumberOfVideoEncoderInstances.xml", 4,
                 "%TOTAL_NUMBER%", stmp,
@@ -681,7 +731,7 @@ int media_get_audio_sources()
 
 int media_get_audio_source_configurations()
 {
-    char profiles_num[2], stmp_w[16], stmp_h[16];
+    char profiles_num[2];
 
     sprintf(profiles_num, "%d", service_ctx.profiles_num);
 
@@ -697,29 +747,63 @@ int media_get_audio_source_configurations()
 
 int media_get_audio_source_configuration()
 {
-    // Ignore the requested token
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
     char profiles_num[2];
 
-    sprintf(profiles_num, "%d", service_ctx.profiles_num);
+    if (configuration_token == NULL) {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
+        return -1;
+    }
 
-    long size = cat(NULL, "media_service_files/GetAudioSourceConfiguration.xml", 2,
-            "%PROFILES_NUM%", profiles_num);
+    if (strncasecmp("AudioSourceConfigToken", configuration_token, 22) == 0) {
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        sprintf(profiles_num, "%d", service_ctx.profiles_num);
+        long size = cat(NULL, "media_service_files/GetAudioSourceConfiguration.xml", 2,
+                "%PROFILES_NUM%", profiles_num);
 
-    return cat("stdout", "media_service_files/GetAudioSourceConfiguration.xml", 2,
-            "%PROFILES_NUM%", profiles_num);
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+        return cat("stdout", "media_service_files/GetAudioSourceConfiguration.xml", 2,
+                "%PROFILES_NUM%", profiles_num);
+
+    } else {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
+        return -2;
+    }
 }
 
 int media_get_audio_source_configuration_options()
 {
-    long size = cat(NULL, "media_service_files/GetAudioSourceConfigurationOptions.xml", 0);
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
+    char token[23];
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    memset(token, '\0', sizeof(token));
+    if (profile_token != NULL) {
+        // Extract "Profile_x" from token Profile_x
+        strncpy(token, profile_token, 9);
+    } else if (configuration_token != NULL) {
+        strncpy(token, configuration_token, 22);
+    } else {
+        strncpy(token, service_ctx.profiles[0].name, 9);
+    }
 
-    return cat("stdout", "media_service_files/GetAudioSourceConfigurationOptions.xml", 0);
+    if ((strcasecmp(service_ctx.profiles[0].name, token) == 0) ||
+            (strcasecmp(service_ctx.profiles[1].name, token) == 0) ||
+            (strcasecmp("AudioSourceConfigToken", token) == 0)) {
+
+        long size = cat(NULL, "media_service_files/GetAudioSourceConfigurationOptions.xml", 0);
+
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+        return cat("stdout", "media_service_files/GetAudioSourceConfigurationOptions.xml", 0);
+
+    } else {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
+        return -2;
+    }
 }
 
 int media_get_audio_encoder_configuration()
@@ -839,22 +923,64 @@ int media_get_audio_encoder_configuration_options()
 
 int media_get_audio_decoder_configuration()
 {
-    long size = cat(NULL, "media_service_files/GetAudioDecoderConfiguration.xml", 0);
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    char token[10];
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    if (configuration_token == NULL) {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
+        return -1;
+    }
 
-    return cat("stdout", "media_service_files/GetAudioDecoderConfiguration.xml", 0);
+    memset(token, '\0', sizeof(token));
+    strncpy(token, configuration_token, 9);
+
+    if (strcasecmp(service_ctx.profiles[0].name, token) == 0) {
+
+        long size = cat(NULL, "media_service_files/GetAudioDecoderConfiguration.xml", 2,
+                "%PROFILE%", token);
+
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+        return cat("stdout", "media_service_files/GetAudioDecoderConfiguration.xml", 2,
+                "%PROFILE%", token);
+
+    } else if ((service_ctx.profiles_num == 2) &&
+            (strcasecmp(service_ctx.profiles[1].name, token) == 0)) {
+
+        long size = cat(NULL, "media_service_files/GetAudioDecoderConfiguration.xml", 2,
+                "%PROFILE%", token);
+
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+        return cat("stdout", "media_service_files/GetAudioDecoderConfiguration.xml", 2,
+                "%PROFILE%", token);
+
+    } else {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
+        return -2;
+    }
 }
 
 int media_get_audio_decoder_configurations()
 {
-    long size = cat(NULL, "media_service_files/GetAudioDecoderConfigurations.xml", 0);
+    if (service_ctx.profiles_num == 1) {
+        long size = cat(NULL, "media_service_files/GetAudioDecoderConfigurations_high.xml", 0);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("stdout", "media_service_files/GetAudioDecoderConfigurations.xml", 0);
+        return cat("stdout", "media_service_files/GetAudioDecoderConfigurations_high.xml", 0);
+
+    } else if (service_ctx.profiles_num == 2) {
+        long size = cat(NULL, "media_service_files/GetAudioDecoderConfigurations_both.xml", 0);
+
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+        return cat("stdout", "media_service_files/GetAudioDecoderConfigurations_both.xml", 0);
+    }
 }
 
 int media_get_audio_decoder_configuration_options()
@@ -918,22 +1044,34 @@ int media_get_audio_outputs()
 
 int media_get_audio_output_configuration()
 {
-    long size = cat(NULL, "media_service_files/GetAudioOutputConfiguration.xml", 0);
+    char profiles_num[2];
+
+    sprintf(profiles_num, "%d", service_ctx.profiles_num);
+
+    long size = cat(NULL, "media_service_files/GetAudioOutputConfiguration.xml", 2,
+            "%PROFILES_NUM%", profiles_num);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("stdout", "media_service_files/GetAudioOutputConfiguration.xml", 0);
+    return cat("stdout", "media_service_files/GetAudioOutputConfiguration.xml", 2,
+            "%PROFILES_NUM%", profiles_num);
 }
 
 int media_get_audio_output_configurations()
 {
-    long size = cat(NULL, "media_service_files/GetAudioOutputConfigurations.xml", 0);
+    char profiles_num[2];
+
+    sprintf(profiles_num, "%d", service_ctx.profiles_num);
+
+    long size = cat(NULL, "media_service_files/GetAudioOutputConfigurations.xml", 2,
+            "%PROFILES_NUM%", profiles_num);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("stdout", "media_service_files/GetAudioOutputConfigurations.xml", 0);
+    return cat("stdout", "media_service_files/GetAudioOutputConfigurations.xml", 2,
+            "%PROFILES_NUM%", profiles_num);
 }
 
 int media_get_audio_output_configuration_options()
@@ -1042,12 +1180,21 @@ int media_get_compatible_audio_decoder_configurations()
 
 int media_get_compatible_audio_output_configurations()
 {
-    long size = cat(NULL, "media_service_files/GetCompatibleAudioOutputConfigurations.xml", 0);
+    // Ignore the requested token
+    char profiles_num[2];
+
+    sprintf(profiles_num, "%d", service_ctx.profiles_num);
+
+    long size = cat(NULL, "media_service_files/GetCompatibleAudioOutputConfigurations.xml", 2,
+            "%PROFILES_NUM%", profiles_num);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("stdout", "media_service_files/GetCompatibleAudioOutputConfigurations.xml", 0);
+    return cat("stdout", "media_service_files/GetCompatibleAudioOutputConfigurations.xml", 2,
+            "%PROFILES_NUM%", profiles_num);
+}
+
 int media_set_video_source_configuration()
 {
     const char *token = NULL;

@@ -1,4 +1,4 @@
-onvif_simple_server is a C light implementation of an onvif server intended for use in resource-constrained devices.
+onvif_simple_server is a C light implementation of an onvif server (Profile S) intended for use in resource-constrained devices.
 
 So:
 - no gsoap
@@ -172,6 +172,7 @@ input_file=/tmp/onvif_notify_server/sound_detection
 
 Note:
 - you can use 1 or 2 profiles.
+- **Actually only type=h264 is supported.** This doesn't mean that if your camera is h265 then it does not work. It depends on your onvif client implementation.
 - ipc_cmd is just an example of a local binary that handles ptz, use the specific program of your cam
 
   **If the external command uses stdout, please append a redirect to /dev/null to avoid garbage in the html content**

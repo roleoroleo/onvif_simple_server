@@ -21,15 +21,15 @@
                    xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
     <SOAP-ENV:Body>
         <trt:GetAudioEncoderConfigurationResponse>
-            <trt:Configuration token="AudioEncoderToken">
-                <tt:Name>AudioEncoder</tt:Name>
+            <trt:Configuration token="%PROFILE%_AudioEncoderToken">
+                <tt:Name>%PROFILE%_AudioEncoder</tt:Name>
                 <tt:UseCount>1</tt:UseCount>
-                <tt:Encoding>AAC</tt:Encoding>
+                <tt:Encoding>%AUDIO_ENCODING%</tt:Encoding>
                 <tt:Bitrate>50</tt:Bitrate>
                 <tt:SampleRate>16</tt:SampleRate>
                 <tt:Multicast>
                     <tt:Address>
-                    <tt:Type>IPv4</tt:Type>
+                        <tt:Type>IPv4</tt:Type>
                     </tt:Address>
                     <tt:Port>0</tt:Port>
                     <tt:TTL>0</tt:TTL>

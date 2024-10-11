@@ -21,13 +21,13 @@
                    xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
     <SOAP-ENV:Body>
         <trt:GetVideoEncoderConfigurationResponse>
-            <trt:Configuration token="Profile_1_VideoEncoderToken">
-                <tt:Name>Profile_1_VideoEncoder</tt:Name>
+            <trt:Configuration token="%PROFILE%_VideoEncoderToken">
+                <tt:Name>%PROFILE%_VideoEncoder</tt:Name>
                 <tt:UseCount>1</tt:UseCount>
                 <tt:Encoding>H264</tt:Encoding>
                 <tt:Resolution>
-                    <tt:Width>%WIDTH_LOW%</tt:Width>
-                    <tt:Height>%HEIGHT_LOW%</tt:Height>
+                    <tt:Width>%WIDTH%</tt:Width>
+                    <tt:Height>%HEIGHT%</tt:Height>
                 </tt:Resolution>
                 <tt:Quality>0</tt:Quality>
                 <tt:RateControl>
@@ -37,7 +37,7 @@
                 </tt:RateControl>
                 <tt:H264>
                     <tt:GovLength>40</tt:GovLength>
-                    <tt:H264Profile>Main</tt:H264Profile>
+                    <tt:H264Profile>%PROFILE_TYPE%</tt:H264Profile>
                 </tt:H264>
                 <tt:Multicast>
                     <tt:Address>
