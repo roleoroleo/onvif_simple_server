@@ -185,7 +185,8 @@ int process_conf_file(char *file)
             service_ctx.profiles[service_ctx.profiles_num - 1].url = NULL;
             service_ctx.profiles[service_ctx.profiles_num - 1].snapurl = NULL;
             service_ctx.profiles[service_ctx.profiles_num - 1].type = 0;
-            service_ctx.profiles[service_ctx.profiles_num - 1].decoder = 0;
+            service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AUDIO_NONE;
+            service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
         } else if (strcasecmp(param, "width") == 0) {
             errno = 0;
             service_ctx.profiles[service_ctx.profiles_num - 1].width = strtol(value, &endptr, 10);
@@ -225,13 +226,24 @@ int process_conf_file(char *file)
                 service_ctx.profiles[service_ctx.profiles_num - 1].type = MPEG4;
             else if (strcasecmp(value, "H264") == 0)
                 service_ctx.profiles[service_ctx.profiles_num - 1].type = H264;
-        } else if (strcasecmp(param, "decoder") == 0) {
+        } else if (strcasecmp(param, "audio_encoder") == 0) {
             if (strcasecmp(value, "NONE") == 0)
-                service_ctx.profiles[service_ctx.profiles_num - 1].decoder = DEC_NONE;
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AUDIO_NONE;
             else if (strcasecmp(value, "G711") == 0)
-                service_ctx.profiles[service_ctx.profiles_num - 1].decoder = DEC_G711;
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AUDIO_G711;
+            else if (strcasecmp(value, "G726") == 0)
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AUDIO_G711;
             else if (strcasecmp(value, "AAC") == 0)
-                service_ctx.profiles[service_ctx.profiles_num - 1].decoder = DEC_AAC;
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AUDIO_AAC;
+        } else if (strcasecmp(param, "audio_decoder") == 0) {
+            if (strcasecmp(value, "NONE") == 0)
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
+            else if (strcasecmp(value, "G711") == 0)
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_G711;
+            else if (strcasecmp(value, "G726") == 0)
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_G711;
+            else if (strcasecmp(value, "AAC") == 0)
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_AAC;
 
         //PTZ Profile for ONVIF PTZ Service
         } else if (strcasecmp(param, "ptz") == 0) {
@@ -517,7 +529,8 @@ void print_conf_help()
     fprintf(stderr, "\turl=rtsp://%%s/ch0_0.h264\n");
     fprintf(stderr, "\tsnapurl=http://%%s/cgi-bin/snapshot.sh?res=high&watermark=yes\n");
     fprintf(stderr, "\ttype=H264\n");
-    fprintf(stderr, "\tdecoder=G711\n");
+    fprintf(stderr, "\taudio_encoder=AAC\n");
+    fprintf(stderr, "\taudio_decoder=G711\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "\t#Profile 1\n");
     fprintf(stderr, "\tname=Profile_1\n");
@@ -526,7 +539,8 @@ void print_conf_help()
     fprintf(stderr, "\turl=rtsp://%%s/ch0_1.h264\n");
     fprintf(stderr, "\tsnapurl=http://%%s/cgi-bin/snapshot.sh?res=low&watermark=yes\n");
     fprintf(stderr, "\ttype=H264\n");
-    fprintf(stderr, "\tdecoder=NONE\n");
+    fprintf(stderr, "\taudio_encoder=AAC\n");
+    fprintf(stderr, "\taudio_decoder=NONE\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "\t#PTZ\n");
     fprintf(stderr, "\tptz=1\n");

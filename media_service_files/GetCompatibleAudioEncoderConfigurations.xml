@@ -24,7 +24,7 @@
             <trt:Configurations token="AudioEncoderToken">
                 <tt:Name>AudioEncoder</tt:Name>
                 <tt:UseCount>1</tt:UseCount>
-                <tt:Encoding>AAC</tt:Encoding>
+                <tt:Encoding>%AUDIO_ENCODING%</tt:Encoding>
                 <tt:Bitrate>50</tt:Bitrate>
                 <tt:SampleRate>16</tt:SampleRate>
                 <tt:Multicast>

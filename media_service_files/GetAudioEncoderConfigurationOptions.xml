@@ -23,7 +23,7 @@
         <trt:GetAudioEncoderConfigurationOptionsResponse>
             <trt:Options>
                 <tt:Options>
-                    <tt:Encoding>AAC</tt:Encoding>
+                    <tt:Encoding>%AUDIO_ENCODING%</tt:Encoding>
                     <tt:BitrateList>
                         <tt:Items>50</tt:Items>
                     </tt:BitrateList>

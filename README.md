@@ -102,7 +102,8 @@ height=1080
 url=rtsp://%s/ch0_0.h264
 snapurl=http://%s/cgi-bin/snapshot.sh?res=high&watermark=yes
 type=H264
-decoder=G711
+audio_encoder=AAC
+audio_decoder=G711
 
 #Profile 1
 name=Profile_1
@@ -111,7 +112,8 @@ height=360
 url=rtsp://%s/ch0_1.h264
 snapurl=http://%s/cgi-bin/snapshot.sh?res=low&watermark=yes
 type=H264
-decoder=NONE
+audio_encoder=AAC
+audio_decoder=NONE
 
 #PTZ
 ptz=1
@@ -191,7 +193,7 @@ Brief explanation of some parameters:
 | adv_synology_nvr | set to 1 to improve compatibility if you are using a Synology NVR |
 | url | the url of your streaming service (it is not provided by onvif server) |
 | snapurl | the url of your snapshot service (tipically an http url that provides a jpg image) |
-| decoder | set to G711 or AAC if your device support an audio back channel |
+| audio_decoder | set to G711 or AAC if your device support an audio back channel |
 | ptz | 1 if onvif_simple_server can control PTZ, 0 otherwise |
 | max_step_* | max values of x and y movements reported by the cam (min = 0) |
 | move_* | the binary that moves the PTZ controls, onvif_simple_server will run it with a system call |

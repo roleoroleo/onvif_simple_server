@@ -19,7 +19,8 @@ height=1080
 url=rtsp://%s/ch0_0.h264
 snapurl=http://%s/cgi-bin/snapshot.sh
 type=H264
-decoder=G711
+audio_encoder=AAC
+audio_decoder=G711
 
 #Profile 1
 name=Profile_1
@@ -28,7 +29,8 @@ height=360
 url=rtsp://%s/ch0_1.h264
 snapurl=http://%s/cgi-bin/snapshot.sh
 type=H264
-decoder=NONE
+audio_encoder=AAC
+audio_decoder=NONE
 
 #PTZ
 ptz=1

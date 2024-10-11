@@ -730,6 +730,23 @@ int get_from_query_string(char **ret, int *ret_size, char *par)
     return -1;
 }
 
+int set_audio_codec(char *buffer, int buffer_len, int codec)
+{
+    if (buffer_len < 5) return -1;
+
+    if (codec == AUDIO_G711) {
+        sprintf(buffer, "G711");
+    } else if (codec == AUDIO_G726) {
+        sprintf(buffer, "G726");
+    } else if (codec == AUDIO_AAC) {
+        sprintf(buffer, "AAC");
+    } else {
+        return -2;
+    }
+
+    return 0;
+}
+
 void *reboot_thread(void *arg)
 {
     sync();

@@ -45,7 +45,8 @@ typedef struct {
     char *url;
     char *snapurl;
     int  type;
-    int  decoder;
+    int  audio_encoder;
+    int  audio_decoder;
 } stream_profile_t;
 
 typedef struct {
