@@ -437,6 +437,9 @@ int handle_events(int fd, char *dir)
 
                         for(j = 0; j < MAX_SUBSCRIPTIONS; j++) {
                             if (subs_evts->subscriptions[j].used == SUB_PULL) {
+                                // Check if subscription is expired
+                                if (now > subs_evts->subscriptions[j].expire) continue;
+                                sub_count++;
                                 subs_evts->events[i].pull_notify |= (1 << j);
                             } else if (subs_evts->subscriptions[j].used == SUB_PUSH) {
                                 // Check if subscription is expired
@@ -754,10 +757,14 @@ int main(int argc, char **argv)  {
 
                     for(j = 0; j < MAX_SUBSCRIPTIONS; j++) {
                         if (subs_evts->subscriptions[j].used == SUB_PULL) {
+                            // Check if subscription is expired
+                            if (now > subs_evts->subscriptions[j].expire) continue;
+                            sub_count++;
                             subs_evts->events[i].pull_notify |= (1 << j);
                         } else if (subs_evts->subscriptions[j].used == SUB_PUSH) {
                             // Check if subscription is expired
                             if (now > subs_evts->subscriptions[j].expire) continue;
+                            sub_count++;
                             send_notify(subs_evts->subscriptions[j].reference, i, subs_evts->events[i].e_time, "Changed", "true");
                         }
                     }
@@ -775,10 +782,14 @@ int main(int argc, char **argv)  {
 
                     for(j = 0; j < MAX_SUBSCRIPTIONS; j++) {
                         if (subs_evts->subscriptions[j].used == SUB_PULL) {
+                            // Check if subscription is expired
+                            if (now > subs_evts->subscriptions[j].expire) continue;
+                            sub_count++;
                             subs_evts->events[i].pull_notify |= (1 << j);
                         } else if (subs_evts->subscriptions[j].used == SUB_PUSH) {
                             // Check if subscription is expired
                             if (now > subs_evts->subscriptions[j].expire) continue;
+                            sub_count++;
                             send_notify(subs_evts->subscriptions[j].reference, i, subs_evts->events[i].e_time, "Changed", "false");
                         }
                     }
