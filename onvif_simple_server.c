@@ -28,6 +28,7 @@
 #include "onvif_simple_server.h"
 #include "device_service.h"
 #include "media_service.h"
+#include "media2_service.h"
 #include "ptz_service.h"
 #include "events_service.h"
 #include "fault.h"
@@ -249,6 +250,7 @@ int main(int argc, char ** argv)
         tmp = argv[argc - 1];
         if ((strstr(tmp, "device_service") != NULL) ||
                 (strstr(tmp, "media_service") != NULL) ||
+                (strstr(tmp, "media2_service") != NULL) ||
                 (strstr(tmp, "ptz_service") != NULL) ||
                 (strstr(tmp, "events_service") != NULL)) {
             tmp = argv[argc - 1];
@@ -526,6 +528,42 @@ int main(int argc, char ** argv)
                 media_set_audio_output_configuration();
             } else {
                 media_unsupported(method);
+            }
+        } else if ((service_ctx.adv_enable_media2 == 1) && (strcasecmp("media2_service", prog_name) == 0)) {
+            if (strcasecmp(method, "GetServiceCapabilities") == 0) {
+                media2_get_service_capabilities();
+            } else if (strcasecmp(method, "GetProfiles") == 0) {
+                media2_get_profiles();
+            } else if (strcasecmp(method, "GetVideoSourceConfigurations") == 0) {
+                media2_get_video_source_configurations();
+            } else if (strcasecmp(method, "GetVideoSourceConfigurationOptions") == 0) {
+                media2_get_video_source_configuration_options();
+            } else if (strcasecmp(method, "GetVideoEncoderConfigurations") == 0) {
+                media2_get_video_encoder_configurations();
+            } else if (strcasecmp(method, "GetVideoEncoderConfigurationOptions") == 0) {
+                media2_get_video_encoder_configuration_options();
+            } else if (strcasecmp(method, "GetAudioSourceConfigurations") == 0) {
+                media2_get_audio_source_configurations();
+            } else if (strcasecmp(method, "GetAudioSourceConfigurationOptions") == 0) {
+                media2_get_audio_source_configuration_options();
+            } else if (strcasecmp(method, "GetAudioEncoderConfigurations") == 0) {
+                media2_get_audio_encoder_configurations();
+            } else if (strcasecmp(method, "GetAudioEncoderConfigurationOptions") == 0) {
+                media2_get_audio_encoder_configuration_options();
+            } else if (strcasecmp(method, "GetAudioOutputConfigurations") == 0) {
+                media2_get_audio_output_configurations();
+            } else if (strcasecmp(method, "GetAudioOutputConfigurationOptions") == 0) {
+                media2_get_audio_output_configuration_options();
+            } else if (strcasecmp(method, "GetAudioDecoderConfigurations") == 0) {
+                media2_get_audio_decoder_configurations();
+            } else if (strcasecmp(method, "GetAudioDecoderConfigurationOptions") == 0) {
+                media2_get_audio_decoder_configuration_options();
+            } else if (strcasecmp(method, "GetSnapshotUri") == 0) {
+                media2_get_snapshot_uri();
+            } else if (strcasecmp(method, "GetStreamUri") == 0) {
+                media2_get_stream_uri();
+            } else {
+                media2_unsupported(method);
             }
         } else if (strcasecmp("ptz_service", prog_name) == 0) {
             if (strcasecmp(method, "GetServiceCapabilities") == 0) {

@@ -92,6 +92,7 @@ scope=onvif://www.onvif.org/Profile/Streaming
 user=
 password=
 #Advanced options
+adv_enable_media2=0
 adv_fault_if_unknown=0
 adv_fault_if_set=0
 adv_synology_nvr=0

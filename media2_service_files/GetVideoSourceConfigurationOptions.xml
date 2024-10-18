@@ -21,6 +21,28 @@
                    xmlns:wsc="http://docs.oasis-open.org/ws-sx/ws-secureconversation/200512"
                    xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
     <SOAP-ENV:Body>
-        <%METHOD% />
+        <tr2:GetVideoSourceConfigurationOptionsResponse>
+            <tr2:Options>
+                <tt:BoundsRange>
+                    <tt:XRange>
+                        <tt:Min>0</tt:Min>
+                        <tt:Max>%WIDTH%</tt:Max>
+                    </tt:XRange>
+                    <tt:YRange>
+                        <tt:Min>0</tt:Min>
+                        <tt:Max>%HEIGHT%</tt:Max>
+                    </tt:YRange>
+                    <tt:WidthRange>
+                        <tt:Min>0</tt:Min>
+                        <tt:Max>%WIDTH%</tt:Max>
+                    </tt:WidthRange>
+                    <tt:HeightRange>
+                        <tt:Min>0</tt:Min>
+                        <tt:Max>%HEIGHT%</tt:Max>
+                    </tt:HeightRange>
+                </tt:BoundsRange>
+                <tt:VideoSourceTokensAvailable>VideoSourceToken</tt:VideoSourceTokensAvailable>
+            </tr2:Options>
+        </tr2:GetVideoSourceConfigurationOptionsResponse>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>

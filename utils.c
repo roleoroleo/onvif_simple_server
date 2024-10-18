@@ -41,6 +41,7 @@
 #endif
 
 #include "utils.h"
+#include "onvif_simple_server.h"
 #include "log.h"
 
 #define SHMOBJ_PATH "/onvif_subscription"
@@ -730,16 +731,47 @@ int get_from_query_string(char **ret, int *ret_size, char *par)
     return -1;
 }
 
-int set_audio_codec(char *buffer, int buffer_len, int codec)
+int set_video_codec(char *buffer, int buffer_len, int codec, int ver)
 {
-    if (buffer_len < 5) return -1;
+    if (buffer_len < 16) return -1;
 
-    if (codec == AUDIO_G711) {
-        sprintf(buffer, "G711");
-    } else if (codec == AUDIO_G726) {
+    if (codec == JPEG) {
+        sprintf(buffer, "JPEG");
+    } else if (codec == MPEG4) {
+        sprintf(buffer, "MPEG4");
+    } else if (codec == H264) {
+        sprintf(buffer, "H264");
+    } else if (codec == H265) {
+        if (ver == 1) {
+            sprintf(buffer, "H264");
+        } else {
+            sprintf(buffer, "H265");
+        }
+    } else {
+        return -2;
+    }
+
+    return 0;
+}
+
+int set_audio_codec(char *buffer, int buffer_len, int codec, int ver)
+{
+    if (buffer_len < 16) return -1;
+
+    if (codec == G711) {
+        if (ver == 1) {
+            sprintf(buffer, "G711");
+        } else {
+            sprintf(buffer, "PCMU");
+        }
+    } else if (codec == G726) {
         sprintf(buffer, "G726");
-    } else if (codec == AUDIO_AAC) {
-        sprintf(buffer, "AAC");
+    } else if (codec == AAC) {
+        if (ver == 1) {
+            sprintf(buffer, "AAC");
+        } else {
+            sprintf(buffer, "MPEG4-GENERIC");
+        }
     } else {
         return -2;
     }

@@ -21,6 +21,26 @@
                    xmlns:wsc="http://docs.oasis-open.org/ws-sx/ws-secureconversation/200512"
                    xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
     <SOAP-ENV:Body>
-        <%METHOD% />
+        <tr2:GetVideoEncoderConfigurationOptionsResponse>
+            <tr2:Options GovLengthRange="0 40"
+                         FrameRatesSupported="20"
+                         ProfilesSupported="%PROFILE%"
+                         ConstantBitRateSupported="false"
+                         GuaranteedFrameRateSupported="false">
+                <tt:Encoding>%VIDEO_ENCODING%</tt:Encoding>
+                <tt:QualityRange>
+                    <tt:Min>0</tt:Min>
+                    <tt:Max>10</tt:Max>
+                </tt:QualityRange>
+                <tt:ResolutionsAvailable>
+                    <tt:Width>%WIDTH%</tt:Width>
+                    <tt:Height>%HEIGHT%</tt:Height>
+                </tt:ResolutionsAvailable>
+                <tt:BitrateRange>
+                    <tt:Min>10</tt:Min>
+                    <tt:Max>1000</tt:Max>
+                </tt:BitrateRange>
+            </tr2:Options>
+        </tr2:GetVideoEncoderConfigurationOptionsResponse>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>

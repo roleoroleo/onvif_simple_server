@@ -6,9 +6,11 @@ serial_num=SN1234567890
 ifs=wlan0
 port=8080
 scope=onvif://www.onvif.org/Profile/Streaming
+scope=onvif://www.onvif.org/Profile/T
 #user=admin
 #password=admin
 #Advanced options
+adv_enable_media2=0
 adv_fault_if_unknown=0
 adv_fault_if_set=0
 adv_synology_nvr=0

@@ -33,10 +33,19 @@ typedef struct {
 } username_token_t;
 
 typedef enum {
+    VIDEO_NONE,
     JPEG,
     MPEG4,
-    H264
+    H264,
+    H265
 } stream_type;
+
+typedef enum {
+    AUDIO_NONE,
+    G711,
+    G726,
+    AAC
+} audio_type;
 
 typedef struct {
     char *name;
@@ -91,6 +100,7 @@ typedef struct {
 
     char *ifs;
 
+    int adv_enable_media2;
     int adv_fault_if_unknown;
     int adv_fault_if_set;
     int adv_synology_nvr;

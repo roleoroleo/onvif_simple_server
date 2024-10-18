@@ -53,6 +53,7 @@ int process_conf_file(char *file)
     service_ctx.serial_num = NULL;
     service_ctx.hardware_id = NULL;
     service_ctx.ifs = NULL;
+    service_ctx.adv_enable_media2 = 0;
     service_ctx.adv_fault_if_unknown = 0;
     service_ctx.adv_fault_if_set = 0;
     service_ctx.adv_synology_nvr = 0;
@@ -167,6 +168,9 @@ int process_conf_file(char *file)
         } else if (strcasecmp(param, "ifs") == 0) {
             service_ctx.ifs = (char *) malloc(strlen(value) + 1);
             strcpy(service_ctx.ifs, value);
+        } else if (strcasecmp(param, "adv_enable_media2") == 0) {
+            if (strcasecmp(value, "1") == 0)
+                service_ctx.adv_enable_media2 = 1;
         } else if (strcasecmp(param, "adv_fault_if_unknown") == 0) {
             if (strcasecmp(value, "1") == 0)
                 service_ctx.adv_fault_if_unknown = 1;
@@ -189,7 +193,7 @@ int process_conf_file(char *file)
             service_ctx.profiles[service_ctx.profiles_num - 1].url = NULL;
             service_ctx.profiles[service_ctx.profiles_num - 1].snapurl = NULL;
             service_ctx.profiles[service_ctx.profiles_num - 1].type = 0;
-            service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AUDIO_AAC;
+            service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
             service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
         } else if (strcasecmp(param, "width") == 0) {
             errno = 0;
@@ -230,24 +234,26 @@ int process_conf_file(char *file)
                 service_ctx.profiles[service_ctx.profiles_num - 1].type = MPEG4;
             else if (strcasecmp(value, "H264") == 0)
                 service_ctx.profiles[service_ctx.profiles_num - 1].type = H264;
+            else if (strcasecmp(value, "H265") == 0)
+                service_ctx.profiles[service_ctx.profiles_num - 1].type = H265;
         } else if (strcasecmp(param, "audio_encoder") == 0) {
             if (strcasecmp(value, "NONE") == 0)
                 service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AUDIO_NONE;
             else if (strcasecmp(value, "G711") == 0)
-                service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AUDIO_G711;
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = G711;
             else if (strcasecmp(value, "G726") == 0)
-                service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AUDIO_G711;
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = G711;
             else if (strcasecmp(value, "AAC") == 0)
-                service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AUDIO_AAC;
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
         } else if (strcasecmp(param, "audio_decoder") == 0) {
             if (strcasecmp(value, "NONE") == 0)
                 service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
             else if (strcasecmp(value, "G711") == 0)
-                service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_G711;
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = G711;
             else if (strcasecmp(value, "G726") == 0)
-                service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_G711;
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = G726;
             else if (strcasecmp(value, "AAC") == 0)
-                service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_AAC;
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AAC;
 
         //PTZ Profile for ONVIF PTZ Service
         } else if (strcasecmp(param, "ptz") == 0) {
@@ -523,6 +529,7 @@ void print_conf_help()
     fprintf(stderr, "\tuser=\n");
     fprintf(stderr, "\tpassword=\n");
     fprintf(stderr, "\t#Advanced options\n");
+    fprintf(stderr, "\tadv_enable_media2=0\n");
     fprintf(stderr, "\tadv_fault_if_unknown=0\n");
     fprintf(stderr, "\tadv_fault_if_set=0\n");
     fprintf(stderr, "\tadv_synology_nvr=0\n");

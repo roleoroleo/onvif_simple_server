@@ -21,6 +21,10 @@
                    xmlns:wsc="http://docs.oasis-open.org/ws-sx/ws-secureconversation/200512"
                    xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
     <SOAP-ENV:Body>
-        <%METHOD% />
+        <tr2:GetAudioSourceConfigurationOptionsResponse>
+            <tr2:Options>
+                <tt:InputTokensAvailable>AudioSourceToken</tt:InputTokensAvailable>
+            </tr2:Options>
+        </tr2:GetAudioSourceConfigurationOptionsResponse>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>

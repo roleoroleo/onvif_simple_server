@@ -35,11 +35,6 @@
 #define EVENTS_BASESUBSCRIPTION 2 // Base Subscription
 #define EVENTS_BOTH 3             // PullPoint and Base Subscription
 
-#define AUDIO_NONE              0
-#define AUDIO_G711              1
-#define AUDIO_G726              2
-#define AUDIO_AAC               4
-
 typedef enum {
     SUB_UNUSED,
     SUB_PULL,
@@ -84,7 +79,8 @@ int to_iso_date(char *iso_date, int size, time_t timestamp);
 time_t from_iso_date(const char *date);
 int gen_uuid(char *g_uuid);
 int get_from_query_string(char **ret, int *ret_size, char *par);
-int set_audio_codec(char *buffer, int buffer_len, int codec);
+int set_video_codec(char *buffer, int buffer_len, int codec, int ver);
+int set_audio_codec(char *buffer, int buffer_len, int codec, int ver);
 void *reboot_thread(void *arg);
 
 #endif //UTILS_H

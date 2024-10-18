@@ -38,6 +38,7 @@ int device_get_services()
     get_ip_address(address, netmask, service_ctx.ifs);
     char device_service_address[MAX_LEN];
     char media_service_address[MAX_LEN];
+    char media2_service_address[MAX_LEN];
     char ptz_service_address[MAX_LEN];
     char events_service_address[MAX_LEN];
     char port[8];
@@ -50,6 +51,7 @@ int device_get_services()
         sprintf(port, ":%d", service_ctx.port);
     sprintf(device_service_address, "http://%s%s/onvif/device_service", address, port);
     sprintf(media_service_address, "http://%s%s/onvif/media_service", address, port);
+    sprintf(media2_service_address, "http://%s%s/onvif/media2_service", address, port);
     sprintf(ptz_service_address, "http://%s%s/onvif/ptz_service", address, port);
     sprintf(events_service_address, "http://%s%s/onvif/events_service", address, port);
 
@@ -66,8 +68,8 @@ int device_get_services()
 
     cap = get_element("IncludeCapability", "Body");
     if ((cap != NULL) && (strcasecmp(cap, "true")) == 0) {
-        if (service_ctx.ptz_node.enable == 0) {
-            long size = cat(NULL, "device_service_files/GetServices_with_capabilities_no_ptz.xml", 10,
+        if ((service_ctx.ptz_node.enable == 0) && (service_ctx.adv_enable_media2 == 0)) {
+            long size = cat(NULL, "device_service_files/GetServices_with_capabilities_no_ptz_no_media2.xml", 10,
                     "%DEVICE_SERVICE_ADDRESS%", device_service_address,
                     "%MEDIA_SERVICE_ADDRESS%", media_service_address,
                     "%EVENTS_SERVICE_ADDRESS%", events_service_address,
@@ -77,14 +79,35 @@ int device_get_services()
             fprintf(stdout, "Content-type: application/soap+xml\r\n");
             fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-            return cat("stdout", "device_service_files/GetServices_with_capabilities_no_ptz.xml", 10,
+            return cat("stdout", "device_service_files/GetServices_with_capabilities_no_ptz_no_media2.xml", 10,
                     "%DEVICE_SERVICE_ADDRESS%", device_service_address,
                     "%MEDIA_SERVICE_ADDRESS%", media_service_address,
                     "%EVENTS_SERVICE_ADDRESS%", events_service_address,
                     "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
                     "%EVENTS_PULLPOINT%", epullpoint);
-        } else {
-            long size = cat(NULL, "device_service_files/GetServices_with_capabilities_ptz.xml", 12,
+
+        } else if ((service_ctx.ptz_node.enable == 0) && (service_ctx.adv_enable_media2 == 1)) {
+            long size = cat(NULL, "device_service_files/GetServices_with_capabilities_no_ptz_media2.xml", 12,
+                    "%DEVICE_SERVICE_ADDRESS%", device_service_address,
+                    "%MEDIA_SERVICE_ADDRESS%", media_service_address,
+                    "%MEDIA2_SERVICE_ADDRESS%", media2_service_address,
+                    "%EVENTS_SERVICE_ADDRESS%", events_service_address,
+                    "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
+                    "%EVENTS_PULLPOINT%", epullpoint);
+
+            fprintf(stdout, "Content-type: application/soap+xml\r\n");
+            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+            return cat("stdout", "device_service_files/GetServices_with_capabilities_no_ptz_media2.xml", 12,
+                    "%DEVICE_SERVICE_ADDRESS%", device_service_address,
+                    "%MEDIA_SERVICE_ADDRESS%", media_service_address,
+                    "%MEDIA2_SERVICE_ADDRESS%", media2_service_address,
+                    "%EVENTS_SERVICE_ADDRESS%", events_service_address,
+                    "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
+                    "%EVENTS_PULLPOINT%", epullpoint);
+
+        } else if ((service_ctx.ptz_node.enable == 1) && (service_ctx.adv_enable_media2 == 0)) {
+            long size = cat(NULL, "device_service_files/GetServices_with_capabilities_ptz_no_media2.xml", 12,
                     "%DEVICE_SERVICE_ADDRESS%", device_service_address,
                     "%MEDIA_SERVICE_ADDRESS%", media_service_address,
                     "%PTZ_SERVICE_ADDRESS%", ptz_service_address,
@@ -95,17 +118,39 @@ int device_get_services()
             fprintf(stdout, "Content-type: application/soap+xml\r\n");
             fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-            return cat("stdout", "device_service_files/GetServices_with_capabilities_ptz.xml", 12,
+            return cat("stdout", "device_service_files/GetServices_with_capabilities_ptz_no_media2.xml", 12,
                     "%DEVICE_SERVICE_ADDRESS%", device_service_address,
                     "%MEDIA_SERVICE_ADDRESS%", media_service_address,
+                    "%PTZ_SERVICE_ADDRESS%", ptz_service_address,
+                    "%EVENTS_SERVICE_ADDRESS%", events_service_address,
+                    "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
+                    "%EVENTS_PULLPOINT%", epullpoint);
+
+        } else if ((service_ctx.ptz_node.enable == 1) && (service_ctx.adv_enable_media2 == 1)) {
+            long size = cat(NULL, "device_service_files/GetServices_with_capabilities_ptz_media2.xml", 14,
+                    "%DEVICE_SERVICE_ADDRESS%", device_service_address,
+                    "%MEDIA_SERVICE_ADDRESS%", media_service_address,
+                    "%MEDIA2_SERVICE_ADDRESS%", media2_service_address,
+                    "%PTZ_SERVICE_ADDRESS%", ptz_service_address,
+                    "%EVENTS_SERVICE_ADDRESS%", events_service_address,
+                    "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
+                    "%EVENTS_PULLPOINT%", epullpoint);
+
+            fprintf(stdout, "Content-type: application/soap+xml\r\n");
+            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+            return cat("stdout", "device_service_files/GetServices_with_capabilities_ptz_media2.xml", 14,
+                    "%DEVICE_SERVICE_ADDRESS%", device_service_address,
+                    "%MEDIA_SERVICE_ADDRESS%", media_service_address,
+                    "%MEDIA2_SERVICE_ADDRESS%", media2_service_address,
                     "%PTZ_SERVICE_ADDRESS%", ptz_service_address,
                     "%EVENTS_SERVICE_ADDRESS%", events_service_address,
                     "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
                     "%EVENTS_PULLPOINT%", epullpoint);
         }
     } else {
-        if (service_ctx.ptz_node.enable == 0) {
-            long size = cat(NULL, "device_service_files/GetServices_no_ptz.xml", 6,
+        if ((service_ctx.ptz_node.enable == 0) && (service_ctx.adv_enable_media2 == 0)) {
+            long size = cat(NULL, "device_service_files/GetServices_no_ptz_no_media2.xml", 6,
                     "%DEVICE_SERVICE_ADDRESS%", device_service_address,
                     "%MEDIA_SERVICE_ADDRESS%", media_service_address,
                     "%EVENTS_SERVICE_ADDRESS%", events_service_address);
@@ -113,12 +158,29 @@ int device_get_services()
             fprintf(stdout, "Content-type: application/soap+xml\r\n");
             fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-            return cat("stdout", "device_service_files/GetServices_no_ptz.xml", 6,
+            return cat("stdout", "device_service_files/GetServices_no_ptz_no_media2.xml", 6,
                     "%DEVICE_SERVICE_ADDRESS%", device_service_address,
                     "%MEDIA_SERVICE_ADDRESS%", media_service_address,
                     "%EVENTS_SERVICE_ADDRESS%", events_service_address);
-        } else {
-            long size = cat(NULL, "device_service_files/GetServices_ptz.xml", 8,
+
+        } else if ((service_ctx.ptz_node.enable == 0) && (service_ctx.adv_enable_media2 == 1)) {
+            long size = cat(NULL, "device_service_files/GetServices_no_ptz_media2.xml", 8,
+                    "%DEVICE_SERVICE_ADDRESS%", device_service_address,
+                    "%MEDIA_SERVICE_ADDRESS%", media_service_address,
+                    "%MEDIA2_SERVICE_ADDRESS%", media2_service_address,
+                    "%EVENTS_SERVICE_ADDRESS%", events_service_address);
+
+            fprintf(stdout, "Content-type: application/soap+xml\r\n");
+            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+            return cat("stdout", "device_service_files/GetServices_no_ptz_media2.xml", 8,
+                    "%DEVICE_SERVICE_ADDRESS%", device_service_address,
+                    "%MEDIA_SERVICE_ADDRESS%", media_service_address,
+                    "%MEDIA2_SERVICE_ADDRESS%", media2_service_address,
+                    "%EVENTS_SERVICE_ADDRESS%", events_service_address);
+
+        } else if ((service_ctx.ptz_node.enable == 1) && (service_ctx.adv_enable_media2 == 0)) {
+            long size = cat(NULL, "device_service_files/GetServices_ptz_no_media2.xml", 8,
                     "%DEVICE_SERVICE_ADDRESS%", device_service_address,
                     "%MEDIA_SERVICE_ADDRESS%", media_service_address,
                     "%PTZ_SERVICE_ADDRESS%", ptz_service_address,
@@ -127,9 +189,27 @@ int device_get_services()
             fprintf(stdout, "Content-type: application/soap+xml\r\n");
             fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-            return cat("stdout", "device_service_files/GetServices_ptz.xml", 8,
+            return cat("stdout", "device_service_files/GetServices_ptz_no_media2.xml", 8,
                     "%DEVICE_SERVICE_ADDRESS%", device_service_address,
                     "%MEDIA_SERVICE_ADDRESS%", media_service_address,
+                    "%PTZ_SERVICE_ADDRESS%", ptz_service_address,
+                    "%EVENTS_SERVICE_ADDRESS%", events_service_address);
+
+        } else if ((service_ctx.ptz_node.enable == 1) && (service_ctx.adv_enable_media2 == 1)) {
+            long size = cat(NULL, "device_service_files/GetServices_ptz_media2.xml", 10,
+                    "%DEVICE_SERVICE_ADDRESS%", device_service_address,
+                    "%MEDIA_SERVICE_ADDRESS%", media_service_address,
+                    "%MEDIA2_SERVICE_ADDRESS%", media2_service_address,
+                    "%PTZ_SERVICE_ADDRESS%", ptz_service_address,
+                    "%EVENTS_SERVICE_ADDRESS%", events_service_address);
+
+            fprintf(stdout, "Content-type: application/soap+xml\r\n");
+            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+            return cat("stdout", "device_service_files/GetServices_ptz_media2.xml", 10,
+                    "%DEVICE_SERVICE_ADDRESS%", device_service_address,
+                    "%MEDIA_SERVICE_ADDRESS%", media_service_address,
+                    "%MEDIA2_SERVICE_ADDRESS%", media2_service_address,
                     "%PTZ_SERVICE_ADDRESS%", ptz_service_address,
                     "%EVENTS_SERVICE_ADDRESS%", events_service_address);
         }
