@@ -610,27 +610,64 @@ void b64_encode(unsigned char *input, unsigned int input_size, unsigned char *ou
 
 int interval2sec(const char *interval)
 {
-    int num, ret;
+    int d1 = -1, d2 = -1, d3 = -1, n, ret;
+    char c1 = 'c', c2 = 'c', c3 = 'c';
 
-    if (sscanf(interval, "PT%dX", &num) == 1) {
-        switch (interval[strlen(interval) - 1]) {
-            case 's':
-            case 'S':
-                ret = num;
-                break;
-            case 'm':
-            case 'M':
-                ret = num * 60;
-                break;
-            case 'h':
-            case 'H':
-                ret = num * 3600;
-                break;
-            default:
-                ret = 0;
-        }
-    } else {
-        ret = 0;
+    n = sscanf(interval, "PT%d%c%d%c%d%c", &d1, &c1, &d2, &c2, &d3, &c3);
+    if (n % 2 == 1)
+        return -1;
+    if ((n < 2) || (n > 6))
+        return -1;
+
+    ret = -2;
+
+    switch (c1) {
+        case 's':
+        case 'S':
+            ret = d1;
+            break;
+        case 'm':
+        case 'M':
+            ret = d1 * 60;
+            break;
+        case 'h':
+        case 'H':
+            ret = d1 * 3600;
+            break;
+        default:
+            return ret;
+    }
+    switch (c2) {
+        case 's':
+        case 'S':
+            ret += d2;
+            break;
+        case 'm':
+        case 'M':
+            ret += d2 * 60;
+            break;
+        case 'h':
+        case 'H':
+            ret += d2 * 3600;
+            break;
+        default:
+            return ret;
+    }
+    switch (c3) {
+        case 's':
+        case 'S':
+            ret += d3;
+            break;
+        case 'm':
+        case 'M':
+            ret += d3 * 60;
+            break;
+        case 'h':
+        case 'H':
+            ret += d3 * 3600;
+            break;
+        default:
+            return ret;
     }
 
     return ret;
