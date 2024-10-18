@@ -242,7 +242,7 @@ int process_conf_file(char *file)
             else if (strcasecmp(value, "G711") == 0)
                 service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = G711;
             else if (strcasecmp(value, "G726") == 0)
-                service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = G711;
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = G726;
             else if (strcasecmp(value, "AAC") == 0)
                 service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
         } else if (strcasecmp(param, "audio_decoder") == 0) {
