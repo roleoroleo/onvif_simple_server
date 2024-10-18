@@ -161,13 +161,13 @@ source_value=VideoSourceToken
 input_file=/tmp/onvif_notify_server/animal_detection
 #Event 4
 topic=tns1:RuleEngine/MyRuleDetector/BabyCryingDetect
-source_name=VideoSourceConfigurationToken
-source_value=VideoSourceToken
+source_name=AudioSourceConfigurationToken
+source_value=AudioSourceToken
 input_file=/tmp/onvif_notify_server/baby_crying
 #Event 5
 topic=tns1:AudioAnalytics/Audio/DetectedSound
-source_name=VideoSourceConfigurationToken
-source_value=VideoSourceToken
+source_name=AudioSourceConfigurationToken
+source_value=AudioSourceToken
 input_file=/tmp/onvif_notify_server/sound_detection
 ```
 

@@ -598,12 +598,12 @@ void print_conf_help()
     fprintf(stderr, "\tinput_file=/tmp/animal_detection\n");
     fprintf(stderr, "\t#Event 4\n");
     fprintf(stderr, "\ttopic=tns1:RuleEngine/MyRuleDetector/BabyCryingDetect\n");
-    fprintf(stderr, "\tsource_name=VideoSourceConfigurationToken\n");
-    fprintf(stderr, "\tsource_value=VideoSourceToken\n");
+    fprintf(stderr, "\tsource_name=AudioSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_value=AudioSourceToken\n");
     fprintf(stderr, "\tinput_file=/tmp/baby_crying\n");
     fprintf(stderr, "\t#Event 5\n");
     fprintf(stderr, "\ttopic=tns1:AudioAnalytics/Audio/DetectedSound\n");
-    fprintf(stderr, "\tsource_name=VideoSourceConfigurationToken\n");
-    fprintf(stderr, "\tsource_value=VideoSourceToken\n");
+    fprintf(stderr, "\tsource_name=AudioSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_value=AudioSourceToken\n");
     fprintf(stderr, "\tinput_file=/tmp/sound_detection\n");
 }
