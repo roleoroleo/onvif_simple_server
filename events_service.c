@@ -169,7 +169,7 @@ int events_pull_messages()
     const char *timeout;
     const char *message_limit;
     int limit, count;
-    time_t now, now_p_timeout, expire_time;
+    time_t now, now_p_timeout, previous_expire_time, expire_time;
     char iso_str[21];
     char iso_str_2[21];
     char iso_str_3[21];
@@ -268,9 +268,10 @@ int events_pull_messages()
         return -8;
     }
 
-    // Set temporary termination time = 2 * timeout (bigger than timeout)
+    // Set temporary termination time += 10 to avoid termination during this function
     time(&now);
-    subs_evts->subscriptions[sub_index].expire = now + (2 * interval2sec(timeout));
+    previous_expire_time = subs_evts->subscriptions[sub_index].expire;
+    subs_evts->subscriptions[sub_index].expire = now + 10;
     sem_memory_post();
     now_p_timeout = now + interval2sec(timeout);
 
@@ -288,17 +289,20 @@ int events_pull_messages()
             sem_memory_post();
         }
         if (at_least_one_message == 1) {
-            usleep(500000);
             break;
         }
-        sleep(1);
+        usleep(100000);
         time(&now);
     }
 
     // Set correct termination time
     time(&now);
     sem_memory_wait();
-    subs_evts->subscriptions[sub_index].expire = now + interval2sec(timeout);
+    if (previous_expire_time > now + interval2sec(timeout)) {
+        subs_evts->subscriptions[sub_index].expire = previous_expire_time;
+    } else {
+        subs_evts->subscriptions[sub_index].expire = now + interval2sec(timeout);
+    }
     expire_time = subs_evts->subscriptions[sub_index].expire;
     sem_memory_post();
     to_iso_date(iso_str, sizeof(iso_str), now);

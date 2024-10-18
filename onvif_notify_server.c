@@ -787,7 +787,7 @@ int main(int argc, char **argv)  {
                 }
             }
 
-            usleep(500 * 1000);
+            usleep(100000);
         }
     }
 
