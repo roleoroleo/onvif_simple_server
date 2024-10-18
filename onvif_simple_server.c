@@ -410,15 +410,19 @@ int main(int argc, char ** argv)
         security.enable = 0;
     }
 
+    if ((strcasecmp("device_service", prog_name) == 0) &&
+            ((strcasecmp("GetSystemDateAndTime", method) == 0) || (strcasecmp("GetUsers", method) == 0) ||
+            (strcasecmp("GetCapabilities", method) == 0) || (strcasecmp("GetServices", method) == 0) ||
+            (strcasecmp("GetServiceCapabilities", method) == 0))) {
+
+        auth_error = 0;
+    }
+
     if (security.enable == 1) {
         if (auth_error == 0)
             log_info("Authentication ok");
         else
             log_error("Authentication error");
-    }
-
-    if ((strcmp("GetSystemDateAndTime", method) == 0) || (strcmp("GetUsers", method) == 0)) {
-        auth_error = 0;
     }
 
     if (auth_error == 0) {
