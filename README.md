@@ -1,4 +1,4 @@
-onvif_simple_server is a C light implementation of an onvif server (Profile S) intended for use in resource-constrained devices.
+onvif_simple_server is a C light implementation of an onvif server (Profile S and Profile T) intended for use in resource-constrained devices.
 
 So:
 - no gsoap
@@ -12,6 +12,9 @@ About security, you can choose between libtomcrypt or mbedtls, to handle authent
 The web service discovery daemon and the notify server daemon are standalone programs and must be started with command line options.
 
 The onvif server instead runs as CGI and therefore needs an http server that supports the CGI standard (for example httpd from busybox).
+
+Simple also means that it does not implement all the functions required and therefore does not fully comply with the Onvif Conformance Test.
+But usually is enough to work with an onvif client.
 
 ## Table of Contents
 - [Table of Contents](#table-of-contents)
@@ -173,7 +176,7 @@ input_file=/tmp/onvif_notify_server/sound_detection
 
 Note:
 - you can use 1 or 2 profiles.
-- **Actually only type=h264 is supported.** This doesn't mean that if your camera is h265 then it does not work. It depends on your onvif client implementation.
+- **Actually only type=h264 is supported on Profile S and both type=h264 and type=h265 are supported in Profile T.** This doesn't mean that if your camera is h265 then it does not work with Profile S. It depends on your onvif client implementation.
 - ipc_cmd is just an example of a local binary that handles ptz, use the specific program of your cam
 
   **If the external command uses stdout, please append a redirect to /dev/null to avoid garbage in the html content**
@@ -192,6 +195,7 @@ Brief explanation of some parameters:
 | ifs | the network interface used by your http server |
 | port | the TCP port used by your http server |
 | user | the user you want to set for WS-UsernameToken authentication, if blank security is disabled |
+| adv_enable_media2 | enable media2 methods for Profile T |
 | adv_fault_if_unknown | try to set to 1 if your ONVIF client is not able to connect to the device |
 | adv_fault_if_set | try to set to 1 if your ONVIF client is not able to connect to the device |
 | adv_synology_nvr | try to set to 1 to improve compatibility, if you are using a Synology NVR |
@@ -277,7 +281,7 @@ Usage: onvif_notify_server [-p PID_FILE] [-q NUM] [-f] [-d LEVEL]
 I tested this program with the following clients:
 - Onvif Device Manager (Windows)
 - Synology Surveillance Station (DSM 6.x and 7.x)
-- Onvifer (Android)
+- Onvier (Android)
 
 If you test it with other clients or NVR, please let me know opening a issue or a pull request.
 
@@ -287,7 +291,7 @@ Below a list of the implemented functions, all other functions return a generic 
 ```
 GetServices
 GetServiceCapabilities
-GetDevicermation
+GetDeviceInformation
 GetSystemDateAndTime
 SystemReboot
 GetScopes
@@ -306,7 +310,6 @@ GetCompatibleVideoSourceConfigurations
 GetVideoSourceConfigurationOptions
 GetProfiles
 GetProfile
-CreateProfile
 GetVideoEncoderConfigurations
 GetVideoEncoderConfiguration
 GetCompatibleVideoEncoderConfigurations
@@ -332,6 +335,26 @@ GetCompatibleAudioSourceConfigurations
 GetCompatibleAudioEncoderConfigurations
 GetCompatibleAudioDecoderConfigurations
 GetCompatibleAudioOutputConfigurations
+```
+**Media2**
+```
+GetServiceCapabilities
+GetProfiles
+GetVideoSourceConfigurations
+GetVideoSourceConfigurationOptions
+GetVideoEncoderConfigurations
+GetVideoEncoderConfigurationOptions
+GetAudioSourceConfigurations
+GetAudioSourceConfigurationOptions
+GetAudioEncoderConfigurations
+GetAudioEncoderConfigurationOptions
+GetAudioOutputConfigurations
+GetAudioOutputConfigurationOptions
+GetAudioDecoderConfigurations
+GetAudioDecoderConfigurationOptions
+GetSnapshotUri
+GetStreamUri
+
 ```
 **PTZ**
 ```
