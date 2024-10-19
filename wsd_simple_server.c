@@ -250,10 +250,13 @@ int main(int argc, char **argv)  {
     char *xaddr_s;
     int foreground;
     char s_tmp[32];
+    const char *method;
 
     struct ip_mreq mr;
     long size;
     char recv_buffer[RECV_BUFFER_LEN];
+    int recv_len;
+    char *recv_copy;
 
     if_name = NULL;
     pid_file = NULL;
@@ -511,14 +514,24 @@ int main(int argc, char **argv)  {
 
         // Read from socket
         memset(recv_buffer, '\0', RECV_BUFFER_LEN);
-        if (recvfrom(sock, recv_buffer, RECV_BUFFER_LEN, 0, (struct sockaddr *) &addr_in, &addr_len) >= 0) {
+        if (recvfrom(sock, recv_buffer, RECV_BUFFER_LEN, 0, (struct sockaddr *) &addr_in, &addr_len) > 0) {
 
             // Check if the message is a response
-            if ((strstr(recv_buffer, TYPE) != NULL) && (strstr(recv_buffer, "XAddrs") == NULL)) {
+            if (strstr(recv_buffer, "XAddrs") == NULL) {
 
                 const char *relates_to_uuid;
 
                 log_debug("%s", recv_buffer);
+
+                // Check if it's a Probe message
+                init_xml(recv_buffer, strlen(recv_buffer));
+                method = get_method(1);
+                if ((method == NULL) || (strcasecmp("Probe", method) != 0)) {
+                    log_debug("This is not a Probe message");
+                    close_xml();
+                    continue;
+                }
+                log_debug("Probe message");
 
                 // Prepare ProbeMatches message
                 msg_number++;
@@ -526,7 +539,6 @@ int main(int argc, char **argv)  {
                 gen_uuid(msg_uuid);
                 relates_to_uuid = NULL;
 
-                init_xml(recv_buffer, strlen(recv_buffer));
                 relates_to_uuid = get_element("MessageID", "Header");
                 if (relates_to_uuid == NULL) {
                     log_error("Cannot find MessageID.\n");
