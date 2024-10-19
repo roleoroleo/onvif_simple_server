@@ -537,6 +537,16 @@ int device_get_network_interfaces()
             "%NETMASK%", sprefix_len);
 }
 
+int device_get_discovery_mode()
+{
+    long size = cat(NULL, "device_service_files/GetDiscoveryMode.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "device_service_files/GetDiscoveryMode.xml", 0);
+}
+
 int device_unsupported(const char *method)
 {
     if (service_ctx.adv_fault_if_unknown == 1)

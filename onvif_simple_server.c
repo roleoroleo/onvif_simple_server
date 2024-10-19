@@ -448,6 +448,8 @@ int main(int argc, char ** argv)
                 device_get_capabilities();
             } else if (strcasecmp(method, "GetNetworkInterfaces") == 0) {
                 device_get_network_interfaces();
+            } else if (strcasecmp(method, "GetDiscoveryMode") == 0) {
+                device_get_discovery_mode();
             } else {
                 device_unsupported(method);
             }
