@@ -302,6 +302,7 @@ int device_system_reboot()
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
     ret = cat("stdout", "device_service_files/SystemReboot.xml", 0);
+    fflush(stdout);
     sleep(1);
 
     pthread_create(&reboot_pthread, NULL, reboot_thread, NULL);
