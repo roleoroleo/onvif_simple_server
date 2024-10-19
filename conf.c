@@ -192,7 +192,7 @@ int process_conf_file(char *file)
             service_ctx.profiles[service_ctx.profiles_num - 1].height = 0;
             service_ctx.profiles[service_ctx.profiles_num - 1].url = NULL;
             service_ctx.profiles[service_ctx.profiles_num - 1].snapurl = NULL;
-            service_ctx.profiles[service_ctx.profiles_num - 1].type = 0;
+            service_ctx.profiles[service_ctx.profiles_num - 1].type = H264;
             service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
             service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
         } else if (strcasecmp(param, "width") == 0) {
