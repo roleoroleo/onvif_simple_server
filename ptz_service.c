@@ -601,18 +601,14 @@ int ptz_relative_move()
                     dy = atof(y);
                     if ((dy > service_ctx.ptz_node.max_step_y) || (dy < -service_ctx.ptz_node.max_step_y)) {
                         ret = -6;
-                    } else {
-                        sprintf(sys_command, service_ctx.ptz_node.jump_to_rel, dx, dy);
                     }
-                }
-                if (z != NULL) {
-                    dz = atof(z);
-                    if (dz != 0.0) {
-                        // Ignore wrong zoom values
-                        // It should be = 0.0
-                    } else {
-                        // do nothing
+                    if (z != NULL) {
+                        dz = atof(z);
+                        if ((dz > service_ctx.ptz_node.max_step_z) || (dz < -service_ctx.ptz_node.max_step_z)) {
+                            ret = -7;
+                        }
                     }
+                    sprintf(sys_command, service_ctx.ptz_node.jump_to_rel, dx, dy, dz);
                 }
             }
         } else if (strcmp("http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationSpaceFov", space_p) == 0) {
@@ -625,39 +621,35 @@ int ptz_relative_move()
                     ((x == NULL) && (y != NULL)) ||
                     ((x != NULL) && (y == NULL))) {
 
-                ret = -7;
+                ret = -8;
 
             } else {
                 if ((x != NULL) && (y != NULL)) {
                     dx = atof(x);
                     if ((dx > 100.0) || (dx < -100.0)) {
-                        ret = -8;
+                        ret = -9;
                     }
                     dy = atof(y);
                     if ((dy > 100.0) || (dy < -100.0)) {
-                        ret = -9;
-                    } else {
-                        // Convert -100/+100 to degrees values based on FOV
-                        // Approximation 1: assume FOV for x axys = 63°
-                        // Approximation 2: assume FOV for y axys = 37°
-                        dx = (dx / 100.0) * (63.0 / 2.0);
-                        dy = (dy / 100.0) * (37.0 / 2.0);
-                        // Convert degrees in relative coordinates
-                        // Approximation 3: I don't know how many degrees is max_step_x, assume 360°
-                        // Approximation 4: I don't know how many degrees is max_step_y, assume 180°
-                        dx = dx / (360.0 / service_ctx.ptz_node.max_step_x);
-                        dy = dy / (180.0 / service_ctx.ptz_node.max_step_y);
-                        sprintf(sys_command, service_ctx.ptz_node.jump_to_rel, dx, dy);
+                        ret = -10;
                     }
-                }
-                if (z != NULL) {
-                    dz = atof(z);
-                    if (dz != 0.0) {
-                        // Ignore wrong zoom values
-                        // It should be = 0.0
-                    } else {
-                        // do nothing
+                    if (z != NULL) {
+                        dz = atof(z);
+                        if ((dz > service_ctx.ptz_node.max_step_z) || (dz < -service_ctx.ptz_node.max_step_z)) {
+                            ret = -11;
+                        }
                     }
+                    // Convert -100/+100 to degrees values based on FOV
+                    // Approximation 1: assume FOV for x axys = 63°
+                    // Approximation 2: assume FOV for y axys = 37°
+                    dx = (dx / 100.0) * (63.0 / 2.0);
+                    dy = (dy / 100.0) * (37.0 / 2.0);
+                    // Convert degrees in relative coordinates
+                    // Approximation 3: I don't know how many degrees is max_step_x, assume 360°
+                    // Approximation 4: I don't know how many degrees is max_step_y, assume 180°
+                    dx = dx / (360.0 / service_ctx.ptz_node.max_step_x);
+                    dy = dy / (180.0 / service_ctx.ptz_node.max_step_y);
+                    sprintf(sys_command, service_ctx.ptz_node.jump_to_rel, dx, dy, dz);
                 }
             }
         }
