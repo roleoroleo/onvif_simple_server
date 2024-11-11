@@ -68,6 +68,8 @@ typedef struct {
     char *move_right;
     char *move_up;
     char *move_down;
+    char *move_in;
+    char *move_out;
     char *move_stop;
     char *move_preset;
     char *goto_home_position;

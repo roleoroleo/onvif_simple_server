@@ -399,7 +399,7 @@ int ptz_continuous_move()
     const char *x = NULL;
     const char *y = NULL;
     const char *z = NULL;
-    double dx, dy;
+    double dx, dy, dz;
     char sys_command[MAX_LEN];
     int ret = -1;
     ezxml_t node;
@@ -473,7 +473,25 @@ int ptz_continuous_move()
     }
 
     if (z != NULL) {
-        ret = 0;
+        dz = atof(z);
+
+        if (dz > 0.0) {
+            if (service_ctx.ptz_node.move_in == NULL) {
+                send_action_failed_fault("ptz_service", -7);
+                return -7;
+            }
+            sprintf(sys_command, service_ctx.ptz_node.move_in, dz);
+            system(sys_command);
+            ret = 0;
+        } else if (dz < 0.0) {
+            if (service_ctx.ptz_node.move_out == NULL) {
+                send_action_failed_fault("ptz_service", -8);
+                return -8;
+            }
+            sprintf(sys_command, service_ctx.ptz_node.move_out, -dz);
+            system(sys_command);
+            ret = 0;
+        }
     }
 
     long size = cat(NULL, "ptz_service_files/ContinuousMove.xml", 0);
