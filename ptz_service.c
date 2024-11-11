@@ -128,132 +128,162 @@ int ptz_get_service_capabilities()
 
 int ptz_get_configurations()
 {
+    char min_x[256];
     char max_x[256];
+    char min_y[256];
     char max_y[256];
+    char min_z[256];
     char max_z[256];
 
+    sprintf(min_x, "%.1f", service_ctx.ptz_node.min_step_x);
     sprintf(max_x, "%.1f", service_ctx.ptz_node.max_step_x);
+    sprintf(min_y, "%.1f", service_ctx.ptz_node.min_step_y);
     sprintf(max_y, "%.1f", service_ctx.ptz_node.max_step_y);
+    sprintf(min_z, "%.1f", service_ctx.ptz_node.min_step_z);
     sprintf(max_z, "%.1f", service_ctx.ptz_node.max_step_z);
 
     long size = cat(NULL, "ptz_service_files/GetConfigurations.xml", 12,
-            "%MIN_X%", "0.0",
+            "%MIN_X%", min_x,
             "%MAX_X%", max_x,
-            "%MIN_Y%", "0.0",
+            "%MIN_Y%", min_y,
             "%MAX_Y%", max_y,
-            "%MIN_Z%", "0.0",
+            "%MIN_Z%", min_z,
             "%MAX_Z%", max_z);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
     return cat("stdout", "ptz_service_files/GetConfigurations.xml", 12,
-            "%MIN_X%", "0.0",
+            "%MIN_X%", min_x,
             "%MAX_X%", max_x,
-            "%MIN_Y%", "0.0",
+            "%MIN_Y%", min_y,
             "%MAX_Y%", max_y,
-            "%MIN_Z%", "0.0",
+            "%MIN_Z%", min_z,
             "%MAX_Z%", max_z);
 }
 
 int ptz_get_configuration()
 {
+    char min_x[256];
     char max_x[256];
+    char min_y[256];
     char max_y[256];
+    char min_z[256];
     char max_z[256];
 
+    sprintf(min_x, "%.1f", service_ctx.ptz_node.min_step_x);
     sprintf(max_x, "%.1f", service_ctx.ptz_node.max_step_x);
+    sprintf(min_y, "%.1f", service_ctx.ptz_node.min_step_y);
     sprintf(max_y, "%.1f", service_ctx.ptz_node.max_step_y);
+    sprintf(min_z, "%.1f", service_ctx.ptz_node.min_step_z);
     sprintf(max_z, "%.1f", service_ctx.ptz_node.max_step_z);
 
     long size = cat(NULL, "ptz_service_files/GetConfiguration.xml", 12,
-            "%MIN_X%", "0.0",
+            "%MIN_X%", min_x,
             "%MAX_X%", max_x,
-            "%MIN_Y%", "0.0",
+            "%MIN_Y%", min_y,
             "%MAX_Y%", max_y,
-            "%MIN_Z%", "0.0",
+            "%MIN_Z%", min_x,
             "%MAX_Z%", max_z);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
     return cat("stdout", "ptz_service_files/GetConfiguration.xml", 12,
-            "%MIN_X%", "0.0",
+            "%MIN_X%", min_x,
             "%MAX_X%", max_x,
-            "%MIN_Y%", "0.0",
+            "%MIN_Y%", min_y,
             "%MAX_Y%", max_y,
-            "%MIN_Z%", "0.0",
+            "%MIN_Z%", min_z,
             "%MAX_Z%", max_z);
 }
 
 int ptz_get_configuration_options()
 {
+    char min_x[256];
     char max_x[256];
+    char min_y[256];
     char max_y[256];
+    char min_z[256];
     char max_z[256];
 
+    sprintf(min_x, "%.1f", service_ctx.ptz_node.min_step_x);
     sprintf(max_x, "%.1f", service_ctx.ptz_node.max_step_x);
+    sprintf(min_y, "%.1f", service_ctx.ptz_node.min_step_y);
     sprintf(max_y, "%.1f", service_ctx.ptz_node.max_step_y);
+    sprintf(min_z, "%.1f", service_ctx.ptz_node.min_step_z);
     sprintf(max_z, "%.1f", service_ctx.ptz_node.max_step_z);
 
     long size = cat(NULL, "ptz_service_files/GetConfigurationOptions.xml", 12,
-            "%MIN_X%", "0.0",
+            "%MIN_X%", min_x,
             "%MAX_X%", max_x,
-            "%MIN_Y%", "0.0",
+            "%MIN_Y%", min_y,
             "%MAX_Y%", max_y,
-            "%MIN_Z%", "0.0",
+            "%MIN_Z%", min_z,
             "%MAX_Z%", max_z);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
     return cat("stdout", "ptz_service_files/GetConfigurationOptions.xml", 12,
-            "%MIN_X%", "0.0",
+            "%MIN_X%", min_x,
             "%MAX_X%", max_x,
-            "%MIN_Y%", "0.0",
+            "%MIN_Y%", min_y,
             "%MAX_Y%", max_y,
-            "%MIN_Z%", "0.0",
+            "%MIN_Z%", min_z,
             "%MAX_Z%", max_z);
 }
 
 int ptz_get_nodes()
 {
+    char min_x[256];
     char max_x[256];
+    char min_y[256];
     char max_y[256];
+    char min_z[256];
     char max_z[256];
 
+    sprintf(min_x, "%.1f", service_ctx.ptz_node.min_step_x);
     sprintf(max_x, "%.1f", service_ctx.ptz_node.max_step_x);
+    sprintf(min_y, "%.1f", service_ctx.ptz_node.min_step_y);
     sprintf(max_y, "%.1f", service_ctx.ptz_node.max_step_y);
+    sprintf(min_z, "%.1f", service_ctx.ptz_node.min_step_z);
     sprintf(max_z, "%.1f", service_ctx.ptz_node.max_step_z);
 
     long size = cat(NULL, "ptz_service_files/GetNodes.xml", 12,
-            "%MIN_X%", "0.0",
+            "%MIN_X%", min_x,
             "%MAX_X%", max_x,
-            "%MIN_Y%", "0.0",
+            "%MIN_Y%", min_y,
             "%MAX_Y%", max_y,
-            "%MIN_Z%", "0.0",
+            "%MIN_Z%", min_z,
             "%MAX_Z%", max_z);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
     return cat("stdout", "ptz_service_files/GetNodes.xml", 12,
-            "%MIN_X%", "0.0",
+            "%MIN_X%", min_x,
             "%MAX_X%", max_x,
-            "%MIN_Y%", "0.0",
+            "%MIN_Y%", min_y,
             "%MAX_Y%", max_y,
-            "%MIN_Z%", "0.0",
+            "%MIN_Z%", min_z,
             "%MAX_Z%", max_z);
 }
 
 int ptz_get_node()
 {
+    char min_x[256];
     char max_x[256];
+    char min_y[256];
     char max_y[256];
+    char min_z[256];
     char max_z[256];
 
+    sprintf(min_x, "%.1f", service_ctx.ptz_node.min_step_x);
     sprintf(max_x, "%.1f", service_ctx.ptz_node.max_step_x);
+    sprintf(min_y, "%.1f", service_ctx.ptz_node.min_step_y);
     sprintf(max_y, "%.1f", service_ctx.ptz_node.max_step_y);
+    sprintf(min_z, "%.1f", service_ctx.ptz_node.min_step_z);
     sprintf(max_z, "%.1f", service_ctx.ptz_node.max_step_z);
 
     const char *node_token = get_element("NodeToken", "Body");
@@ -263,22 +293,22 @@ int ptz_get_node()
     }
 
     long size = cat(NULL, "ptz_service_files/GetNode.xml", 12,
-            "%MIN_X%", "0.0",
+            "%MIN_X%", min_x,
             "%MAX_X%", max_x,
-            "%MIN_Y%", "0.0",
+            "%MIN_Y%", min_y,
             "%MAX_Y%", max_y,
-            "%MIN_Y%", "0.0",
+            "%MIN_Y%", min_z,
             "%MAX_Z%", max_z);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
     return cat("stdout", "ptz_service_files/GetNode.xml", 12,
-            "%MIN_X%", "0.0",
+            "%MIN_X%", min_x,
             "%MAX_X%", max_x,
-            "%MIN_Y%", "0.0",
+            "%MIN_Y%", min_y,
             "%MAX_Y%", max_y,
-            "%MIN_Y%", "0.0",
+            "%MIN_Y%", min_z,
             "%MAX_Z%", max_z);
 }
 
@@ -733,16 +763,16 @@ int ptz_absolute_move()
     } else {
         if ((x != NULL) && (y != NULL)) {
             dx = atof(x);
-            if ((dx > service_ctx.ptz_node.max_step_x) || (dx < 0.0)) {
+            if ((dx > service_ctx.ptz_node.max_step_x) || (dx < service_ctx.ptz_node.min_step_x)) {
                 ret = -5;
             }
             dy = atof(y);
-            if ((dy > service_ctx.ptz_node.max_step_y) || (dy < 0.0)) {
+            if ((dy > service_ctx.ptz_node.max_step_y) || (dy < service_ctx.ptz_node.min_step_y)) {
                 ret = -6;
             }
             if (z != NULL) {
                 dz = atof(z);
-                if ((dz > service_ctx.ptz_node.max_step_z) || (dz < 0.0)) {
+                if ((dz > service_ctx.ptz_node.max_step_z) || (dz < service_ctx.ptz_node.min_step_z)) {
                     ret = -7;
                 }
             }

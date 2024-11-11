@@ -122,8 +122,11 @@ audio_decoder=NONE
 
 #PTZ
 ptz=1
+min_step_x=0
 max_step_x=360
+min_step_y=0
 max_step_y=180
+min_step_z=0
 max_step_z=0
 get_position=/tmp/sd/yi-hack/bin/ipc_cmd -g
 is_moving=/tmp/sd/yi-hack/bin/ipc_cmd -u
