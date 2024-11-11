@@ -459,6 +459,7 @@ int process_conf_file(char *file)
         service_ctx.ifs = (char *) malloc(strlen(DEFAULT_IFS) + 1);
         strcpy(service_ctx.ifs, DEFAULT_IFS);
     }
+    return 0;
 }
 
 void free_conf_file()
