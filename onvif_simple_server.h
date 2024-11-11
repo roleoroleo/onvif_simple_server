@@ -62,6 +62,7 @@ typedef struct {
     int enable;
     double max_step_x;
     double max_step_y;
+    double max_step_z;
     char *get_position;
     char *is_moving;
     char *move_left;
