@@ -139,7 +139,7 @@ goto_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -p 0
 set_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a add_preset -m %s
 set_home_position=/tmp/sd/yi-hack/script/ptz_presets.sh -a set_home_position
 remove_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a del_preset -n %d
-jump_to_abs=/tmp/sd/yi-hack/bin/ipc_cmd -j %f,%f
+jump_to_abs=/tmp/sd/yi-hack/bin/ipc_cmd -j %f,%f,%f
 jump_to_rel=/tmp/sd/yi-hack/bin/ipc_cmd -J %f,%f,%f
 get_presets=/tmp/sd/yi-hack/script/ptz_presets.sh -a get_presets
 

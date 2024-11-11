@@ -54,7 +54,7 @@ goto_home_position=/usr/local/bin/ptz_move -h
 set_preset=/usr/local/bin/ptz_presets.sh -a add_preset -m %s
 set_home_position=/usr/local/bin/ptz_presets.sh -a set_home_position
 remove_preset=/usr/local/bin/ptz_presets.sh -a del_preset -n %d
-jump_to_abs=/usr/local/bin/ptz_move -j %f,%f
+jump_to_abs=/usr/local/bin/ptz_move -j %f,%f,%f
 jump_to_rel=/usr/local/bin/ptz_move -J %f,%f,%f
 get_presets=/usr/local/bin/ptz_presets.sh -a get_presets
 

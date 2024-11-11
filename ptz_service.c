@@ -739,18 +739,14 @@ int ptz_absolute_move()
             dy = atof(y);
             if ((dy > service_ctx.ptz_node.max_step_y) || (dy < 0.0)) {
                 ret = -6;
-            } else {
-                sprintf(sys_command, service_ctx.ptz_node.jump_to_abs, dx, dy);
             }
-        }
-        if (z != NULL) {
-            dz = atof(z);
-            if (dz != 1.0) {
-                // Ignore wrong zoom values
-                // It should be = 1.0
-            } else {
-                // do nothing
+            if (z != NULL) {
+                dz = atof(z);
+                if ((dz > service_ctx.ptz_node.max_step_z) || (dz < 0.0)) {
+                    ret = -7;
+                }
             }
+            sprintf(sys_command, service_ctx.ptz_node.jump_to_abs, dx, dy, dz);
         }
     }
 
