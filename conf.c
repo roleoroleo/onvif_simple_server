@@ -561,10 +561,10 @@ void print_conf_help()
     fprintf(stderr, "\tmax_step_y=180\n");
     fprintf(stderr, "\tget_position=/tmp/sd/yi-hack/bin/ipc_cmd -g\n");
     fprintf(stderr, "\tis_moving=/tmp/sd/yi-hack/bin/ipc_cmd -u\n");
-    fprintf(stderr, "\tmove_left=/tmp/sd/yi-hack/bin/ipc_cmd -m left\n");
-    fprintf(stderr, "\tmove_right=/tmp/sd/yi-hack/bin/ipc_cmd -m right\n");
-    fprintf(stderr, "\tmove_up=/tmp/sd/yi-hack/bin/ipc_cmd -m up\n");
-    fprintf(stderr, "\tmove_down=/tmp/sd/yi-hack/bin/ipc_cmd -m down\n");
+    fprintf(stderr, "\tmove_left=/tmp/sd/yi-hack/bin/ipc_cmd -m left -s %%f\n");
+    fprintf(stderr, "\tmove_right=/tmp/sd/yi-hack/bin/ipc_cmd -m right -s %%f\n");
+    fprintf(stderr, "\tmove_up=/tmp/sd/yi-hack/bin/ipc_cmd -m up -s %%f\n");
+    fprintf(stderr, "\tmove_down=/tmp/sd/yi-hack/bin/ipc_cmd -m down -s %%f\n");
     fprintf(stderr, "\tmove_stop=/tmp/sd/yi-hack/bin/ipc_cmd -m stop\n");
     fprintf(stderr, "\tmove_preset=/tmp/sd/yi-hack/bin/ipc_cmd -p %%d\n");
     fprintf(stderr, "\tgoto_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -p 0\n");

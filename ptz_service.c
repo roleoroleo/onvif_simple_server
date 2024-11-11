@@ -436,7 +436,7 @@ int ptz_continuous_move()
                 send_action_failed_fault("ptz_service", -3);
                 return -3;
             }
-            strcpy(sys_command, service_ctx.ptz_node.move_right);
+            sprintf(sys_command, service_ctx.ptz_node.move_right, dx);
             system(sys_command);
             ret = 0;
         } else if (dx < 0.0) {
@@ -444,7 +444,7 @@ int ptz_continuous_move()
                 send_action_failed_fault("ptz_service", -4);
                 return -4;
             }
-            strcpy(sys_command, service_ctx.ptz_node.move_left);
+            sprintf(sys_command, service_ctx.ptz_node.move_left, -dx);
             system(sys_command);
             ret = 0;
         }
@@ -458,7 +458,7 @@ int ptz_continuous_move()
                 send_action_failed_fault("ptz_service", -5);
                 return -5;
             }
-            strcpy(sys_command, service_ctx.ptz_node.move_up);
+            sprintf(sys_command, service_ctx.ptz_node.move_up, dy);
             system(sys_command);
             ret = 0;
         } else if (dy < 0.0) {
@@ -466,7 +466,7 @@ int ptz_continuous_move()
                 send_action_failed_fault("ptz_service", -6);
                 return -6;
             }
-            strcpy(sys_command, service_ctx.ptz_node.move_down);
+            sprintf(sys_command, service_ctx.ptz_node.move_down, -dy);
             system(sys_command);
             ret = 0;
         }
