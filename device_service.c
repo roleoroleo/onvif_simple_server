@@ -32,10 +32,17 @@ extern service_context_t service_ctx;
 
 int device_get_services()
 {
+    int ret = 0;
     char address[16];
     char netmask[16];
 
-    get_ip_address(address, netmask, service_ctx.ifs);
+    ret = get_ip_address(address, netmask, service_ctx.ifs);
+    if (ret < 0 ) {
+        log_error("Unable to get ip address from interface %s", service_ctx.ifs);
+        send_action_failed_fault("device_service", -1);
+        return -1;
+    }
+
     char device_service_address[MAX_LEN];
     char media_service_address[MAX_LEN];
     char media2_service_address[MAX_LEN];
@@ -361,10 +368,17 @@ int device_get_wsdl_url()
 
 int device_get_capabilities()
 {
+    int ret = 0;
     char address[16];
     char netmask[16];
 
-    get_ip_address(address, netmask, service_ctx.ifs);
+    ret = get_ip_address(address, netmask, service_ctx.ifs);
+    if (ret < 0 ) {
+        log_error("Unable to get ip address from interface %s", service_ctx.ifs);
+        send_action_failed_fault("device_service", -1);
+        return -1;
+    }
+
     char device_service_address[MAX_LEN];
     char media_service_address[MAX_LEN];
     char ptz_service_address[MAX_LEN];
@@ -389,7 +403,7 @@ int device_get_capabilities()
             icategory = 15;
         } else {
             send_fault("device_service", "Receiver", "ter:ActionNotSupported", "ter:NoSuchService", "No such service", "The requested WSDL service category is not supported by the device");
-            return -1;
+            return -2;
         }
     } else {
         icategory = 15;
@@ -444,7 +458,7 @@ int device_get_capabilities()
                     "%PTZ_SERVICE_ADDRESS%", ptz_service_address);
         } else {
             send_fault("device_service", "Receiver", "ter:ActionNotSupported", "ter:NoSuchService", "No such service", "The requested WSDL service category is not supported by the device");
-            return -2;
+            return -3;
         }
     } else if (icategory == 8) {
         long size = cat(NULL, "device_service_files/GetEventsCapabilities.xml", 6,
@@ -511,8 +525,9 @@ int device_get_network_interfaces()
 
     ret = get_ip_address(address, netmask, service_ctx.ifs);
     if (ret < 0) {
-        address[0] = '\0';
-        netmask[0] = '\0';
+        log_error("Unable to get ip address from interface %s", service_ctx.ifs);
+        send_action_failed_fault("device_service", -1);
+        return -1;
     }
     prefix_len = netmask2prefixlen(netmask);
     sprintf(sprefix_len, "%d", prefix_len);

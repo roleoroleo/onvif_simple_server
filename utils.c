@@ -250,6 +250,7 @@ int get_ip_address(char *address, char *netmask, char *name)
     char *host;
     char *mask;
     struct sockaddr_in *sa, *san;
+    int found = 0;
 
     if (getifaddrs(&ifaddr) == -1) {
         log_error("Error in getifaddrs()");
@@ -270,10 +271,14 @@ int get_ip_address(char *address, char *netmask, char *name)
             log_debug("Interface: <%s>", ifa->ifa_name);
             log_debug("Address: <%s>", address);
             log_debug("Netmask: <%s>", netmask);
+            found = 1;
         }
     }
 
     freeifaddrs(ifaddr);
+
+    if (found != 1)
+        return -2;
 
     return 0;
 }
