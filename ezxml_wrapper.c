@@ -182,7 +182,7 @@ const char *get_element(char *name, char *first_node)
 }
 
 /**
- * Internal recursive function: get the 1st element with name "name" starting from "first_node"
+ * Internal recursive function: get the 1st element with name "name" starting from "start_from"
  * @param xml The xml structure
  * @param name The name of the element to find
  * @param first_node The node where to find the element
@@ -243,7 +243,7 @@ ezxml_t get_element_rec_ptr(ezxml_t xml, char *name, char *first_node)
 }
 
 /**
- * Get the 1st element with name "name" starting from "first_node"
+ * Get the 1st element with name "name" starting from "start_from"
  * @param start_from The element where to start
  * @param name The name of the element to find
  * @param first_node The 1st level node where to find the element
