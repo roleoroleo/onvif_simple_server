@@ -1,0 +1,10 @@
+                    <tr2:VideoSource ViewMode="Original"
+                                    token="VideoSourceConfigToken">
+                        <tt:Name>VideoSourceConfig</tt:Name>
+                        <tt:UseCount>%PROFILES_NUM%</tt:UseCount>
+                        <tt:SourceToken>VideoSourceToken</tt:SourceToken>
+                        <tt:Bounds x="0"
+                                   y="0"
+                                   width="%VSC_WIDTH%"
+                                   height="%VSC_HEIGHT%"/>
+                    </tr2:VideoSource>

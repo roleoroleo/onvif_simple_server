@@ -1,0 +1,15 @@
+                    <tr2:AudioEncoder token="%PROFILE%_AudioEncoderToken">
+                        <tt:Name>%PROFILE%_AudioEncoder</tt:Name>
+                        <tt:UseCount>1</tt:UseCount>
+                        <tt:Encoding>%AUDIO_ENCODING%</tt:Encoding>
+                        <tt:Bitrate>50</tt:Bitrate>
+                        <tt:SampleRate>16</tt:SampleRate>
+                        <tt:Multicast>
+                            <tt:Address>
+                                <tt:Type>IPv4</tt:Type>
+                            </tt:Address>
+                            <tt:Port>0</tt:Port>
+                            <tt:TTL>0</tt:TTL>
+                            <tt:AutoStart>false</tt:AutoStart>
+                        </tt:Multicast>
+                    </tr2:AudioEncoder>

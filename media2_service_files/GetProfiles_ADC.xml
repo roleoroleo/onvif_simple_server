@@ -1,0 +1,4 @@
+                    <tr2:AudioDecoder token="%PROFILE%_AudioDecoderToken">
+                        <tt:Name>%PROFILE%_AudioDecoder</tt:Name>
+                        <tt:UseCount>1</tt:UseCount>
+                    </tr2:AudioDecoder>

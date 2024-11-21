@@ -1,0 +1,5 @@
+                    <tr2:AudioSource token="AudioSourceConfigToken">
+                        <tt:Name>AudioSourceConfig</tt:Name>
+                        <tt:UseCount>%PROFILES_NUM%</tt:UseCount>
+                        <tt:SourceToken>AudioSourceToken</tt:SourceToken>
+                    </tr2:AudioSource>
