@@ -526,7 +526,7 @@ int media2_get_video_encoder_configurations()
         sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
         set_video_codec(video_enc_h, 16, service_ctx.profiles[0].type, 2);
-        long size = cat(NULL, "media2_service_files/GetVideoEncoderConfigurations.xml", 12,
+        long size = cat(NULL, "media2_service_files/GetVideoEncoderConfigurations.xml", 10,
                 "%H264PROFILE%", "High",
                 "%PROFILE%", "Profile_0",
                 "%WIDTH%", stmp_w_h,
@@ -536,7 +536,7 @@ int media2_get_video_encoder_configurations()
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("stdout", "media2_service_files/GetVideoEncoderConfigurations.xml", 12,
+        return cat("stdout", "media2_service_files/GetVideoEncoderConfigurations.xml", 10,
                 "%H264PROFILE%", "High",
                 "%PROFILE%", "Profile_0",
                 "%WIDTH%", stmp_w_h,
@@ -549,7 +549,7 @@ int media2_get_video_encoder_configurations()
         sprintf(stmp_w_l, "%d", service_ctx.profiles[1].width);
         sprintf(stmp_h_l, "%d", service_ctx.profiles[1].height);
         set_video_codec(video_enc_l, 16, service_ctx.profiles[1].type, 2);
-        long size = cat(NULL, "media2_service_files/GetVideoEncoderConfigurations.xml", 12,
+        long size = cat(NULL, "media2_service_files/GetVideoEncoderConfigurations.xml", 10,
                 "%H264PROFILE%", "Main",
                 "%PROFILE%", "Profile_1",
                 "%WIDTH%", stmp_w_l,
@@ -559,7 +559,7 @@ int media2_get_video_encoder_configurations()
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("stdout", "media2_service_files/GetVideoEncoderConfigurations.xml", 12,
+        return cat("stdout", "media2_service_files/GetVideoEncoderConfigurations.xml", 10,
                 "%H264PROFILE%", "Main",
                 "%PROFILE%", "Profile_1",
                 "%WIDTH%", stmp_w_l,
