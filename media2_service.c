@@ -760,7 +760,7 @@ int media2_get_audio_encoder_configurations()
         strncpy(token, profile_token, 9);
     }
 
-    if (((service_ctx.profiles_num > 0) && (service_ctx.profiles[0].audio_encoder == AUDIO_NONE)) ||
+    if (((service_ctx.profiles_num == 0) && (service_ctx.profiles[0].audio_encoder == AUDIO_NONE)) ||
             ((service_ctx.profiles_num == 2) &&
             (service_ctx.profiles[0].audio_encoder == AUDIO_NONE) && (service_ctx.profiles[1].audio_encoder == AUDIO_NONE))) {
 
