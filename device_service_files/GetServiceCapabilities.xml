@@ -62,7 +62,9 @@
                             HttpSystemBackup="false"
                             HttpSystemLogging="false"
                             HttpSupportInformation="false"
-                            StorageConfiguration="false"/>
+                            StorageConfiguration="false"
+                            NetworkConfigNotSupported="true"
+                            UserConfigNotSupported="true"/>
             </tds:Capabilities>
         </tds:GetServiceCapabilitiesResponse>
     </SOAP-ENV:Body>

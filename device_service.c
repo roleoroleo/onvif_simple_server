@@ -346,14 +346,8 @@ int device_get_scopes()
 
 int device_get_users()
 {
-    long size = cat(NULL, "device_service_files/GetUsers.xml", 2,
-            "%USER%", service_ctx.user);
-
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-    return cat("stdout", "device_service_files/GetUsers.xml", 2,
-            "%USER%", service_ctx.user);
+    // For security reason, returns empty message instead of service_ctx.user
+    send_empty_response("tds", "GetUsers");
 }
 
 int device_get_wsdl_url()
