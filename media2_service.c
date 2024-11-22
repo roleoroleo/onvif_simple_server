@@ -710,9 +710,9 @@ int media2_get_audio_source_configuration_options()
     } else if (configuration_token != NULL) {
         strncpy(token, configuration_token, 22);
     } else {
-        if ((service_ctx.profiles_num > 0) && (service_ctx.profiles[0].audio_decoder != AUDIO_NONE)) {
+        if ((service_ctx.profiles_num > 0) && (service_ctx.profiles[0].audio_encoder != AUDIO_NONE)) {
             strncpy(token, service_ctx.profiles[0].name, 9);
-        } else if ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE)) {
+        } else if ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_encoder != AUDIO_NONE)) {
             strncpy(token, service_ctx.profiles[1].name, 9);
         } else {
             send_fault("media2_service", "Receiver", "ter:ActionNotSupported", "ter:AudioNotSupported", "AudioNotSupported", "The device does not support audio");
@@ -921,7 +921,7 @@ int media2_get_audio_encoder_configuration_options()
     } else if ((service_ctx.profiles_num == 2) &&
             (strcasecmp(service_ctx.profiles[1].name, token) == 0)) {
 
-        if (service_ctx.profiles[0].audio_encoder != AUDIO_NONE) {
+        if (service_ctx.profiles[1].audio_encoder != AUDIO_NONE) {
 
             set_audio_codec(audio_enc, 16, service_ctx.profiles[1].audio_encoder, 2);
 
@@ -970,14 +970,14 @@ int media2_get_audio_output_configurations()
         profiles_num = service_ctx.profiles_num;
 
         if (profiles_num == 1) {
-            if (service_ctx.profiles[0].audio_encoder == AUDIO_NONE) {
+            if (service_ctx.profiles[0].audio_decoder == AUDIO_NONE) {
                 profiles_num--;
             }
         } else if (profiles_num == 2) {
-            if (service_ctx.profiles[0].audio_encoder == AUDIO_NONE) {
+            if (service_ctx.profiles[0].audio_decoder == AUDIO_NONE) {
                 profiles_num--;
             }
-            if (service_ctx.profiles[1].audio_encoder == AUDIO_NONE) {
+            if (service_ctx.profiles[1].audio_decoder == AUDIO_NONE) {
                 profiles_num--;
             }
         }

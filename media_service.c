@@ -1551,8 +1551,6 @@ int media_get_compatible_audio_encoder_configurations()
 
 int media_get_compatible_audio_decoder_configurations()
 {
-    char audio_encoder_high[8];
-    char audio_encoder_low[8];
     const char *profile_token = get_element("ProfileToken", "Body");
 
     if (profile_token == NULL) {
