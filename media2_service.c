@@ -710,39 +710,36 @@ int media2_get_audio_source_configuration_options()
     } else if (configuration_token != NULL) {
         strncpy(token, configuration_token, 22);
     } else {
-        strncpy(token, service_ctx.profiles[0].name, 9);
+        if ((service_ctx.profiles_num > 0) && (service_ctx.profiles[0].audio_decoder != AUDIO_NONE)) {
+            strncpy(token, service_ctx.profiles[0].name, 9);
+        } else if ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE)) {
+            strncpy(token, service_ctx.profiles[1].name, 9);
+        } else {
+            send_fault("media2_service", "Receiver", "ter:ActionNotSupported", "ter:AudioNotSupported", "AudioNotSupported", "The device does not support audio");
+            return -1;
+        }
     }
 
-    if (((service_ctx.profiles_num > 0) && (service_ctx.profiles[0].audio_encoder == AUDIO_NONE)) ||
-            ((service_ctx.profiles_num == 2) &&
-            (service_ctx.profiles[0].audio_encoder == AUDIO_NONE) && (service_ctx.profiles[1].audio_encoder == AUDIO_NONE))) {
+    if (((service_ctx.profiles_num > 0) && (service_ctx.profiles[0].audio_encoder != AUDIO_NONE)) ||
+            ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_encoder != AUDIO_NONE))) {
 
-        send_fault("media2_service", "Receiver", "ter:ActionNotSupported", "ter:AudioNotSupported", "AudioNotSupported", "The device does not support audio");
-        return -1;
-    }
+        if (((service_ctx.profiles_num > 0) && (strcasecmp(service_ctx.profiles[0].name, token) == 0)) ||
+                ((service_ctx.profiles_num == 2) && (strcasecmp(service_ctx.profiles[1].name, token) == 0)) ||
+                (strcasecmp("AudioSourceConfigToken", token) == 0)) {
 
-    if ((profile_token == NULL) && (configuration_token == NULL)) {
-        long size = cat(NULL, "media2_service_files/GetAudioSourceConfigurationOptions.xml", 0);
+            long size = cat(NULL, "media2_service_files/GetAudioSourceConfigurationOptions.xml", 0);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            fprintf(stdout, "Content-type: application/soap+xml\r\n");
+            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("stdout", "media2_service_files/GetAudioSourceConfigurationOptions.xml", 0);
-    }
-    if ((strcasecmp(service_ctx.profiles[0].name, token) == 0) ||
-            ((service_ctx.profiles_num == 2) && (strcasecmp(service_ctx.profiles[1].name, token) == 0)) ||
-            (strcasecmp("AudioSourceConfigToken", token) == 0)) {
-
-        long size = cat(NULL, "media2_service_files/GetAudioSourceConfigurationOptions.xml", 0);
-
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
-        return cat("stdout", "media2_service_files/GetAudioSourceConfigurationOptions.xml", 0);
-
+            return cat("stdout", "media2_service_files/GetAudioSourceConfigurationOptions.xml", 0);
+        } else {
+            send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
+            return -2;
+        }
     } else {
-        send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
-        return -2;
+        send_fault("media2_service", "Receiver", "ter:ActionNotSupported", "ter:AudioNotSupported", "AudioNotSupported", "The device does not support audio");
+        return -3;
     }
 }
 
@@ -1029,7 +1026,7 @@ int media2_get_audio_output_configuration_options()
         }
     }
 
-    if ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE) ||
+    if (((service_ctx.profiles_num > 0) && (service_ctx.profiles[0].audio_decoder != AUDIO_NONE)) ||
             ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE))) {
 
         if (((service_ctx.profiles_num > 0) && (strcasecmp(service_ctx.profiles[0].name, token) == 0)) ||
