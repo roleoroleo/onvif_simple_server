@@ -663,12 +663,6 @@ int ptz_relative_move()
                     if ((dy > 100.0) || (dy < -100.0)) {
                         ret = -10;
                     }
-                    if (z != NULL) {
-                        dz = atof(z);
-                        if ((dz > service_ctx.ptz_node.max_step_z) || (dz < -service_ctx.ptz_node.max_step_z)) {
-                            ret = -11;
-                        }
-                    }
                     // Convert -100/+100 to degrees values based on FOV
                     // Approximation 1: assume FOV for x axys = 63°
                     // Approximation 2: assume FOV for y axys = 37°
@@ -679,7 +673,7 @@ int ptz_relative_move()
                     // Approximation 4: I don't know how many degrees is max_step_y, assume 180°
                     dx = dx / (360.0 / service_ctx.ptz_node.max_step_x);
                     dy = dy / (180.0 / service_ctx.ptz_node.max_step_y);
-                    sprintf(sys_command, service_ctx.ptz_node.jump_to_rel, dx, dy, dz);
+                    sprintf(sys_command, service_ctx.ptz_node.jump_to_rel, dx, dy, 0);
                 }
             }
         }
