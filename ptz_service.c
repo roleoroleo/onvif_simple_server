@@ -183,7 +183,7 @@ int ptz_get_configuration()
             "%MAX_X%", max_x,
             "%MIN_Y%", min_y,
             "%MAX_Y%", max_y,
-            "%MIN_Z%", min_x,
+            "%MIN_Z%", min_z,
             "%MAX_Z%", max_z);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
@@ -297,7 +297,7 @@ int ptz_get_node()
             "%MAX_X%", max_x,
             "%MIN_Y%", min_y,
             "%MAX_Y%", max_y,
-            "%MIN_Y%", min_z,
+            "%MIN_Z%", min_z,
             "%MAX_Z%", max_z);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
@@ -308,7 +308,7 @@ int ptz_get_node()
             "%MAX_X%", max_x,
             "%MIN_Y%", min_y,
             "%MAX_Y%", max_y,
-            "%MIN_Y%", min_z,
+            "%MIN_Z%", min_z,
             "%MAX_Z%", max_z);
 }
 
