@@ -66,14 +66,20 @@ int process_conf_file(char *file)
     service_ctx.events_enable = EVENTS_NONE;
     service_ctx.events_num = 0;
 
+    service_ctx.ptz_node.min_step_x = 0;
     service_ctx.ptz_node.max_step_x = 360.0;
+    service_ctx.ptz_node.min_step_y = 0;
     service_ctx.ptz_node.max_step_y = 180.0;
+    service_ctx.ptz_node.min_step_z = 0.0;
+    service_ctx.ptz_node.max_step_z = 0.0;
     service_ctx.ptz_node.get_position = NULL;
     service_ctx.ptz_node.is_moving = NULL;
     service_ctx.ptz_node.move_left = NULL;
     service_ctx.ptz_node.move_right = NULL;
     service_ctx.ptz_node.move_up = NULL;
     service_ctx.ptz_node.move_down = NULL;
+    service_ctx.ptz_node.move_in = NULL;
+    service_ctx.ptz_node.move_out = NULL;
     service_ctx.ptz_node.move_stop = NULL;
     service_ctx.ptz_node.move_preset = NULL;
     service_ctx.ptz_node.goto_home_position = NULL;
@@ -260,14 +266,20 @@ int process_conf_file(char *file)
             if (strcasecmp(value, "1") == 0) {
                 service_ctx.ptz_node.enable = 1;
             }
+            service_ctx.ptz_node.min_step_x = 0.0;
             service_ctx.ptz_node.max_step_x = 360.0;
+            service_ctx.ptz_node.min_step_y = 0.0;
             service_ctx.ptz_node.max_step_y = 180.0;
+            service_ctx.ptz_node.min_step_z = 0.0;
+            service_ctx.ptz_node.max_step_z = 0.0;
             service_ctx.ptz_node.get_position = NULL;
             service_ctx.ptz_node.is_moving = NULL;
             service_ctx.ptz_node.move_left = NULL;
             service_ctx.ptz_node.move_right = NULL;
             service_ctx.ptz_node.move_up = NULL;
             service_ctx.ptz_node.move_down = NULL;
+            service_ctx.ptz_node.move_in = NULL;
+            service_ctx.ptz_node.move_out = NULL;
             service_ctx.ptz_node.move_stop = NULL;
             service_ctx.ptz_node.move_preset = NULL;
             service_ctx.ptz_node.goto_home_position = NULL;
@@ -276,6 +288,25 @@ int process_conf_file(char *file)
             service_ctx.ptz_node.remove_preset = NULL;
             service_ctx.ptz_node.jump_to_abs = NULL;
             service_ctx.ptz_node.jump_to_rel = NULL;
+        } else if (strcasecmp(param, "min_step_x") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                if (value[0] == '\0') {
+                    log_warn("Empty value for %s, use default", param);
+                } else {
+                    errno = 0;
+                    service_ctx.ptz_node.min_step_x = strtod(value, &endptr);
+
+                    /* Check for various possible errors */
+                    if (errno == ERANGE || (errno != 0 && service_ctx.ptz_node.min_step_x == 0.0)) {
+                        log_error("Wrong option: %s", line);
+                        return -2;
+                    }
+                    if (endptr == value) {
+                        log_error("Wrong option: %s", line);
+                        return -2;
+                    }
+                }
+            }
         } else if (strcasecmp(param, "max_step_x") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
                 if (value[0] == '\0') {
@@ -295,6 +326,25 @@ int process_conf_file(char *file)
                     }
                 }
             }
+        } else if (strcasecmp(param, "min_step_y") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                if (value[0] == '\0') {
+                    log_warn("Empty value for %s, use default", param);
+                } else {
+                    errno = 0;
+                    service_ctx.ptz_node.min_step_y = strtod(value, &endptr);
+
+                    /* Check for various possible errors */
+                    if (errno == ERANGE || (errno != 0 && service_ctx.ptz_node.max_step_y == 0.0)) {
+                        log_error("Wrong option: %s", line);
+                        return -2;
+                    }
+                    if (endptr == value) {
+                        log_error("Wrong option: %s", line);
+                        return -2;
+                    }
+                }
+            }
         } else if (strcasecmp(param, "max_step_y") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
                 if (value[0] == '\0') {
@@ -305,6 +355,44 @@ int process_conf_file(char *file)
 
                     /* Check for various possible errors */
                     if (errno == ERANGE || (errno != 0 && service_ctx.ptz_node.max_step_y == 0.0)) {
+                        log_error("Wrong option: %s", line);
+                        return -2;
+                    }
+                    if (endptr == value) {
+                        log_error("Wrong option: %s", line);
+                        return -2;
+                    }
+                }
+            }
+        } else if (strcasecmp(param, "min_step_z") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                if (value[0] == '\0') {
+                    log_warn("Empty value for %s, use default", param);
+                } else {
+                    errno = 0;
+                    service_ctx.ptz_node.min_step_z = strtod(value, &endptr);
+
+                    /* Check for various possible errors */
+                    if (errno == ERANGE || (errno != 0 && service_ctx.ptz_node.max_step_z == 0.0)) {
+                        log_error("Wrong option: %s", line);
+                        return -2;
+                    }
+                    if (endptr == value) {
+                        log_error("Wrong option: %s", line);
+                        return -2;
+                    }
+                }
+            }
+        } else if (strcasecmp(param, "max_step_z") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                if (value[0] == '\0') {
+                    log_warn("Empty value for %s, use default", param);
+                } else {
+                    errno = 0;
+                    service_ctx.ptz_node.max_step_z = strtod(value, &endptr);
+
+                    /* Check for various possible errors */
+                    if (errno == ERANGE || (errno != 0 && service_ctx.ptz_node.max_step_z == 0.0)) {
                         log_error("Wrong option: %s", line);
                         return -2;
                     }
@@ -343,6 +431,16 @@ int process_conf_file(char *file)
             if (service_ctx.ptz_node.enable == 1) {
                 service_ctx.ptz_node.move_down = (char *) malloc(strlen(value) + 1);
                 strcpy(service_ctx.ptz_node.move_down, value);
+            }
+        } else if (strcasecmp(param, "move_in") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                service_ctx.ptz_node.move_in = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.ptz_node.move_in, value);
+            }
+        } else if (strcasecmp(param, "move_out") == 0) {
+            if (service_ctx.ptz_node.enable == 1) {
+                service_ctx.ptz_node.move_out = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.ptz_node.move_out, value);
             }
         } else if (strcasecmp(param, "move_stop") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
@@ -484,6 +582,8 @@ void free_conf_file()
         if (service_ctx.ptz_node.goto_home_position != NULL) free(service_ctx.ptz_node.goto_home_position);
         if (service_ctx.ptz_node.move_preset != NULL) free(service_ctx.ptz_node.move_preset);
         if (service_ctx.ptz_node.move_stop != NULL) free(service_ctx.ptz_node.move_stop);
+        if (service_ctx.ptz_node.move_out != NULL) free(service_ctx.ptz_node.move_out);
+        if (service_ctx.ptz_node.move_in != NULL) free(service_ctx.ptz_node.move_in);
         if (service_ctx.ptz_node.move_down != NULL) free(service_ctx.ptz_node.move_down);
         if (service_ctx.ptz_node.move_up != NULL) free(service_ctx.ptz_node.move_up);
         if (service_ctx.ptz_node.move_right != NULL) free(service_ctx.ptz_node.move_right);
@@ -557,22 +657,28 @@ void print_conf_help()
     fprintf(stderr, "\n");
     fprintf(stderr, "\t#PTZ\n");
     fprintf(stderr, "\tptz=1\n");
+    fprintf(stderr, "\tmin_step_x=0\n");
     fprintf(stderr, "\tmax_step_x=360\n");
+    fprintf(stderr, "\tmin_step_y=0\n");
     fprintf(stderr, "\tmax_step_y=180\n");
+    fprintf(stderr, "\tmin_step_z=0\n");
+    fprintf(stderr, "\tmax_step_z=0\n");
     fprintf(stderr, "\tget_position=/tmp/sd/yi-hack/bin/ipc_cmd -g\n");
     fprintf(stderr, "\tis_moving=/tmp/sd/yi-hack/bin/ipc_cmd -u\n");
-    fprintf(stderr, "\tmove_left=/tmp/sd/yi-hack/bin/ipc_cmd -m left\n");
-    fprintf(stderr, "\tmove_right=/tmp/sd/yi-hack/bin/ipc_cmd -m right\n");
-    fprintf(stderr, "\tmove_up=/tmp/sd/yi-hack/bin/ipc_cmd -m up\n");
-    fprintf(stderr, "\tmove_down=/tmp/sd/yi-hack/bin/ipc_cmd -m down\n");
+    fprintf(stderr, "\tmove_left=/tmp/sd/yi-hack/bin/ipc_cmd -m left -s %%f\n");
+    fprintf(stderr, "\tmove_right=/tmp/sd/yi-hack/bin/ipc_cmd -m right -s %%f\n");
+    fprintf(stderr, "\tmove_up=/tmp/sd/yi-hack/bin/ipc_cmd -m up -s %%f\n");
+    fprintf(stderr, "\tmove_down=/tmp/sd/yi-hack/bin/ipc_cmd -m down -s %%f\n");
+    fprintf(stderr, "\tmove_in=/tmp/sd/yi-hack/bin/ipc_cmd -m in -s %%f\n");
+    fprintf(stderr, "\tmove_out=/tmp/sd/yi-hack/bin/ipc_cmd -m out -s %%f\n");
     fprintf(stderr, "\tmove_stop=/tmp/sd/yi-hack/bin/ipc_cmd -m stop\n");
     fprintf(stderr, "\tmove_preset=/tmp/sd/yi-hack/bin/ipc_cmd -p %%d\n");
     fprintf(stderr, "\tgoto_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -p 0\n");
     fprintf(stderr, "\tset_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a add_preset -m %%s\n");
     fprintf(stderr, "\tset_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -H\n");
     fprintf(stderr, "\tremove_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a del_preset -n %%d\n");
-    fprintf(stderr, "\tjump_to_abs=/tmp/sd/yi-hack/bin/ipc_cmd -j %%f,%%f\n");
-    fprintf(stderr, "\tjump_to_rel=/tmp/sd/yi-hack/bin/ipc_cmd -J %%f,%%f\n");
+    fprintf(stderr, "\tjump_to_abs=/tmp/sd/yi-hack/bin/ipc_cmd -j %%f,%%f,%%f\n");
+    fprintf(stderr, "\tjump_to_rel=/tmp/sd/yi-hack/bin/ipc_cmd -J %%f,%%f,%%f\n");
     fprintf(stderr, "\tget_presets=/tmp/sd/yi-hack/script/ptz_presets.sh -a get_presets\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "\t#EVENTS\n");

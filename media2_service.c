@@ -76,15 +76,19 @@ int media2_get_profiles()
     char dest_a[] = "stdout";
     char *dest;
     int typeVSC = 0, typeASC = 0, typeVEC = 0, typeAEC = 0, typePTZ = 0, typeAOC = 0, typeADC = 0;
-    char max_x[256], max_y[256];
+    char min_x[256], max_x[256], min_y[256], max_y[256], min_z[256], max_z[256];
 
     audio_enc_h[0] = '\0';
     audio_enc_l[0] = '\0';
     video_enc_h[0] = '\0';
     video_enc_l[0] = '\0';
     sprintf(profiles_num, "%d", service_ctx.profiles_num);
+    sprintf(min_x, "%.1f", service_ctx.ptz_node.min_step_x);
     sprintf(max_x, "%.1f", service_ctx.ptz_node.max_step_x);
+    sprintf(min_y, "%.1f", service_ctx.ptz_node.min_step_y);
     sprintf(max_y, "%.1f", service_ctx.ptz_node.max_step_y);
+    sprintf(min_y, "%.1f", service_ctx.ptz_node.min_step_z);
+    sprintf(max_y, "%.1f", service_ctx.ptz_node.max_step_z);
 
     x_type = get_element_ptr(NULL, "Type", "Body");
     n_type = 0;
@@ -203,11 +207,13 @@ int media2_get_profiles()
                 }
                 if (typePTZ) {
                     if (service_ctx.ptz_node.enable == 1) {
-                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 8,
-                                "%MIN_X%", "0.0",
+                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 12,
+                                "%MIN_X%", min_x,
                                 "%MAX_X%", max_x,
-                                "%MIN_Y%", "0.0",
-                                "%MAX_Y%", max_y);
+                                "%MIN_Y%", min_y,
+                                "%MAX_Y%", max_y,
+                                "%MIN_Z%", min_z,
+                                "%MAX_Z%", max_z);
                     }
                 }
                 if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {
@@ -281,11 +287,13 @@ int media2_get_profiles()
                 }
                 if (typePTZ) {
                     if (service_ctx.ptz_node.enable == 1) {
-                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 8,
-                                "%MIN_X%", "0.0",
+                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 12,
+                                "%MIN_X%", min_x,
                                 "%MAX_X%", max_x,
-                                "%MIN_Y%", "0.0",
-                                "%MAX_Y%", max_y);
+                                "%MIN_Y%", min_y,
+                                "%MAX_Y%", max_y,
+                                "%MIN_Z%", min_z,
+                                "%MAX_Z%", max_z);
                     }
                 }
                 if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {
@@ -347,11 +355,13 @@ int media2_get_profiles()
                 }
                 if (typePTZ) {
                     if (service_ctx.ptz_node.enable == 1) {
-                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 8,
-                                "%MIN_X%", "0.0",
+                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 12,
+                                "%MIN_X%", min_x,
                                 "%MAX_X%", max_x,
-                                "%MIN_Y%", "0.0",
-                                "%MAX_Y%", max_y);
+                                "%MIN_Y%", min_y,
+                                "%MAX_Y%", max_y,
+                                "%MIN_Z%", min_z,
+                                "%MAX_Z%", max_z);
                     }
                 }
                 if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {

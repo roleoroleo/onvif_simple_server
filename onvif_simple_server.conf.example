@@ -37,22 +37,28 @@ audio_decoder=NONE
 
 #PTZ
 ptz=1
+min_step_x=0
 max_step_x=360
+min_step_y=0
 max_step_y=180
+min_step_z=0
+max_step_z=0
 get_position=/usr/local/bin/get_position
 is_moving=/usr/local/bin/is_moving
-move_left=/usr/local/bin/ptz_move -m left
-move_right=/usr/local/bin/ptz_move -m right
-move_up=/usr/local/bin/ptz_move -m up
-move_down=/usr/local/bin/ptz_move -m down
+move_left=/usr/local/bin/ptz_move -m left -s %f
+move_right=/usr/local/bin/ptz_move -m right -s %f
+move_up=/usr/local/bin/ptz_move -m up -s %f
+move_down=/usr/local/bin/ptz_move -m down -s %f
+move_in=/usr/local/bin/ptz_move -m in -s %f
+move_out=/usr/local/bin/ptz_move -m out -s %f
 move_stop=/usr/local/bin/ptz_move -m stop
 move_preset=/usr/local/bin/ptz_move -p %d
 goto_home_position=/usr/local/bin/ptz_move -h
 set_preset=/usr/local/bin/ptz_presets.sh -a add_preset -m %s
 set_home_position=/usr/local/bin/ptz_presets.sh -a set_home_position
 remove_preset=/usr/local/bin/ptz_presets.sh -a del_preset -n %d
-jump_to_abs=/usr/local/bin/ptz_move -j %f,%f
-jump_to_rel=/usr/local/bin/ptz_move -J %f,%f
+jump_to_abs=/usr/local/bin/ptz_move -j %f,%f,%f
+jump_to_rel=/usr/local/bin/ptz_move -J %f,%f,%f
 get_presets=/usr/local/bin/ptz_presets.sh -a get_presets
 
 #EVENT

@@ -60,14 +60,20 @@ typedef struct {
 
 typedef struct {
     int enable;
+    double min_step_x;
     double max_step_x;
+    double min_step_y;
     double max_step_y;
+    double min_step_z;
+    double max_step_z;
     char *get_position;
     char *is_moving;
     char *move_left;
     char *move_right;
     char *move_up;
     char *move_down;
+    char *move_in;
+    char *move_out;
     char *move_stop;
     char *move_preset;
     char *goto_home_position;

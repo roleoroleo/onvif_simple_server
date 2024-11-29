@@ -122,22 +122,28 @@ audio_decoder=NONE
 
 #PTZ
 ptz=1
+min_step_x=0
 max_step_x=360
-tmax_step_y=180
+min_step_y=0
+max_step_y=180
+min_step_z=0
+max_step_z=0
 get_position=/tmp/sd/yi-hack/bin/ipc_cmd -g
 is_moving=/tmp/sd/yi-hack/bin/ipc_cmd -u
-move_left=/tmp/sd/yi-hack/bin/ipc_cmd -m left
-move_right=/tmp/sd/yi-hack/bin/ipc_cmd -m right
-move_up=/tmp/sd/yi-hack/bin/ipc_cmd -m up
-move_down=/tmp/sd/yi-hack/bin/ipc_cmd -m down
+move_left=/tmp/sd/yi-hack/bin/ipc_cmd -m left -s %f
+move_right=/tmp/sd/yi-hack/bin/ipc_cmd -m right -s %f
+move_up=/tmp/sd/yi-hack/bin/ipc_cmd -m up -s %f
+move_down=/tmp/sd/yi-hack/bin/ipc_cmd -m down -s %f
+move_in=/tmp/sd/yi-hack/bin/ipc_cmd -m in -s %f
+move_out=/tmp/sd/yi-hack/bin/ipc_cmd -m out -s %f
 move_stop=/tmp/sd/yi-hack/bin/ipc_cmd -m stop
 move_preset=/tmp/sd/yi-hack/bin/ipc_cmd -p %d
 goto_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -p 0
 set_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a add_preset -m %s
 set_home_position=/tmp/sd/yi-hack/script/ptz_presets.sh -a set_home_position
 remove_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a del_preset -n %d
-jump_to_abs=/tmp/sd/yi-hack/bin/ipc_cmd -j %f,%f
-jump_to_rel=/tmp/sd/yi-hack/bin/ipc_cmd -J %f,%f
+jump_to_abs=/tmp/sd/yi-hack/bin/ipc_cmd -j %f,%f,%f
+jump_to_rel=/tmp/sd/yi-hack/bin/ipc_cmd -J %f,%f,%f
 get_presets=/tmp/sd/yi-hack/script/ptz_presets.sh -a get_presets
 
 #EVENT

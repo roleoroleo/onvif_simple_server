@@ -187,14 +187,17 @@ int media_get_profiles()
     int c;
     char dest_a[] = "stdout";
     char *dest;
-    char max_x[256];
-    char max_y[256];
+    char min_x[256], max_x[256], min_y[256], max_y[256], min_z[256], max_z[256];
 
     audio_enc_h[0] = '\0';
     audio_enc_l[0] = '\0';
     sprintf(profiles_num, "%d", service_ctx.profiles_num);
+    sprintf(min_x, "%.1f", service_ctx.ptz_node.min_step_x);
     sprintf(max_x, "%.1f", service_ctx.ptz_node.max_step_x);
+    sprintf(min_y, "%.1f", service_ctx.ptz_node.min_step_y);
     sprintf(max_y, "%.1f", service_ctx.ptz_node.max_step_y);
+    sprintf(min_z, "%.1f", service_ctx.ptz_node.min_step_z);
+    sprintf(max_z, "%.1f", service_ctx.ptz_node.max_step_z);
 
     if (service_ctx.profiles_num == 1) {
 
@@ -239,11 +242,13 @@ int media_get_profiles()
             }
 
             if (service_ctx.ptz_node.enable == 1) {
-                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 8,
-                        "%MIN_X%", "0.0",
+                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 12,
+                        "%MIN_X%", min_x,
                         "%MAX_X%", max_x,
-                        "%MIN_Y%", "0.0",
-                        "%MAX_Y%", max_y);
+                        "%MIN_Y%", min_y,
+                        "%MAX_Y%", max_y,
+                        "%MIN_Z%", min_z,
+                        "%MAX_Z%", max_z);
             }
 
             size += cat(dest, "media_service_files/GetProfiles_footer.xml", 0);
@@ -293,11 +298,13 @@ int media_get_profiles()
             }
 
             if (service_ctx.ptz_node.enable == 1) {
-                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 8,
-                        "%MIN_X%", "0.0",
+                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 12,
+                        "%MIN_X%", min_x,
                         "%MAX_X%", max_x,
-                        "%MIN_Y%", "0.0",
-                        "%MAX_Y%", max_y);
+                        "%MIN_Y%", min_y,
+                        "%MAX_Y%", max_y,
+                        "%MIN_Z%", min_z,
+                        "%MAX_Z%", max_z);
             }
 
             size += cat(dest, "media_service_files/GetProfiles_middle.xml", 0);
@@ -333,11 +340,13 @@ int media_get_profiles()
             }
 
             if (service_ctx.ptz_node.enable == 1) {
-                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 8,
-                        "%MIN_X%", "0.0",
+                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 12,
+                        "%MIN_X%", min_x,
                         "%MAX_X%", max_x,
-                        "%MIN_Y%", "0.0",
-                        "%MAX_Y%", max_y);
+                        "%MIN_Y%", min_y,
+                        "%MAX_Y%", max_y,
+                        "%MIN_Z%", min_z,
+                        "%MAX_Z%", max_z);
             }
 
             size += cat(dest, "media_service_files/GetProfiles_footer.xml", 0);
@@ -364,8 +373,7 @@ int media_get_profile()
     int c;
     char dest_a[] = "stdout";
     char *dest;
-    char max_x[256];
-    char max_y[256];
+    char min_x[256], max_x[256], min_y[256], max_y[256], min_z[256], max_z[256];
 
     if (profile_token == NULL) {
         send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile token does not exist");
@@ -373,8 +381,12 @@ int media_get_profile()
     }
 
     sprintf(profiles_num, "%d", service_ctx.profiles_num);
+    sprintf(min_x, "%.1f", service_ctx.ptz_node.min_step_x);
     sprintf(max_x, "%.1f", service_ctx.ptz_node.max_step_x);
+    sprintf(min_y, "%.1f", service_ctx.ptz_node.min_step_y);
     sprintf(max_y, "%.1f", service_ctx.ptz_node.max_step_y);
+    sprintf(min_z, "%.1f", service_ctx.ptz_node.min_step_z);
+    sprintf(max_z, "%.1f", service_ctx.ptz_node.max_step_z);
 
     if ((service_ctx.profiles_num > 0) &&
             (strcasecmp(service_ctx.profiles[0].name, profile_token) == 0)) {
@@ -422,11 +434,13 @@ int media_get_profile()
             }
 
             if (service_ctx.ptz_node.enable == 1) {
-                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 8,
-                        "%MIN_X%", "0.0",
+                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 12,
+                        "%MIN_X%", min_x,
                         "%MAX_X%", max_x,
-                        "%MIN_Y%", "0.0",
-                        "%MAX_Y%", max_y);
+                        "%MIN_Y%", min_y,
+                        "%MAX_Y%", max_y,
+                        "%MIN_Z%", min_z,
+                        "%MAX_Z%", max_z);
             }
 
             size += cat(dest, "media_service_files/GetProfile_footer.xml", 0);
@@ -478,11 +492,13 @@ int media_get_profile()
             }
 
             if (service_ctx.ptz_node.enable == 1) {
-                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 8,
-                        "%MIN_X%", "0.0",
+                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 12,
+                        "%MIN_X%", min_x,
                         "%MAX_X%", max_x,
-                        "%MIN_Y%", "0.0",
-                        "%MAX_Y%", max_y);
+                        "%MIN_Y%", min_y,
+                        "%MAX_Y%", max_y,
+                        "%MIN_Z%", min_z,
+                        "%MAX_Z%", max_z);
             }
 
             size += cat(dest, "media_service_files/GetProfile_footer.xml", 0);
