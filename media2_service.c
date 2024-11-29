@@ -87,8 +87,8 @@ int media2_get_profiles()
     sprintf(max_x, "%.1f", service_ctx.ptz_node.max_step_x);
     sprintf(min_y, "%.1f", service_ctx.ptz_node.min_step_y);
     sprintf(max_y, "%.1f", service_ctx.ptz_node.max_step_y);
-    sprintf(min_y, "%.1f", service_ctx.ptz_node.min_step_z);
-    sprintf(max_y, "%.1f", service_ctx.ptz_node.max_step_z);
+    sprintf(min_z, "%.1f", service_ctx.ptz_node.min_step_z);
+    sprintf(max_z, "%.1f", service_ctx.ptz_node.max_step_z);
 
     x_type = get_element_ptr(NULL, "Type", "Body");
     n_type = 0;
