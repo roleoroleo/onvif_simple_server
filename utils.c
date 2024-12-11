@@ -603,7 +603,6 @@ void b64_decode(unsigned char *input, unsigned int input_size, unsigned char *ou
     word32 olen;
     Base64_Decode((const unsigned char*) input, input_size, output, &olen);
     *output_size = olen;
-    log_error("gh %d", *output_size);
 #else
 #ifdef HAVE_MBEDTLS
     size_t olen;
@@ -628,7 +627,6 @@ void b64_encode(unsigned char *input, unsigned int input_size, unsigned char *ou
     word32 olen;
     Base64_Encode_NoNl((const unsigned char*) input, input_size, output, &olen);
     *output_size = olen;
-    log_error("gh %d", *output_size);
 #else
 #ifdef HAVE_MBEDTLS
     size_t olen;
