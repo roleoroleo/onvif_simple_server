@@ -33,11 +33,17 @@
 #include <fcntl.h>
 #include <sys/types.h>
 
+#ifdef HAVE_WOLFSSL
+#include <wolfssl/options.h>
+#include <wolfssl/wolfcrypt/sha.h>
+#include <wolfssl/wolfcrypt/coding.h>
+#else
 #ifdef HAVE_MBEDTLS
 #include <mbedtls/sha1.h>
 #include <mbedtls/base64.h>
 #else
 #include <tomcrypt.h>
+#endif
 #endif
 
 #include "utils.h"
@@ -550,6 +556,12 @@ int hashSHA1(char* input, unsigned long input_size, char *output, int output_siz
     if (output_size < 20)
         return -1;
 
+#ifdef HAVE_WOLFSSL
+    Sha sha;
+    wc_InitSha(&sha);
+    wc_ShaUpdate(&sha, input, input_size);
+    wc_ShaFinal(&sha, output);
+#else
 #ifdef HAVE_MBEDTLS
     //Initial
     mbedtls_sha1_context ctx;
@@ -572,7 +584,8 @@ int hashSHA1(char* input, unsigned long input_size, char *output, int output_siz
     sha1_process(&md, (const unsigned char*) input, input_size);
     //Finish the hash calculation
     sha1_done(&md, output);
-#endif
+#endif //HAVE_MBEDTLS
+#endif //HAVE_WOLFSSL
 
     return 0;
 }
@@ -586,12 +599,19 @@ int hashSHA1(char* input, unsigned long input_size, char *output, int output_siz
  */
 void b64_decode(unsigned char *input, unsigned int input_size, unsigned char *output, unsigned long *output_size)
 {
+#ifdef HAVE_WOLFSSL
+    word32 olen;
+    Base64_Decode((const unsigned char*) input, input_size, output, &olen);
+    *output_size = olen;
+    log_error("gh %d", *output_size);
+#else
 #ifdef HAVE_MBEDTLS
     size_t olen;
     mbedtls_base64_decode(output, *output_size, &olen, input, input_size);
     *output_size = olen;
 #else
     base64_decode(input, input_size, output, output_size);
+#endif
 #endif
 }
 
@@ -604,12 +624,19 @@ void b64_decode(unsigned char *input, unsigned int input_size, unsigned char *ou
  */
 void b64_encode(unsigned char *input, unsigned int input_size, unsigned char *output, unsigned long *output_size)
 {
+#ifdef HAVE_WOLFSSL
+    word32 olen;
+    Base64_Encode_NoNl((const unsigned char*) input, input_size, output, &olen);
+    *output_size = olen;
+    log_error("gh %d", *output_size);
+#else
 #ifdef HAVE_MBEDTLS
     size_t olen;
     mbedtls_base64_encode(output, *output_size, &olen, input, input_size);
     *output_size = olen;
 #else
     base64_encode(input, input_size, output, output_size);
+#endif
 #endif
 }
 
