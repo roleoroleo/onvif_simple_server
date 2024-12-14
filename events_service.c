@@ -271,7 +271,7 @@ int events_pull_messages()
     // Set temporary termination time += 10 to avoid termination during this function
     time(&now);
     previous_expire_time = subs_evts->subscriptions[sub_index].expire;
-    subs_evts->subscriptions[sub_index].expire = now + 10;
+    subs_evts->subscriptions[sub_index].expire = now + interval2sec(timeout) + 10;
     sem_memory_post();
     now_p_timeout = now + interval2sec(timeout);
 

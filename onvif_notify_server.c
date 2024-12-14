@@ -66,6 +66,7 @@ int debug;
 FILE *fLog;
 int exit_main;
 sem_t *sem_shmem;
+subscription_shm_t saved_subscriptions[MAX_SUBSCRIPTIONS];
 
 int daemonize(int flags)
 {
@@ -346,9 +347,30 @@ void clean_expired_subscriptions()
             now = time(NULL);
             if (now > subs_evts->subscriptions[i].expire) {
                 memset(&subs_evts->subscriptions[i], '\0', sizeof(subscription_shm_t));
+                log_info("Subscription %d is expired", i);
             }
         }
     }
+}
+
+void check_subscriptions_status()
+{
+    int i;
+    char iso_str[21];
+
+    // Semaphore is already ok
+    for(i = 0; i < MAX_SUBSCRIPTIONS; i++) {
+        if ((saved_subscriptions[i].used == SUB_UNUSED) && (subs_evts->subscriptions[i].used != saved_subscriptions[i].used)) {
+            to_iso_date(iso_str, sizeof(iso_str), subs_evts->subscriptions[i].expire);
+            log_info("Subscription %d created:", i);
+            log_info("\tid:        %d", subs_evts->subscriptions[i].id);
+            log_info("\treference: %s", subs_evts->subscriptions[i].reference);
+            log_info("\tused:      %d", subs_evts->subscriptions[i].used);
+            log_info("\texpire:    %s", iso_str);
+            log_info("\tneed_sync: %d", subs_evts->subscriptions[i].need_sync);
+        }
+    }
+    memcpy(saved_subscriptions, subs_evts->subscriptions, sizeof(subscription_shm_t) * MAX_SUBSCRIPTIONS);
 }
 
 void *sync_events_thread(void *arg)
@@ -358,16 +380,17 @@ void *sync_events_thread(void *arg)
     while (!exit_main) {
         // Sync all events
         for(i = 0; i < MAX_SUBSCRIPTIONS; i++) {
+            sem_memory_wait();
             if (subs_evts->subscriptions[i].need_sync == 1) {
-                sem_memory_wait();
                 subs_evts->subscriptions[i].need_sync = 0;
                 sync_events(i);
-                sem_memory_post();
             }
+            sem_memory_post();
         }
         // Clean expired_subscriptions
         sem_memory_wait();
         clean_expired_subscriptions();
+        check_subscriptions_status();
         sem_memory_post();
         usleep(500 * 1000);
     }
