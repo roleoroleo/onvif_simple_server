@@ -68,6 +68,7 @@ long cat(char *out, char *filename, int num, ...);
 int get_ip_address(char *address, char *netmask, char *name);
 int get_mac_address(char *address, char *name);
 int netmask2prefixlen(char *netmask);
+int get_mtu(char *if_name);
 char *trim(char *s);
 char *trim_mf(char *s);
 int html_escape(char *url, int max_len);

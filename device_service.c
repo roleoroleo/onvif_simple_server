@@ -513,6 +513,7 @@ int device_get_network_interfaces()
     char address[16];
     char netmask[16];
     char mac_address[18];
+    char mtu[16];
     int prefix_len;
     char sprefix_len[3];
     int ret;
@@ -529,19 +530,22 @@ int device_get_network_interfaces()
     if (ret < 0) {
         mac_address[0] = '\0';
     }
+    sprintf(mtu, "%d", get_mtu(service_ctx.ifs));
 
-    long size = cat(NULL, "device_service_files/GetNetworkInterfaces.xml", 8,
+    long size = cat(NULL, "device_service_files/GetNetworkInterfaces.xml", 10,
             "%INTERFACE%", service_ctx.ifs,
             "%MAC_ADDRESS%", mac_address,
+            "%MTU%", mtu,
             "%IP_ADDRESS%", address,
             "%NETMASK%", sprefix_len);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("stdout", "device_service_files/GetNetworkInterfaces.xml", 8,
+    return cat("stdout", "device_service_files/GetNetworkInterfaces.xml", 10,
             "%INTERFACE%", service_ctx.ifs,
             "%MAC_ADDRESS%", mac_address,
+            "%MTU%", mtu,
             "%IP_ADDRESS%", address,
             "%NETMASK%", sprefix_len);
 }

@@ -360,6 +360,23 @@ int netmask2prefixlen(char *netmask)
 }
 
 /**
+ * Get MTU for interface if_name
+ * @param if_name The name of the interface
+ * @return The value of the MTU
+ */
+int get_mtu(char *if_name)
+{
+    int ret = 0;
+    int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+    struct ifreq ifr;
+    strcpy(ifr.ifr_name, if_name);
+    if(ioctl(sock, SIOCGIFMTU, &ifr) == 0) {
+        ret = ifr.ifr_mtu;
+    }
+    return ret;
+}
+
+/**
  * Remove spaces from the left of the string
  * @param s The input string
  * @return A pointer to the resulting string

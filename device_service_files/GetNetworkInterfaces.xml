@@ -30,6 +30,7 @@
                 <tt:Info>
                     <tt:Name>%INTERFACE%</tt:Name>
                     <tt:HwAddress>%MAC_ADDRESS%</tt:HwAddress>
+                    <tt:MTU>%MTU%</tt:MTU>
                 </tt:Info>
                 <tt:IPv4>
                     <tt:Enabled>true</tt:Enabled>
@@ -38,9 +39,12 @@
                             <tt:Address>%IP_ADDRESS%</tt:Address>
                             <tt:PrefixLength>%NETMASK%</tt:PrefixLength>
                         </tt:Manual>
-                        <tt:DHCP>true</tt:DHCP>
+                        <tt:DHCP>false</tt:DHCP>
                     </tt:Config>
                 </tt:IPv4>
+                <tt:IPv6>
+                    <tt:Enabled>false</tt:Enabled>
+                </tt:IPv6>
             </tds:NetworkInterfaces>
         </tds:GetNetworkInterfacesResponse>
     </SOAP-ENV:Body>
