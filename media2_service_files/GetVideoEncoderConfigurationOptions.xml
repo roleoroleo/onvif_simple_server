@@ -38,7 +38,7 @@
                 </tt:ResolutionsAvailable>
                 <tt:BitrateRange>
                     <tt:Min>10</tt:Min>
-                    <tt:Max>1000</tt:Max>
+                    <tt:Max>5000</tt:Max>
                 </tt:BitrateRange>
             </tr2:Options>
         </tr2:GetVideoEncoderConfigurationOptionsResponse>

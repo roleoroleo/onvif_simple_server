@@ -34,8 +34,8 @@
                 </tt:Resolution>
                 <tt:Quality>10</tt:Quality>
                 <tt:RateControl>
-                    <tt:FrameRateLimit>20</tt:FrameRateLimit>
-                    <tt:BitrateLimit>1000</tt:BitrateLimit>
+                    <tt:FrameRateLimit>30</tt:FrameRateLimit>
+                    <tt:BitrateLimit>5000</tt:BitrateLimit>
                 </tt:RateControl>
                 <tt:Multicast>
                     <tt:Address>
@@ -58,8 +58,8 @@
                 </tt:Resolution>
                 <tt:Quality>10</tt:Quality>
                 <tt:RateControl>
-                    <tt:FrameRateLimit>20</tt:FrameRateLimit>
-                    <tt:BitrateLimit>1000</tt:BitrateLimit>
+                    <tt:FrameRateLimit>30</tt:FrameRateLimit>
+                    <tt:BitrateLimit>5000</tt:BitrateLimit>
                 </tt:RateControl>
                 <tt:Multicast>
                     <tt:Address>

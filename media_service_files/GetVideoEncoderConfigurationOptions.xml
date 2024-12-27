@@ -37,7 +37,7 @@
                     </tt:GovLengthRange>
                     <tt:FrameRateRange>
                         <tt:Min>0</tt:Min>
-                        <tt:Max>20</tt:Max>
+                        <tt:Max>30</tt:Max>
                     </tt:FrameRateRange>
                     <tt:EncodingIntervalRange>
                         <tt:Min>0</tt:Min>
