@@ -7,7 +7,7 @@ So:
 
 The XML parsing features are replaced by a wrapper that uses ezxml library and a template based strategy.
 
-About security, you can choose between libtomcrypt or mbedtls, to handle authentication.
+About security, you can choose between libtomcrypt, mbedtls or wolfssl to handle authentication.
 
 The web service discovery daemon and the notify server daemon are standalone programs and must be started with command line options.
 
