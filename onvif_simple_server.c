@@ -31,6 +31,7 @@
 #include "media2_service.h"
 #include "ptz_service.h"
 #include "events_service.h"
+#include "deviceio_service.h"
 #include "fault.h"
 #include "ezxml_wrapper.h"
 #include "conf.h"
@@ -252,7 +253,8 @@ int main(int argc, char ** argv)
                 (strstr(tmp, "media_service") != NULL) ||
                 (strstr(tmp, "media2_service") != NULL) ||
                 (strstr(tmp, "ptz_service") != NULL) ||
-                (strstr(tmp, "events_service") != NULL)) {
+                (strstr(tmp, "events_service") != NULL) ||
+                (strstr(tmp, "deviceio_service") != NULL)) {
             tmp = argv[argc - 1];
         } else {
             tmp = argv[0];
@@ -630,6 +632,12 @@ int main(int argc, char ** argv)
                 events_set_synchronization_point();
             } else {
                 events_unsupported(method);
+            }
+        } else if (strcasecmp("deviceio_service", prog_name) == 0) {
+            if (strcasecmp(method, "GetVideoSources") == 0) {
+                deviceio_get_video_sources();
+            } else {
+                deviceio_unsupported(method);
             }
         }
     } else {

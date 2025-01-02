@@ -1,7 +1,7 @@
 # Set HAVE_WOLFSSL or HAVE_MBEDTLS variable if you want to use WOLFSSL or
 # MBEDTLS instead of LIBTOMCRYPT
 
-OBJECTS_O = onvif_simple_server.o device_service.o media_service.o media2_service.o ptz_service.o events_service.o fault.o conf.o utils.o log.o ezxml_wrapper.o ezxml/ezxml.o
+OBJECTS_O = onvif_simple_server.o device_service.o media_service.o media2_service.o ptz_service.o events_service.o deviceio_service.o fault.o conf.o utils.o log.o ezxml_wrapper.o ezxml/ezxml.o
 OBJECTS_N = onvif_notify_server.o conf.o utils.o log.o ezxml_wrapper.o ezxml/ezxml.o
 OBJECTS_W = wsd_simple_server.o utils.o log.o ezxml_wrapper.o ezxml/ezxml.o
 ifdef HAVE_WOLFSSL
