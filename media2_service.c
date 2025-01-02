@@ -382,6 +382,36 @@ int media2_get_profiles()
     }
 }
 
+int media2_get_video_source_modes()
+{
+    const char *token = get_element("VideoSourceToken", "Body");
+    char stmp_w[16], stmp_h[16], video_enc[16];
+
+    if (strcasecmp("VideoSourceToken", token) == 0) {
+
+        // Get data from profile 0
+        sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
+        sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
+        set_video_codec(video_enc, 16, service_ctx.profiles[0].type, 2);
+        long size = cat(NULL, "media2_service_files/GetVideoSourceModes.xml", 6,
+                "%WIDTH%", stmp_w,
+                "%HEIGHT%", stmp_h,
+                "%VIDEO_ENCODING%", video_enc);
+
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+        return cat("stdout", "media2_service_files/GetVideoSourceModes.xml", 6,
+                "%WIDTH%", stmp_w,
+                "%HEIGHT%", stmp_h,
+                "%VIDEO_ENCODING%", video_enc);
+
+    } else {
+        send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:NoVideoSource", "No video source", "The requested video source does not exist");
+        return -1;
+    }
+}
+
 int media2_get_video_source_configurations()
 {
     const char *configuration_token = get_element("ConfigurationToken", "Body");

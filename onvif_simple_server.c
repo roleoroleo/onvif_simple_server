@@ -540,6 +540,8 @@ int main(int argc, char ** argv)
                 media2_get_service_capabilities();
             } else if (strcasecmp(method, "GetProfiles") == 0) {
                 media2_get_profiles();
+            } else if (strcasecmp(method, "GetVideoSourceModes") == 0) {
+                media2_get_video_source_modes();
             } else if (strcasecmp(method, "GetVideoSourceConfigurations") == 0) {
                 media2_get_video_source_configurations();
             } else if (strcasecmp(method, "GetVideoSourceConfigurationOptions") == 0) {

@@ -19,6 +19,7 @@
 
 int media2_get_service_capabilities();
 int media2_get_profiles();
+int media2_get_video_source_modes();
 int media2_get_video_source_configurations();
 int media2_get_video_source_configuration_options();
 int media2_get_video_encoder_configurations();
