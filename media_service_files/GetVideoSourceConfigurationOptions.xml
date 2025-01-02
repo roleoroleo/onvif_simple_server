@@ -24,19 +24,19 @@
             <trt:Options>
                 <tt:BoundsRange>
                     <tt:XRange>
-                        <tt:Min>0</tt:Min>
+                        <tt:Min>%WIDTH%</tt:Min>
                         <tt:Max>%WIDTH%</tt:Max>
                     </tt:XRange>
                     <tt:YRange>
                         <tt:Min>0</tt:Min>
-                        <tt:Max>%HEIGHT%</tt:Max>
+                        <tt:Max>0</tt:Max>
                     </tt:YRange>
                     <tt:WidthRange>
-                        <tt:Min>0</tt:Min>
+                        <tt:Min>%WIDTH%</tt:Min>
                         <tt:Max>%WIDTH%</tt:Max>
                     </tt:WidthRange>
                     <tt:HeightRange>
-                        <tt:Min>0</tt:Min>
+                        <tt:Min>%HEIGHT%</tt:Min>
                         <tt:Max>%HEIGHT%</tt:Max>
                     </tt:HeightRange>
                 </tt:BoundsRange>

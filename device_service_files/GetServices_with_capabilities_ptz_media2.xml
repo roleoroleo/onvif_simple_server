@@ -209,7 +209,7 @@
                 <tds:Capabilities>
                     <tr2:Capabilities SnapshotUri="true"
                                       Rotation="false"
-                                      VideoSourceMode="false"
+                                      VideoSourceMode="true"
                                       OSD="false"
                                       TemporaryOSDText="false"
                                       Mask="false"
