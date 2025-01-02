@@ -37,10 +37,6 @@
                         <tt:SystemLogging>false</tt:SystemLogging>
                         <tt:FirmwareUpgrade>false</tt:FirmwareUpgrade>
                         <tt:SupportedVersions>
-                            <tt:Major>20</tt:Major>
-                            <tt:Minor>12</tt:Minor>
-                        </tt:SupportedVersions>
-                        <tt:SupportedVersions>
                             <tt:Major>17</tt:Major>
                             <tt:Minor>6</tt:Minor>
                         </tt:SupportedVersions>
