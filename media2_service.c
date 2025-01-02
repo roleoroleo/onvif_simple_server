@@ -1198,6 +1198,7 @@ int media2_get_audio_decoder_configuration_options()
     const char *profile_token = get_element("ProfileToken", "Body");
     char token[10];
     char audio_decoder[16];
+    char bitrate[4], samplerate[4];
 
     memset(token, '\0', sizeof(token));
     if (configuration_token != NULL) {
@@ -1223,18 +1224,30 @@ int media2_get_audio_decoder_configuration_options()
         decoder_type = service_ctx.profiles[1].audio_decoder;
     }
 
-    if (decoder_type != AUDIO_NONE) {
+    // G726 is not suppoerted
+    if ((decoder_type != AUDIO_NONE) && (decoder_type != G726)) {
 
         set_audio_codec(audio_decoder, 16, decoder_type, 2);
+        if (decoder_type == G711) {
+            sprintf(bitrate, "%d", 64);
+            sprintf(samplerate, "%d", 8);
+        } else if (decoder_type == AAC) {
+            sprintf(bitrate, "%d", 50);
+            sprintf(samplerate, "%d", 16);
+        }
 
-        long size = cat(NULL, "media2_service_files/GetAudioDecoderConfigurationOptions.xml", 2,
-                "%AUDIO_DECODING%", audio_decoder);
+        long size = cat(NULL, "media2_service_files/GetAudioDecoderConfigurationOptions.xml", 6,
+                "%AUDIO_DECODING%", audio_decoder,
+                "%BITRATE%", bitrate,
+                "%SAMPLERATE%", samplerate);
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("stdout", "media2_service_files/GetAudioDecoderConfigurationOptions.xml", 2,
-                "%AUDIO_DECODING%", audio_decoder);
+        return cat("stdout", "media2_service_files/GetAudioDecoderConfigurationOptions.xml", 6,
+                "%AUDIO_DECODING%", audio_decoder,
+                "%BITRATE%", bitrate,
+                "%SAMPLERATE%", samplerate);
 
     } else {
         send_fault("media2_service", "Receiver", "ter:ActionNotSupported", "ter:AudioDecodingNotSupported", "AudioDecodingNotSupported", "Audio or Audio decoding is not supported by the device");

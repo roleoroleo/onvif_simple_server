@@ -24,10 +24,10 @@
             <trt:Options>
                 <tt:%AUDIO_DECODING%DecOptions>
                     <tt:Bitrate>
-                        <tt:Items>50</tt:Items>
+                        <tt:Items>%BITRATE%</tt:Items>
                     </tt:Bitrate>
                     <tt:SampleRateRange>
-                        <tt:Items>16</tt:Items>
+                        <tt:Items>%SAMPLERATE%</tt:Items>
                     </tt:SampleRateRange>
                 </tt:%AUDIO_DECODING%DecOptions>
             </trt:Options>

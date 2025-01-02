@@ -26,6 +26,7 @@
                 <tt:Name>AudioOutputConfig</tt:Name>
                 <tt:UseCount>%PROFILES_NUM%</tt:UseCount>
                 <tt:OutputToken>AudioOutputToken</tt:OutputToken>
+                <tt:SendPrimacy>www.onvif.org/ver20/HalfDuplex/Client</tt:SendPrimacy>
                 <tt:OutputLevel>1</tt:OutputLevel>
             </tr2:Configurations>
         </tr2:GetAudioOutputConfigurationsResponse>
