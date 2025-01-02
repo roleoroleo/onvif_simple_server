@@ -150,32 +150,38 @@ get_presets=/tmp/sd/yi-hack/script/ptz_presets.sh -a get_presets
 events=1
 #Event 0
 topic=tns1:VideoSource/MotionAlarm
-source_name=VideoSourceConfigurationToken
+source_name=Source
+source_type=tt:ReferenceToken
 source_value=VideoSourceToken
 input_file=/tmp/onvif_notify_server/motion_alarm
 #Event 1
 topic=tns1:RuleEngine/MyRuleDetector/PeopleDetect
 source_name=VideoSourceConfigurationToken
+source_type=xsd:string
 source_value=VideoSourceToken
 input_file=/tmp/onvif_notify_server/human_detection
 #Event 2
 topic=tns1:RuleEngine/MyRuleDetector/VehicleDetect
 source_name=VideoSourceConfigurationToken
+source_type=xsd:string
 source_value=VideoSourceToken
 input_file=/tmp/onvif_notify_server/vehicle_detection
 #Event 3
 topic=tns1:RuleEngine/MyRuleDetector/DogCatDetect
 source_name=VideoSourceConfigurationToken
+source_type=xsd:string
 source_value=VideoSourceToken
 input_file=/tmp/onvif_notify_server/animal_detection
 #Event 4
 topic=tns1:RuleEngine/MyRuleDetector/BabyCryingDetect
 source_name=AudioSourceConfigurationToken
+source_type=xsd:string
 source_value=AudioSourceToken
 input_file=/tmp/onvif_notify_server/baby_crying
 #Event 5
 topic=tns1:AudioAnalytics/Audio/DetectedSound
 source_name=AudioSourceConfigurationToken
+source_type=tt:ReferenceToken
 source_value=AudioSourceToken
 input_file=/tmp/onvif_notify_server/sound_detection
 ```
@@ -214,6 +220,7 @@ Brief explanation of some parameters:
 | events | set to 1 to enable PullPoint, 2 to enable Base Subscription or 3 to enable both |
 | topic | the topic of the event |
 | source_name | the source name inside the Notify message |
+| source_name | the source type inside the Notify message |
 | source_value | the source value inside the Notify message |
 | input_file | the file created when the event is fired |
 
@@ -305,7 +312,9 @@ GetUsers
 GetWsdlUrl
 GetCapabilities
 GetNetworkInterfaces
+GetDiscoveryMode
 ```
+
 **Media**
 ```
 GetServiceCapabilities
@@ -342,10 +351,12 @@ GetCompatibleAudioEncoderConfigurations
 GetCompatibleAudioDecoderConfigurations
 GetCompatibleAudioOutputConfigurations
 ```
+
 **Media2**
 ```
 GetServiceCapabilities
 GetProfiles
+GetVideoSourceModes
 GetVideoSourceConfigurations
 GetVideoSourceConfigurationOptions
 GetVideoEncoderConfigurations
@@ -360,8 +371,8 @@ GetAudioDecoderConfigurations
 GetAudioDecoderConfigurationOptions
 GetSnapshotUri
 GetStreamUri
-
 ```
+
 **PTZ**
 ```
 GetServiceCapabilities
@@ -382,6 +393,7 @@ SetPreset
 SetHomePosition
 RemovePreset
 ```
+
 **Events**
 ```
 GetServiceCapabilities
@@ -389,9 +401,14 @@ CreatePullPointSubscription
 PullMessages
 Subscribe
 Renew
-Unsubscribe
 GetEventProperties
+Unsubscribe
 SetSynchronizationPoint
+```
+
+**DeviceIO**
+```
+GetVideoSources
 ```
 
 ## Credits
