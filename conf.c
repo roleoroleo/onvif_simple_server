@@ -507,6 +507,7 @@ int process_conf_file(char *file)
                 service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
                 service_ctx.events[service_ctx.events_num - 1].topic = NULL;
                 service_ctx.events[service_ctx.events_num - 1].source_name = NULL;
+                service_ctx.events[service_ctx.events_num - 1].source_type = NULL;
                 service_ctx.events[service_ctx.events_num - 1].source_value = NULL;
                 service_ctx.events[service_ctx.events_num - 1].input_file = NULL;
                 service_ctx.events[service_ctx.events_num - 1].topic = (char *) malloc(strlen(value) + 1);
@@ -516,6 +517,11 @@ int process_conf_file(char *file)
             if (service_ctx.events_enable != EVENTS_NONE) {
                 service_ctx.events[service_ctx.events_num - 1].source_name = (char *) malloc(strlen(value) + 1);
                 strcpy(service_ctx.events[service_ctx.events_num - 1].source_name, value);
+            }
+        } else if (strcasecmp(param, "source_type") == 0) {
+            if (service_ctx.events_enable != EVENTS_NONE) {
+                service_ctx.events[service_ctx.events_num - 1].source_type = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.events[service_ctx.events_num - 1].source_type, value);
             }
         } else if (strcasecmp(param, "source_value") == 0) {
             if (service_ctx.events_enable != EVENTS_NONE) {
@@ -568,6 +574,7 @@ void free_conf_file()
         for (i = service_ctx.events_num - 1; i >= 0; i--) {
             if (service_ctx.events[i].input_file != NULL) free(service_ctx.events[i].input_file);
             if (service_ctx.events[i].source_value != NULL) free(service_ctx.events[i].source_value);
+            if (service_ctx.events[i].source_type != NULL) free(service_ctx.events[i].source_type);
             if (service_ctx.events[i].source_name != NULL) free(service_ctx.events[i].source_name);
             if (service_ctx.events[i].topic != NULL) free(service_ctx.events[i].topic);
         }
@@ -686,31 +693,37 @@ void print_conf_help()
     fprintf(stderr, "\t#Event 0\n");
     fprintf(stderr, "\ttopic=tns1:VideoSource/MotionAlarm\n");
     fprintf(stderr, "\tsource_name=VideoSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_type=tt:ReferenceToken\n");
     fprintf(stderr, "\tsource_value=VideoSourceToken\n");
     fprintf(stderr, "\tinput_file=/tmp/motion_alarm\n");
     fprintf(stderr, "\t#Event 1\n");
     fprintf(stderr, "\ttopic=tns1:RuleEngine/MyRuleDetector/PeopleDetect\n");
     fprintf(stderr, "\tsource_name=VideoSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_type=xsd:string\n");
     fprintf(stderr, "\tsource_value=VideoSourceToken\n");
     fprintf(stderr, "\tinput_file=/tmp/human_detection\n");
     fprintf(stderr, "\t#Event 2\n");
     fprintf(stderr, "\ttopic=tns1:RuleEngine/MyRuleDetector/VehicleDetect\n");
     fprintf(stderr, "\tsource_name=VideoSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_type=xsd:string\n");
     fprintf(stderr, "\tsource_value=VideoSourceToken\n");
     fprintf(stderr, "\tinput_file=/tmp/vehicle_detection\n");
     fprintf(stderr, "\t#Event 3\n");
     fprintf(stderr, "\ttopic=tns1:RuleEngine/MyRuleDetector/DogCatDetect\n");
     fprintf(stderr, "\tsource_name=VideoSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_type=xsd:string\n");
     fprintf(stderr, "\tsource_value=VideoSourceToken\n");
     fprintf(stderr, "\tinput_file=/tmp/animal_detection\n");
     fprintf(stderr, "\t#Event 4\n");
     fprintf(stderr, "\ttopic=tns1:RuleEngine/MyRuleDetector/BabyCryingDetect\n");
     fprintf(stderr, "\tsource_name=AudioSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_type=xsd:string\n");
     fprintf(stderr, "\tsource_value=AudioSourceToken\n");
     fprintf(stderr, "\tinput_file=/tmp/baby_crying\n");
     fprintf(stderr, "\t#Event 5\n");
     fprintf(stderr, "\ttopic=tns1:AudioAnalytics/Audio/DetectedSound\n");
     fprintf(stderr, "\tsource_name=AudioSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_type=tt:ReferenceToken\n");
     fprintf(stderr, "\tsource_value=AudioSourceToken\n");
     fprintf(stderr, "\tinput_file=/tmp/sound_detection\n");
 }

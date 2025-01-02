@@ -88,6 +88,7 @@ typedef struct {
 typedef struct {
     char *topic;
     char *source_name;
+    char *source_type;
     char *source_value;
     char *input_file;
 } event_t;

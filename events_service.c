@@ -658,11 +658,12 @@ int events_get_event_properties()
                 return -1;
             }
 
-            size = cat(dest, "events_service_files/GetEventProperties_2.xml", 14,
+            size = cat(dest, "events_service_files/GetEventProperties_2.xml", 16,
                 "%TOPIC_L1_START%", topic_ls[0],
                 "%TOPIC_L2_START%", topic_ls[1],
                 "%TOPIC_L3_START%", topic_ls[2],
                 "%SOURCE_NAME%", service_ctx.events[i].source_name,
+                "%SOURCE_TYPE%", service_ctx.events[i].source_type,
                 "%TOPIC_L3_END%", topic_le[2],
                 "%TOPIC_L2_END%", topic_le[1],
                 "%TOPIC_L1_END%", topic_le[0]);

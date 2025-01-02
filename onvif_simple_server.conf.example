@@ -65,31 +65,37 @@ get_presets=/usr/local/bin/ptz_presets.sh -a get_presets
 events=3
 #Event 0
 topic=tns1:VideoSource/MotionAlarm
-source_name=VideoSourceConfigurationToken
+source_name=Source
+source_type=tt:ReferenceToken
 source_value=VideoSourceToken
 input_file=/tmp/onvif_notify_server/motion_alarm
 #Event 1
 topic=tns1:RuleEngine/MyRuleDetector/PeopleDetect
 source_name=VideoSourceConfigurationToken
+source_type=xsd:string
 source_value=VideoSourceToken
 input_file=/tmp/onvif_notify_server/human_detection
 #Event 2
 topic=tns1:RuleEngine/MyRuleDetector/VehicleDetect
 source_name=VideoSourceConfigurationToken
+source_type=xsd:string
 source_value=VideoSourceToken
 input_file=/tmp/onvif_notify_server/vehicle_detection
 #Event 3
 topic=tns1:RuleEngine/MyRuleDetector/DogCatDetect
 source_name=VideoSourceConfigurationToken
+source_type=xsd:string
 source_value=VideoSourceToken
 input_file=/tmp/onvif_notify_server/animal_detection
 #Event 4
 topic=tns1:RuleEngine/MyRuleDetector/BabyCryingDetect
 source_name=AudioSourceConfigurationToken
+source_type=xsd:string
 source_value=AudioSourceToken
 input_file=/tmp/onvif_notify_server/baby_crying
 #Event 5
 topic=tns1:AudioAnalytics/Audio/DetectedSound
 source_name=AudioSourceConfigurationToken
+source_type=tt:ReferenceToken
 source_value=AudioSourceToken
 input_file=/tmp/onvif_notify_server/sound_detection
