@@ -25,10 +25,10 @@
             <tr2:Options>
                 <tt:Encoding>%AUDIO_ENCODING%</tt:Encoding>
                 <tt:BitrateList>
-                    <tt:Items>50</tt:Items>
+                    <tt:Items>%BITRATE%</tt:Items>
                 </tt:BitrateList>
                 <tt:SampleRateList>
-                    <tt:Items>16</tt:Items>
+                    <tt:Items>%SAMPLERATE%</tt:Items>
                 </tt:SampleRateList>
             </tr2:Options>
         </tr2:GetAudioEncoderConfigurationOptionsResponse>

@@ -1187,6 +1187,8 @@ int media_get_audio_encoder_configuration_options()
     const char *profile_token = get_element("ProfileToken", "Body");
     char token[10];
 
+    char bitrate[4], samplerate[4];
+
     memset(token, '\0', sizeof(token));
     if (configuration_token != NULL) {
         // Extract "Profile_x" from token Profile_x_AudioEncoderToken
@@ -1208,10 +1210,18 @@ int media_get_audio_encoder_configuration_options()
     if ((service_ctx.profiles_num > 0) &&
             (strcasecmp(service_ctx.profiles[0].name, token) == 0)) {
 
-        if (service_ctx.profiles[0].audio_encoder != AUDIO_NONE) {
+        // G726 is not suppoerted
+        if ((service_ctx.profiles[0].audio_encoder != AUDIO_NONE) && (service_ctx.profiles[0].audio_encoder != G726)) {
 
             set_audio_codec(audio_encoder, 16, service_ctx.profiles[0].audio_encoder, 1);
 
+            if (service_ctx.profiles[0].audio_encoder == G711) {
+                sprintf(bitrate, "%d", 64);
+                sprintf(samplerate, "%d", 8);
+            } else if (service_ctx.profiles[0].audio_encoder == AAC) {
+                sprintf(bitrate, "%d", 50);
+                sprintf(samplerate, "%d", 16);
+            }
         } else {
             send_fault("media_service", "Receiver", "ter:ActionNotSupported", "ter:AudioNotSupported", "AudioNotSupported", "The device does not support audio");
             return -2;
@@ -1219,10 +1229,18 @@ int media_get_audio_encoder_configuration_options()
     } else if ((service_ctx.profiles_num == 2) &&
             (strcasecmp(service_ctx.profiles[1].name, token) == 0)) {
 
-        if (service_ctx.profiles[1].audio_encoder != AUDIO_NONE) {
+        // G726 is not suppoerted
+        if ((service_ctx.profiles[1].audio_encoder != AUDIO_NONE) && (service_ctx.profiles[1].audio_encoder != G726)) {
 
             set_audio_codec(audio_encoder, 16, service_ctx.profiles[1].audio_encoder, 1);
 
+            if (service_ctx.profiles[1].audio_encoder == G711) {
+                sprintf(bitrate, "%d", 64);
+                sprintf(samplerate, "%d", 8);
+            } else if (service_ctx.profiles[1].audio_encoder == AAC) {
+                sprintf(bitrate, "%d", 50);
+                sprintf(samplerate, "%d", 16);
+            }
         } else {
             send_fault("media_service", "Receiver", "ter:ActionNotSupported", "ter:AudioNotSupported", "AudioNotSupported", "The device does not support audio");
             return -3;
@@ -1232,14 +1250,18 @@ int media_get_audio_encoder_configuration_options()
         return -4;
     }
 
-    long size = cat(NULL, "media_service_files/GetAudioEncoderConfigurationOptions.xml", 2,
-            "%AUDIO_ENCODING%", audio_encoder);
+    long size = cat(NULL, "media_service_files/GetAudioEncoderConfigurationOptions.xml", 6,
+            "%AUDIO_ENCODING%", audio_encoder,
+            "%BITRATE%", bitrate,
+            "%SAMPLERATE%", samplerate);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("stdout", "media_service_files/GetAudioEncoderConfigurationOptions.xml", 2,
-            "%AUDIO_ENCODING%", audio_encoder);
+    return cat("stdout", "media_service_files/GetAudioEncoderConfigurationOptions.xml", 6,
+            "%AUDIO_ENCODING%", audio_encoder,
+            "%BITRATE%", bitrate,
+            "%SAMPLERATE%", samplerate);
 }
 
 int media_get_audio_decoder_configuration()
