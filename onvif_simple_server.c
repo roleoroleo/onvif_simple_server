@@ -636,6 +636,14 @@ int main(int argc, char ** argv)
         } else if (strcasecmp("deviceio_service", prog_name) == 0) {
             if (strcasecmp(method, "GetVideoSources") == 0) {
                 deviceio_get_video_sources();
+            } else if (strcasecmp(method, "GetServiceCapabilities") == 0) {
+                deviceio_get_service_capabilities();
+            } else if (strcasecmp(method, "GetAudioOutputs") == 0) {
+                deviceio_get_audio_outputs();
+            } else if (strcasecmp(method, "GetAudioSources") == 0) {
+                deviceio_get_audio_sources();
+            } else if (strcasecmp(method, "GetRelayOutputs") == 0) {
+                deviceio_get_relay_outputs();
             } else {
                 deviceio_unsupported(method);
             }

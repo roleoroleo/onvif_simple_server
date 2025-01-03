@@ -40,6 +40,86 @@ int deviceio_get_video_sources()
     return cat("stdout", "deviceio_service_files/GetVideoSources.xml", 0);
 }
 
+int deviceio_get_service_capabilities()
+{
+    char audio_sources[2], audio_outputs[2];
+
+    if ((service_ctx.profiles[0].audio_encoder != AUDIO_NONE) ||
+            ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_encoder != AUDIO_NONE))) {
+
+        sprintf(audio_sources, "%d", 1);
+    } else {
+        sprintf(audio_sources, "%d", 0);
+    }
+    if ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE) ||
+            ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE))) {
+
+        sprintf(audio_outputs, "%d", 1);
+    } else {
+        sprintf(audio_outputs, "%d", 0);
+    }
+
+    long size = cat(NULL, "deviceio_service_files/GetServiceCapabilities.xml", 4,
+            "%AUDIO_SOURCES%", audio_sources,
+            "%AUDIO_OUTPUTS%", audio_outputs);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "deviceio_service_files/GetServiceCapabilities.xml", 4,
+            "%AUDIO_SOURCES%", audio_sources,
+            "%AUDIO_OUTPUTS%", audio_outputs);
+}
+
+int deviceio_get_audio_outputs()
+{
+    char audio_output_token[MAX_LEN];
+
+    if ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE) ||
+            ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE))) {
+
+        sprintf(audio_output_token, "%s", "<tmd:Token>AudioOutputToken</tmd:Token>");
+    } else {
+        sprintf(audio_output_token, "%s", "");
+    }
+
+    long size = cat(NULL, "deviceio_service_files/GetAudioOutputs.xml", 2,
+            "%AUDIO_OUTPUT_TOKEN%", audio_output_token);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "deviceio_service_files/GetAudioOutputs.xml", 2,
+            "%AUDIO_OUTPUT_TOKEN%", audio_output_token);
+}
+
+int deviceio_get_audio_sources()
+{
+    char audio_source_token[MAX_LEN];
+
+    if ((service_ctx.profiles[0].audio_encoder != AUDIO_NONE) ||
+            ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_encoder != AUDIO_NONE))) {
+
+        sprintf(audio_source_token, "%s", "<tmd:Token>AudioSourceToken</tmd:Token>");
+    } else {
+        sprintf(audio_source_token, "%s", "");
+    }
+
+    long size = cat(NULL, "deviceio_service_files/GetAudioSources.xml", 2,
+            "%AUDIO_SOURCE_TOKEN%", audio_source_token);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "deviceio_service_files/GetAudioSources.xml", 2,
+            "%AUDIO_SOURCE_TOKEN%", audio_source_token);
+}
+
+int deviceio_get_relay_outputs()
+{
+    send_empty_response("tds", "GetRelayOutputs");
+}
+
 int deviceio_unsupported(const char *method)
 {
     if (service_ctx.adv_fault_if_unknown == 1)
