@@ -24,8 +24,8 @@
             <trt:Options>
                 <tt:BoundsRange>
                     <tt:XRange>
-                        <tt:Min>%WIDTH%</tt:Min>
-                        <tt:Max>%WIDTH%</tt:Max>
+                        <tt:Min>0</tt:Min>
+                        <tt:Max>0</tt:Max>
                     </tt:XRange>
                     <tt:YRange>
                         <tt:Min>0</tt:Min>

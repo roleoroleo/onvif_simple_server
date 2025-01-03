@@ -6,7 +6,7 @@
                         <tt:Width>%WIDTH%</tt:Width>
                         <tt:Height>%HEIGHT%</tt:Height>
                     </tt:Resolution>
-                    <tt:Quality>0</tt:Quality>
+                    <tt:Quality>100</tt:Quality>
                     <tt:RateControl>
                         <tt:FrameRateLimit>30</tt:FrameRateLimit>
                         <tt:EncodingInterval>1</tt:EncodingInterval>
