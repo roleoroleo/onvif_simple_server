@@ -574,7 +574,7 @@ int hashSHA1(char* input, unsigned long input_size, char *output, int output_siz
         return -1;
 
 #ifdef HAVE_WOLFSSL
-    Sha sha;
+    wc_Sha sha;
     wc_InitSha(&sha);
     wc_ShaUpdate(&sha, input, input_size);
     wc_ShaFinal(&sha, output);
