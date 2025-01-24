@@ -46,6 +46,8 @@
 #endif
 #endif
 
+#include <zlib.h>
+
 #include "utils.h"
 #include "onvif_simple_server.h"
 #include "log.h"
@@ -173,6 +175,50 @@ int sem_memory_post()
     return sem_post(sem_memory_lock);
 }
 
+#ifdef USE_ZLIB
+/**
+ * Decompress a gzipped file
+ * @param file_in The input file name
+ * @param file_out The output file pointer
+ */
+int gzip_d(FILE *file_out, char *file_in)
+{
+    char buf[1024];
+    char file_in_gz[MAX_LEN];
+
+    sprintf(file_in_gz, "%s.gz", file_in);
+    gzFile fi;
+    if (access(file_in_gz, F_OK) == 0) {
+        fi = gzopen(file_in_gz, "rb");
+    } else {
+        fi = gzopen(file_in, "rb");
+    }
+    if (!fi) {
+        return -1;
+    }
+    if (file_out == NULL) {
+        gzclose(fi);
+        return -2;
+    }
+
+    gzrewind(fi);
+    while (!gzeof(fi)) {
+        int len = gzread(fi, buf, sizeof(buf));
+        if ((len < 0) || ((len == 0) && (!gzeof(fi)))) {
+            gzclose(fi);
+            return -3;
+        }
+        if (fwrite(buf, 1, len, file_out) < 0) {
+            gzclose(fi);
+            return -4;
+        }
+    }
+    gzclose(fi);
+
+    return 0;
+}
+#endif
+
 /**
  * Read a file line by line and send to output after replacing arguments
  * @param out The output type: "sdout", char *ptr or NULL
@@ -189,12 +235,27 @@ long cat(char *out, char *filename, int num, ...)
     char *pars, *pare, *par_to_find, *par_to_sub;
     int i;
     long ret = 0;
+    FILE *file;
 
-    FILE* file = fopen(filename, "r");
-    if (!file) {
+#ifdef USE_ZLIB
+    file = tmpfile();
+    if (file == NULL) {
         log_error("Unable to open file %s\n", filename);
         return -1;
     }
+    if (gzip_d(file, filename) != 0) {
+        log_error("Unable to decompress file %s\n", filename);
+        fclose(file);
+        return -2;
+    }
+    rewind(file);
+#else
+    file = fopen(filename, "r");
+    if (!file) {
+        log_error("Unable to open file %s\n", filename);
+        return -3;
+    }
+#endif
 
     char line[MAX_CAT_LEN];
 
