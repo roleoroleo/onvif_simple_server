@@ -26,7 +26,9 @@ But usually is enough to work with an onvif client.
 - [Donation](#donation)
 
 ## Build
-- Open the `Makefile` and edit the path to the libtomcrypt library to suit your needs
+- Open the `Makefile` and edit it to suit your needs. Instead of `Makefile` rename `Makefile.static` if you want to build a static binary embedding all libraries (ssl and zlib).
+- Export HAVE_WOLFSSL if you want to use wolfssl or HAVE_MBEDTLS if you want to use mbedtls (default libtomcrypt).
+- Export USE_ZLIB if you want to use compressed template files. In this case, all xml files will be compressed to use less disk space but the server will be slower.
 - Run `make`
 
 ## Create a working example with lighttpd
