@@ -331,9 +331,9 @@ int get_ip_address(char *address, char *netmask, char *name)
         if ((strcmp(ifa->ifa_name, name) == 0) && (ifa->ifa_addr->sa_family == AF_INET)) {
 
             sa = (struct sockaddr_in *) ifa->ifa_addr;
-            inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr), address, 15);
+            inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr), address, 16);
             san = (struct sockaddr_in *) ifa->ifa_netmask;
-            inet_ntop(AF_INET, &(((struct sockaddr_in *)san)->sin_addr), netmask, 15);
+            inet_ntop(AF_INET, &(((struct sockaddr_in *)san)->sin_addr), netmask, 16);
 
             log_debug("Interface: <%s>", ifa->ifa_name);
             log_debug("Address: <%s>", address);
