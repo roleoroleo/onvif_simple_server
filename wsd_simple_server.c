@@ -514,6 +514,8 @@ int main(int argc, char **argv)  {
 
         // Read from socket
         memset(recv_buffer, '\0', RECV_BUFFER_LEN);
+        addr_len = sizeof(addr_in);  // init address
+
         if (recvfrom(sock, recv_buffer, RECV_BUFFER_LEN, 0, (struct sockaddr *) &addr_in, &addr_len) > 0) {
 
             // Check if the message is a response
