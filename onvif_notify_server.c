@@ -177,13 +177,13 @@ void print_subscriptions()
             fprintf(stderr, "\t\treference: %s\n", subs_evts->subscriptions[i].reference);
             fprintf(stderr, "\t\tused:      %d\n", subs_evts->subscriptions[i].used);
             fprintf(stderr, "\t\texpire:    %s\n", iso_str);
-            fprintf(stderr, "\t\tneed_sync: %d\n", subs_evts->subscriptions[i].need_sync);
+            fprintf(stderr, "\t\tpush_need_sync: %d\n", subs_evts->subscriptions[i].push_need_sync);
         } else {
             fprintf(stderr, "\t\tid:        0\n");
             fprintf(stderr, "\t\treference:\n");
             fprintf(stderr, "\t\tused:      0\n");
             fprintf(stderr, "\t\texpire:\n");
-            fprintf(stderr, "\t\tneed_sync: 0\n");
+            fprintf(stderr, "\t\tpush_need_sync: 0\n");
         }
     }
 
@@ -367,7 +367,10 @@ void check_subscriptions_status()
             log_info("\treference: %s", subs_evts->subscriptions[i].reference);
             log_info("\tused:      %d", subs_evts->subscriptions[i].used);
             log_info("\texpire:    %s", iso_str);
-            log_info("\tneed_sync: %d", subs_evts->subscriptions[i].need_sync);
+            log_info("\tpush_need_sync: %d", subs_evts->subscriptions[i].push_need_sync);
+        }
+        if ((saved_subscriptions[i].used != SUB_UNUSED) && (subs_evts->subscriptions[i].used != saved_subscriptions[i].used)) {
+            log_info("Subscription %d destroyed", i);
         }
     }
     memcpy(saved_subscriptions, subs_evts->subscriptions, sizeof(subscription_shm_t) * MAX_SUBSCRIPTIONS);
@@ -381,8 +384,8 @@ void *sync_events_thread(void *arg)
         // Sync all events
         for(i = 0; i < MAX_SUBSCRIPTIONS; i++) {
             sem_memory_wait();
-            if (subs_evts->subscriptions[i].need_sync == 1) {
-                subs_evts->subscriptions[i].need_sync = 0;
+            if (subs_evts->subscriptions[i].push_need_sync == 1) {
+                subs_evts->subscriptions[i].push_need_sync = 0;
                 sync_events(i);
             }
             sem_memory_post();
@@ -396,7 +399,7 @@ void *sync_events_thread(void *arg)
     }
 }
 
-int handle_events(int fd, char *dir)
+int handle_inotify_events(int fd, char *dir)
 {
     /* Some systems cannot read integer variables if they are not
        properly aligned. On other systems, incorrect alignment may
@@ -739,7 +742,7 @@ int main(int argc, char **argv)  {
         fds[0].events = POLLIN;
     }
 
-    // Create thread to monitor subscriptions->need_sync
+    // Create thread to monitor subscriptions->push_need_sync
     pthread_t sync_events_pthread;
     pthread_create(&sync_events_pthread, NULL, sync_events_thread, NULL);
     pthread_detach(sync_events_pthread);
@@ -762,7 +765,7 @@ int main(int argc, char **argv)  {
                 if (fds[0].revents & POLLIN) {
 
                     // Inotify events are available
-                    handle_events(fd, INOTIFY_DIR);
+                    handle_inotify_events(fd, INOTIFY_DIR);
                 }
             }
         } else { // Inotify interface is not available

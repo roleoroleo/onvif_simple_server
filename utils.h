@@ -47,7 +47,7 @@ typedef struct {
     char reference[CONSUMER_REFERENCE_MAX_SIZE];
     subscription_type used;
     time_t expire;
-    int need_sync;
+    int push_need_sync;
 } subscription_shm_t;
 
 typedef struct {
