@@ -346,8 +346,9 @@ int events_pull_messages()
                 if (c == 0) total_size += size;
 
                 if (c == 1) subs_evts->events[i].pull_notify &= ~(1 << sub_index);
+
+                count++;
             }
-            count++;
         }
 
         size = cat(dest, "events_service_files/PullMessages_3.xml", 0);
