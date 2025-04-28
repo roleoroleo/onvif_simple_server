@@ -67,7 +67,7 @@ int events_create_pull_point_subscription()
     time_t now, expire_time;
     char iso_str[21];
     char iso_str_2[21];
-    int i, subscription_id;
+    int i, subscription_id, sub_index;
 
     char my_address[16];
     char my_netmask[16];
@@ -135,13 +135,21 @@ int events_create_pull_point_subscription()
         }
     }
     sem_memory_post();
-    destroy_shared_memory((void *) subs_evts, 0);
-
-    if (i == MAX_SUBSCRIPTIONS) {
+    sub_index = i;
+    if (sub_index == MAX_SUBSCRIPTIONS) {
         log_error("Reached the maximum number of subscriptions");
         send_fault("events_service", "Receiver", "wsntw:SubscribeCreationFailedFault", "wsntw:SubscribeCreationFailedFault", "Subscribe creation failed fault", "");
         return -4;
     }
+
+    // Force notification with Property "Initialized"
+    sem_memory_wait();
+    for (i = 0; i < service_ctx.events_num; i++) {
+        subs_evts->events[i].pull_send_initialized |= (1 << sub_index);
+        subs_evts->events[i].pull_notify |= (1 << sub_index);
+    }
+    sem_memory_post();
+    destroy_shared_memory((void *) subs_evts, 0);
 
     sprintf(events_service_address, "http://%s%s/onvif/events_service?sub=%d", my_address, my_port, subscription_id);
 
@@ -182,7 +190,9 @@ int events_pull_messages()
     int at_least_one_message;
     int i, c;
     char *endptr;
-    char value[8];
+    char property[32];
+    char data_name[32];
+    char data_value[32];
     char dest_a[] = "stdout";
     char *dest;
     long size, total_size;
@@ -243,7 +253,7 @@ int events_pull_messages()
         return -6;
     }
 
-    // Find subscription
+    // Find subscription index
     sem_memory_wait();
     sub_index = -1;
     for (i = 0; i < MAX_SUBSCRIPTIONS; i++) {
@@ -329,23 +339,34 @@ int events_pull_messages()
             if (count >= limit)
                 break;
             if ((subs_evts->events[i].pull_notify & (1 << sub_index))) {
-                if (subs_evts->events[i].is_on) {
-                    strcpy(value, "true");
+                if ((subs_evts->events[i].pull_send_initialized & (1 << sub_index))) {
+                    strcpy(property, "Initialized");
+                    to_iso_date(iso_str_3, sizeof(iso_str_3), now);
                 } else {
-                    strcpy(value, "false");
+                    strcpy(property, "Changed");
+                    to_iso_date(iso_str_3, sizeof(iso_str_3), subs_evts->events[i].e_time);
                 }
-                to_iso_date(iso_str_3, sizeof(iso_str_3), subs_evts->events[i].e_time);
+                if (subs_evts->events[i].is_on) {
+                    strcpy(data_value, "true");
+                } else {
+                    strcpy(data_value, "false");
+                }
+                strcpy(data_name, "State");
 
-                size = cat(dest, "events_service_files/PullMessages_2.xml", 12,
+                size = cat(dest, "events_service_files/PullMessages_2.xml", 14,
                     "%TOPIC%", service_ctx.events[i].topic,
                     "%UTC_TIME%", iso_str_3,
-                    "%PROPERTY%", "Changed",
+                    "%PROPERTY%", property,
                     "%SOURCE_NAME%", service_ctx.events[i].source_name,
                     "%SOURCE_VALUE%", service_ctx.events[i].source_value,
-                    "%VALUE%", value);
+                    "%DATA_NAME%", data_name,
+                    "%DATA_VALUE%", data_value);
                 if (c == 0) total_size += size;
 
-                if (c == 1) subs_evts->events[i].pull_notify &= ~(1 << sub_index);
+                if (c == 1) {
+                    subs_evts->events[i].pull_send_initialized &= ~(1 << sub_index);
+                    subs_evts->events[i].pull_notify &= ~(1 << sub_index);
+                }
 
                 count++;
             }
@@ -616,6 +637,8 @@ int events_get_event_properties()
     long size, total_size;
     char dest_a[] = "stdout";
     char *dest;
+    char data_name[32];
+    char data_type[32];
 
     // We need 1st step to evaluate content length
     for (c = 0; c < 2; c++) {
@@ -658,13 +681,17 @@ int events_get_event_properties()
                 send_action_failed_fault("events_service", -1);
                 return -1;
             }
+            strcpy(data_name, "State");
+            strcpy(data_type, "xsd:boolean");
 
-            size = cat(dest, "events_service_files/GetEventProperties_2.xml", 16,
+            size = cat(dest, "events_service_files/GetEventProperties_2.xml", 20,
                 "%TOPIC_L1_START%", topic_ls[0],
                 "%TOPIC_L2_START%", topic_ls[1],
                 "%TOPIC_L3_START%", topic_ls[2],
                 "%SOURCE_NAME%", service_ctx.events[i].source_name,
                 "%SOURCE_TYPE%", service_ctx.events[i].source_type,
+                "%DATA_NAME%", data_name,
+                "%DATA_TYPE%", data_type,
                 "%TOPIC_L3_END%", topic_le[2],
                 "%TOPIC_L2_END%", topic_le[1],
                 "%TOPIC_L1_END%", topic_le[0]);
@@ -809,6 +836,7 @@ int events_set_synchronization_point()
     subs_evts->subscriptions[sub_index].need_sync = 1;
 
     for (i = 0; i < service_ctx.events_num; i++) {
+        subs_evts->events[i].pull_send_initialized |= (1 << sub_index);
         subs_evts->events[i].pull_notify |= (1 << sub_index);
     }
     sem_memory_post();

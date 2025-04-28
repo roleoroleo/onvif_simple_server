@@ -6,7 +6,7 @@
                             <tt:SimpleItem Name="%SOURCE_NAME%" Value="%SOURCE_VALUE%"/>
                         </tt:Source>
                         <tt:Data>
-                            <tt:SimpleItem Name="State" Value="%VALUE%" />
+                            <tt:SimpleItem Name="%DATA_NAME%" Value="%DATA_VALUE%" />
                         </tt:Data>
                     </tt:Message>
                 </wsnt:Message>

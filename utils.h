@@ -19,7 +19,8 @@
 
 #include <stdarg.h>
 #include <time.h>
-#include "semaphore.h"
+#include <sys/types.h>
+#include <semaphore.h>
 
 #define MAX_LEN     1024
 #define MAX_CAT_LEN 2048
@@ -52,7 +53,8 @@ typedef struct {
 typedef struct {
     time_t e_time;
     int is_on;
-    unsigned int pull_notify; // Bit mask
+    uint32_t pull_send_initialized; // Bit mask: 1 if the value is not known to the client (new subscription) and must be sent
+    uint32_t pull_notify; // Bit mask: 1 if the client must be notified
 } event_shm_t;
 
 typedef struct {
