@@ -500,7 +500,7 @@ int process_conf_file(char *file)
         } else if (strcasecmp(param, "topic") == 0) {
             if (service_ctx.events_enable != EVENTS_NONE) {
                 service_ctx.events_num++;
-                if (service_ctx.events_num >= MAX_EVENTS) {
+                if (service_ctx.events_num > MAX_EVENTS) {
                     log_error("Too many events, max is: %d", MAX_EVENTS);
                     return -2;
                 }
