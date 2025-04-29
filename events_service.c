@@ -492,6 +492,10 @@ int events_subscribe()
         return -5;
     }
 
+    // Force notification with Property "Initialized"
+    sem_memory_wait();
+    subs_evts->subscriptions[sub_index].push_need_sync = 1;
+    sem_memory_post();
     destroy_shared_memory((void *) subs_evts, 0);
 
     sprintf(events_service_address, "http://%s%s/onvif/events_service?sub=%d", my_address, my_port, subscription_id);
@@ -855,7 +859,7 @@ int events_set_synchronization_point()
 
     log_info("SetSynchronizationPoint request received for subscription id=%d, index=%d", sub_id, sub_index);
 
-    subs_evts->subscriptions[sub_index].need_sync = 1;
+    subs_evts->subscriptions[sub_index].push_need_sync = 1;
 
     for (i = 0; i < service_ctx.events_num; i++) {
         if (is_topic_in_expression(subs_evts->subscriptions[sub_index].topic_expression, service_ctx.events[i].topic)) {
