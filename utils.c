@@ -924,6 +924,104 @@ int set_audio_codec(char *buffer, int buffer_len, int codec, int ver)
     return 0;
 }
 
+// Remember to free the memory
+topic_expressions_t *parse_topic_expression(const char *input)
+{
+    char input_copy[MAX_LEN];
+    char *str;
+    int number = 0;
+    int len;
+    int error = 0;
+    topic_expressions_t *out = (topic_expressions_t *) malloc(sizeof(topic_expressions_t));
+    out->topics = NULL;
+
+    if (strlen(input) > MAX_LEN - 1) {
+        free(out);
+        return NULL;
+    }
+    if (strlen(input) <= 3) {
+        free(out);
+        return NULL;
+    }
+
+    strcpy(input_copy, input);
+
+    char *token = strtok(input_copy, "|");
+    while (token != NULL) {
+        number++;
+        len = strlen(token);
+        if (len <= 3) {
+            error = 1;
+            break;
+        }
+
+        out->topics = (topic_expression_t *) realloc(out->topics, number * sizeof(topic_expression_t));
+        out->topics[number - 1].topic = malloc((len + 1) * sizeof(char));
+        out->topics[number - 1].match_sub_tree = 0;
+        str = out->topics[number - 1].topic;
+        strcpy(str, token);
+
+        if (str[len - 3] == '/' && str[len - 2] == '/' && str[len - 1] == '.') {
+            str[len - 3] = '\0';
+            out->topics[number - 1].match_sub_tree = 1;
+        }
+
+        token = strtok(NULL, "|");
+    }
+
+    if (error) {
+        number--;
+        if (number == 0) {
+            free(out);
+            return NULL;
+        }
+    }
+    out->number = number;
+
+    return out;
+}
+
+void free_topic_expression(topic_expressions_t *p)
+{
+    int i;
+
+    for(i = p->number - 1; i >= 0; i--) {
+        free(p->topics[i].topic);
+    }
+
+    free(p);
+}
+
+// If topic_expression is empty the function returns 1
+int is_topic_in_expression(const char *topic_expression, char *topic)
+{
+    int i;
+    topic_expressions_t *te;
+
+    if ((topic_expression == NULL) || (topic_expression[0] == '\0')) {
+        return 1;
+    }
+
+    te = parse_topic_expression(topic_expression);
+
+    if (te == NULL) return 0;
+
+    for (i = 0; i < te->number; i++) {
+        if (te->topics[i].match_sub_tree) {
+            if (strncmp(te->topics[i].topic, topic, strlen(te->topics[i].topic)) == 0) {
+                free_topic_expression(te);
+                return 1;
+            }
+        } else {
+            if (strcmp(te->topics[i].topic, topic) == 0) {
+                free_topic_expression(te);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 void *reboot_thread(void *arg)
 {
     sync();

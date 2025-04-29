@@ -64,6 +64,8 @@ int events_create_pull_point_subscription()
 {
     const char *element;
     const char *itt;
+    const char *te;
+    const char *mc;
     time_t now, expire_time;
     char iso_str[21];
     char iso_str_2[21];
@@ -73,6 +75,7 @@ int events_create_pull_point_subscription()
     char my_netmask[16];
     char my_port[8];
     char events_service_address[MAX_LEN];
+    topic_expressions_t *topic_expression;
 
     log_info("CreatePullPointSubscription received");
 
@@ -81,21 +84,14 @@ int events_create_pull_point_subscription()
     if (service_ctx.port != 80)
         sprintf(my_port, ":%d", service_ctx.port);
 
-    // Filter is not supported at the moment
+    // TopicExpression filter is supported
     element = get_element("Filter", "Body");
-    if (element != NULL) {
-        element = get_element("TopicExpression", "Body");
-//        if ((element != NULL) && (strstr(element, "VideoSource/MotionAlarm") == NULL) && (strlen(element) > 0)) {
-//            log_error("Invalid filter");
-//            send_fault("events_service", "Receiver", "wsrf-rw:InvalidFilterFault", "wsrf-rw:ResourceUnknownFault", "Invalid filter", "");
-//            return -1;
-//        }
-        element = get_element("MessageContent", "Body");
-//        if ((element != NULL) && (strlen(element) > 0)) {
-//            log_error("Invalid filter");
-//            send_fault("events_service", "Receiver", "wsrf-rw:InvalidFilterFault", "", "Invalid filter", "");
-//            return -2;
-//        }
+    if (element == NULL) {
+        te = NULL;
+        mc = NULL;
+    } else {
+        te = get_element("TopicExpression", "Body");
+        mc = get_element("MessageContent", "Body");
     }
 
     time(&now);
@@ -131,6 +127,12 @@ int events_create_pull_point_subscription()
             memset(subs_evts->subscriptions[i].reference, '\0', CONSUMER_REFERENCE_MAX_SIZE);
             subs_evts->subscriptions[i].used = SUB_PULL;
             subs_evts->subscriptions[i].expire = expire_time;
+            subs_evts->subscriptions[i].topic_expression[0] = '\0';
+            if ((te != NULL) && (te[0] != '\0')) {
+                if (strlen(te) < sizeof(subs_evts->subscriptions[i].topic_expression) - 1) {
+                    strcpy(subs_evts->subscriptions[i].topic_expression, te);
+                }
+            }
             break;
         }
     }
@@ -145,8 +147,11 @@ int events_create_pull_point_subscription()
     // Force notification with Property "Initialized"
     sem_memory_wait();
     for (i = 0; i < service_ctx.events_num; i++) {
-        subs_evts->events[i].pull_send_initialized |= (1 << sub_index);
-        subs_evts->events[i].pull_notify |= (1 << sub_index);
+        if (is_topic_in_expression(subs_evts->subscriptions[sub_index].topic_expression, service_ctx.events[i].topic)) {
+            subs_evts->events[i].pull_send_initialized |= (1 << sub_index);
+            subs_evts->events[i].pull_notify |= (1 << sub_index);
+            log_debug("Event %d matches topic expression %s", i, subs_evts->subscriptions[sub_index].topic_expression);
+        }
     }
     sem_memory_post();
     destroy_shared_memory((void *) subs_evts, 0);
@@ -397,13 +402,15 @@ int events_subscribe()
     const char *address;
     const char *element;
     const char *itt;
+    const char *te;
+    const char *mc;
     char msg_uuid[UUID_LEN + 1];
     const char *relates_to_uuid;
     time_t now, expire_time;
     char iso_str[21];
     char iso_str_2[21];
     int i, subsel;
-    int subscription_id;
+    int subscription_id, sub_index;
 
     char my_address[16];
     char my_netmask[16];
@@ -424,21 +431,14 @@ int events_subscribe()
         return -1;
     }
 
-    // Filter is not supported at the moment
+    // TopicExpression filter is supported
     element = get_element("Filter", "Body");
-    if (element != NULL) {
-        element = get_element("TopicExpression", "Body");
-//        if ((element != NULL) && (strstr(element, "VideoSource/MotionAlarm") == NULL) && (strlen(element) > 0)) {
-//            log_error("Invalid filter");
-//            send_fault("events_service", "Receiver", "wsrf-rw:InvalidFilterFault", "wsrf-rw:ResourceUnknownFault", "Invalid filter", "");
-//            return -2;
-//        }
-        element = get_element("MessageContent", "Body");
-//        if ((element != NULL) && (strlen(element) > 0)) {
-//            log_error("Invalid filter");
-//            send_fault("events_service", "Receiver", "wsrf-rw:InvalidFilterFault", "", "Invalid filter", "");
-//            return -3;
-//        }
+    if (element == NULL) {
+        te = NULL;
+        mc = NULL;
+    } else {
+        te = get_element("TopicExpression", "Body");
+        mc = get_element("MessageContent", "Body");
     }
 
     time(&now);
@@ -470,24 +470,29 @@ int events_subscribe()
     subscription_id = (subscription_id == 65535) ? 1 : subscription_id + 1;
     for (i = 0; i < MAX_SUBSCRIPTIONS; i++) {
         if (subs_evts->subscriptions[i].used == SUB_UNUSED) {
-            if (strlen(address) < CONSUMER_REFERENCE_MAX_SIZE) {
-                subs_evts->subscriptions[i].id = subscription_id;
-                memset(subs_evts->subscriptions[i].reference, '\0', CONSUMER_REFERENCE_MAX_SIZE);
-                strcpy(subs_evts->subscriptions[i].reference, address);
-                subs_evts->subscriptions[i].used = SUB_PUSH;
-                subs_evts->subscriptions[i].expire = expire_time;
+            subs_evts->subscriptions[i].id = subscription_id;
+            memset(subs_evts->subscriptions[i].reference, '\0', CONSUMER_REFERENCE_MAX_SIZE);
+            strncpy(subs_evts->subscriptions[i].reference, address, CONSUMER_REFERENCE_MAX_SIZE - 1);
+            subs_evts->subscriptions[i].used = SUB_PUSH;
+            subs_evts->subscriptions[i].expire = expire_time;
+            subs_evts->subscriptions[i].topic_expression[0] = '\0';
+            if ((te != NULL) && (te[0] != '\0')) {
+                if (strlen(te) < sizeof(subs_evts->subscriptions[i].topic_expression) - 1) {
+                    strcpy(subs_evts->subscriptions[i].topic_expression, te);
+                }
             }
             break;
         }
     }
     sem_memory_post();
-    destroy_shared_memory((void *) subs_evts, 0);
-
-    if (i == MAX_SUBSCRIPTIONS) {
+    sub_index = i;
+    if (sub_index == MAX_SUBSCRIPTIONS) {
         log_error("Reached the maximum number of subscriptions");
         send_fault("events_service", "Receiver", "wsntw:SubscribeCreationFailedFault", "wsntw:SubscribeCreationFailedFault", "Subscribe creation failed fault", "");
         return -5;
     }
+
+    destroy_shared_memory((void *) subs_evts, 0);
 
     sprintf(events_service_address, "http://%s%s/onvif/events_service?sub=%d", my_address, my_port, subscription_id);
 
@@ -853,8 +858,11 @@ int events_set_synchronization_point()
     subs_evts->subscriptions[sub_index].need_sync = 1;
 
     for (i = 0; i < service_ctx.events_num; i++) {
-        subs_evts->events[i].pull_send_initialized |= (1 << sub_index);
-        subs_evts->events[i].pull_notify |= (1 << sub_index);
+        if (is_topic_in_expression(subs_evts->subscriptions[sub_index].topic_expression, service_ctx.events[i].topic)) {
+            subs_evts->events[i].pull_send_initialized |= (1 << sub_index);
+            subs_evts->events[i].pull_notify |= (1 << sub_index);
+            log_debug("Event %d matches topic expression %s", i, subs_evts->subscriptions[sub_index].topic_expression);
+        }
     }
     sem_memory_post();
     destroy_shared_memory((void *) subs_evts, 0);

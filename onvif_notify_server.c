@@ -173,16 +173,18 @@ void print_subscriptions()
         to_iso_date(iso_str, sizeof(iso_str), subs_evts->subscriptions[i].expire);
         fprintf(stderr, "\tSubscription %d\n", i);
         if (subs_evts->subscriptions[i].used) {
-            fprintf(stderr, "\t\tid:        %d\n", subs_evts->subscriptions[i].id);
-            fprintf(stderr, "\t\treference: %s\n", subs_evts->subscriptions[i].reference);
-            fprintf(stderr, "\t\tused:      %d\n", subs_evts->subscriptions[i].used);
-            fprintf(stderr, "\t\texpire:    %s\n", iso_str);
-            fprintf(stderr, "\t\tpush_need_sync: %d\n", subs_evts->subscriptions[i].push_need_sync);
+            fprintf(stderr, "\t\tid:               %d\n", subs_evts->subscriptions[i].id);
+            fprintf(stderr, "\t\treference:        %s\n", subs_evts->subscriptions[i].reference);
+            fprintf(stderr, "\t\tused:             %d\n", subs_evts->subscriptions[i].used);
+            fprintf(stderr, "\t\texpire:           %s\n", iso_str);
+            fprintf(stderr, "\t\ttopic_expression: %s\n", subs_evts->subscriptions[i].topic_expression);
+            fprintf(stderr, "\t\tpush_need_sync:   %d\n", subs_evts->subscriptions[i].push_need_sync);
         } else {
-            fprintf(stderr, "\t\tid:        0\n");
+            fprintf(stderr, "\t\tid:             0\n");
             fprintf(stderr, "\t\treference:\n");
-            fprintf(stderr, "\t\tused:      0\n");
+            fprintf(stderr, "\t\tused:           0\n");
             fprintf(stderr, "\t\texpire:\n");
+            fprintf(stderr, "\t\ttopic_expression:\n");
             fprintf(stderr, "\t\tpush_need_sync: 0\n");
         }
     }
@@ -190,10 +192,10 @@ void print_subscriptions()
     fprintf(stderr, "Events\n");
     for(i = 0; i < service_ctx.events_num; i++) {
         to_iso_date(iso_str, sizeof(iso_str), subs_evts->events[i].e_time);
-        fprintf(stderr, "\tEvent %d\n", i);
-        fprintf(stderr, "\t\ttopic: %s\n", service_ctx.events[i].topic);
-        fprintf(stderr, "\t\te_time: %s\n", iso_str);
-        fprintf(stderr, "\t\tis_on: %d\n", subs_evts->events[i].is_on);
+        fprintf(stderr, "\tEvent          %d\n", i);
+        fprintf(stderr, "\t\ttopic:       %s\n", service_ctx.events[i].topic);
+        fprintf(stderr, "\t\te_time:      %s\n", iso_str);
+        fprintf(stderr, "\t\tis_on:       %d\n", subs_evts->events[i].is_on);
         fprintf(stderr, "\t\tpull_notify: %08x\n", subs_evts->events[i].pull_notify);
     }
 }
@@ -317,18 +319,23 @@ void sync_events(int sub_index)
     log_info("Synchronization requested");
 
     for (i = 0; i < service_ctx.events_num; i++) {
-        if (access(service_ctx.events[i].input_file, F_OK) == 0)
-            strcpy(value, "true");
-        else
-            strcpy(value, "false");
 
-        // Semaphore is already ok
-        if (subs_evts->subscriptions[sub_index].used == SUB_PUSH) {
-            // Check if subscription is expired
-            now = time(NULL);
-            if (now > subs_evts->subscriptions[sub_index].expire) continue;
+        if (is_topic_in_expression(subs_evts->subscriptions[sub_index].topic_expression, service_ctx.events[i].topic)) {
 
-            send_notify(subs_evts->subscriptions[sub_index].reference, i, subs_evts->events[i].e_time, "Initialized", value);
+            if (access(service_ctx.events[i].input_file, F_OK) == 0)
+                strcpy(value, "true");
+            else
+                strcpy(value, "false");
+
+            // Semaphore is already ok
+            if (subs_evts->subscriptions[sub_index].used == SUB_PUSH) {
+                // Check if subscription is expired
+                now = time(NULL);
+                if (now > subs_evts->subscriptions[sub_index].expire) continue;
+
+                send_notify(subs_evts->subscriptions[sub_index].reference, i, now, "Initialized", value);
+            }
+            log_debug("Event %d matches topic expression %s", i, subs_evts->subscriptions[sub_index].topic_expression);
         }
     }
 
@@ -363,11 +370,12 @@ void check_subscriptions_status()
         if ((saved_subscriptions[i].used == SUB_UNUSED) && (subs_evts->subscriptions[i].used != saved_subscriptions[i].used)) {
             to_iso_date(iso_str, sizeof(iso_str), subs_evts->subscriptions[i].expire);
             log_info("Subscription %d created:", i);
-            log_info("\tid:        %d", subs_evts->subscriptions[i].id);
-            log_info("\treference: %s", subs_evts->subscriptions[i].reference);
-            log_info("\tused:      %d", subs_evts->subscriptions[i].used);
-            log_info("\texpire:    %s", iso_str);
-            log_info("\tpush_need_sync: %d", subs_evts->subscriptions[i].push_need_sync);
+            log_info("\tid:               %d", subs_evts->subscriptions[i].id);
+            log_info("\treference:        %s", subs_evts->subscriptions[i].reference);
+            log_info("\tused:             %d", subs_evts->subscriptions[i].used);
+            log_info("\texpire:           %s", iso_str);
+            log_info("\ttopic_expression: %s", subs_evts->subscriptions[i].topic_expression);
+            log_info("\tpush_need_sync:   %d", subs_evts->subscriptions[i].push_need_sync);
         }
         if ((saved_subscriptions[i].used != SUB_UNUSED) && (subs_evts->subscriptions[i].used != saved_subscriptions[i].used)) {
             log_info("Subscription %d destroyed", i);
@@ -465,8 +473,11 @@ int handle_inotify_events(int fd, char *dir)
                             if (subs_evts->subscriptions[j].used == SUB_PULL) {
                                 // Check if subscription is expired
                                 if (now > subs_evts->subscriptions[j].expire) continue;
-                                sub_count++;
-                                subs_evts->events[i].pull_notify |= (1 << j);
+                                if (is_topic_in_expression(subs_evts->subscriptions[j].topic_expression, service_ctx.events[i].topic)) {
+                                    sub_count++;
+                                    subs_evts->events[i].pull_notify |= (1 << j);
+                                    log_debug("Event %d matches topic expression %s", i, subs_evts->subscriptions[j].topic_expression);
+                                }
                             } else if (subs_evts->subscriptions[j].used == SUB_PUSH) {
                                 // Check if subscription is expired
                                 if (now > subs_evts->subscriptions[j].expire) continue;
@@ -785,8 +796,11 @@ int main(int argc, char **argv)  {
                         if (subs_evts->subscriptions[j].used == SUB_PULL) {
                             // Check if subscription is expired
                             if (now > subs_evts->subscriptions[j].expire) continue;
-                            sub_count++;
-                            subs_evts->events[i].pull_notify |= (1 << j);
+                            if (is_topic_in_expression(subs_evts->subscriptions[j].topic_expression, service_ctx.events[i].topic)) {
+                                sub_count++;
+                                subs_evts->events[i].pull_notify |= (1 << j);
+                                log_debug("Event %d matches topic expression %s", i, subs_evts->subscriptions[j].topic_expression);
+                            }
                         } else if (subs_evts->subscriptions[j].used == SUB_PUSH) {
                             // Check if subscription is expired
                             if (now > subs_evts->subscriptions[j].expire) continue;
@@ -810,8 +824,11 @@ int main(int argc, char **argv)  {
                         if (subs_evts->subscriptions[j].used == SUB_PULL) {
                             // Check if subscription is expired
                             if (now > subs_evts->subscriptions[j].expire) continue;
-                            sub_count++;
-                            subs_evts->events[i].pull_notify |= (1 << j);
+                            if (is_topic_in_expression(subs_evts->subscriptions[j].topic_expression, service_ctx.events[i].topic)) {
+                                sub_count++;
+                                subs_evts->events[i].pull_notify |= (1 << j);
+                                log_debug("Event %d matches topic expression %s", i, subs_evts->subscriptions[j].topic_expression);
+                            }
                         } else if (subs_evts->subscriptions[j].used == SUB_PUSH) {
                             // Check if subscription is expired
                             if (now > subs_evts->subscriptions[j].expire) continue;

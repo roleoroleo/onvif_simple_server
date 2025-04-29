@@ -49,6 +49,7 @@ typedef struct {
     subscription_type used;
     time_t expire;
     int push_need_sync;
+    char topic_expression[MAX_LEN];
 } subscription_shm_t;
 
 typedef struct {
@@ -62,6 +63,16 @@ typedef struct {
     subscription_shm_t subscriptions[MAX_SUBSCRIPTIONS];
     event_shm_t events[MAX_EVENTS];
 } shm_t;
+
+typedef struct {
+    char *topic;
+    int match_sub_tree;
+} topic_expression_t;
+
+typedef struct {
+    topic_expression_t *topics;
+    int number;
+} topic_expressions_t;
 
 void *create_shared_memory(int create);
 void destroy_shared_memory(void *shared_area, int destroy_all);
@@ -85,6 +96,9 @@ int gen_uuid(char *g_uuid);
 int get_from_query_string(char **ret, int *ret_size, char *par);
 int set_video_codec(char *buffer, int buffer_len, int codec, int ver);
 int set_audio_codec(char *buffer, int buffer_len, int codec, int ver);
+topic_expressions_t *parseTopicExpression(const char *input);
+void free_topic_expression(topic_expressions_t *p);
+int is_topic_in_expression(const char *topic_expression, char *topic);
 void *reboot_thread(void *arg);
 
 #endif //UTILS_H
