@@ -42,8 +42,9 @@ int deviceio_get_video_sources()
 
 int deviceio_get_service_capabilities()
 {
-    char audio_sources[2], audio_outputs[2];
+    char relay_outputs[2], audio_sources[2], audio_outputs[2];
 
+    sprintf(relay_outputs, "%d", service_ctx.relay_outputs_num);
     if ((service_ctx.profiles[0].audio_encoder != AUDIO_NONE) ||
             ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_encoder != AUDIO_NONE))) {
 
@@ -59,14 +60,16 @@ int deviceio_get_service_capabilities()
         sprintf(audio_outputs, "%d", 0);
     }
 
-    long size = cat(NULL, "deviceio_service_files/GetServiceCapabilities.xml", 4,
+    long size = cat(NULL, "deviceio_service_files/GetServiceCapabilities.xml", 6,
+            "%RELAY_OUTPUTS%", relay_outputs,
             "%AUDIO_SOURCES%", audio_sources,
             "%AUDIO_OUTPUTS%", audio_outputs);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("stdout", "deviceio_service_files/GetServiceCapabilities.xml", 4,
+    return cat("stdout", "deviceio_service_files/GetServiceCapabilities.xml", 6,
+            "%RELAY_OUTPUTS%", relay_outputs,
             "%AUDIO_SOURCES%", audio_sources,
             "%AUDIO_OUTPUTS%", audio_outputs);
 }
@@ -117,7 +120,169 @@ int deviceio_get_audio_sources()
 
 int deviceio_get_relay_outputs()
 {
-    send_empty_response("tds", "GetRelayOutputs");
+    long size;
+    int c, i;
+    char dest_a[] = "stdout";
+    char *dest;
+    char token[32];
+    char idle_state[8];
+
+    // We need 1st step to evaluate content length
+    for (c = 0; c < 2; c++) {
+        if (c == 0) {
+            dest = NULL;
+        } else {
+            dest = dest_a;
+            fprintf(stdout, "Content-type: application/soap+xml\r\n");
+            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        }
+        size = cat(dest, "deviceio_service_files/GetRelayOutputs_header.xml", 0);
+
+        for (i = 0; i < service_ctx.relay_outputs_num; i++) {
+            sprintf(token, "RelayOutputToken_%d", i);
+            if (service_ctx.relay_outputs[i].idle_state == IDLE_STATE_OPEN)
+                strcpy(idle_state, "open");
+            else
+                strcpy(idle_state, "close");
+            size += cat(dest, "deviceio_service_files/GetRelayOutputs_item.xml", 4,
+                    "%RELAY_OUTPUT_TOKEN%", token,
+                    "%RELAY_IDLE_STATE%", idle_state);
+        }
+        size += cat(dest, "deviceio_service_files/GetRelayOutputs_footer.xml", 0);
+    }
+
+    return size;
+}
+
+int deviceio_get_relay_output_options()
+{
+    long size;
+    int c, i;
+    char dest_a[] = "stdout";
+    char *dest;
+    int itoken;
+    char stoken[32];
+    char idle_state[32];
+    const char *token = get_element("RelayOutputToken", "Body");
+
+    // We need 1st step to evaluate content length
+    for (c = 0; c < 2; c++) {
+        if (c == 0) {
+            dest = NULL;
+        } else {
+            dest = dest_a;
+            fprintf(stdout, "Content-type: application/soap+xml\r\n");
+            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        }
+
+        size = cat(dest, "deviceio_service_files/GetRelayOutputOptions_header.xml", 0);
+
+        if (token == NULL) {
+            for (i = 0; i < service_ctx.relay_outputs_num; i++) {
+                sprintf(stoken, "RelayOutputToken_%d", i);
+                if (service_ctx.relay_outputs[i].idle_state == IDLE_STATE_OPEN) {
+                    strcpy(idle_state, "open");
+                } else {
+                    strcpy(idle_state, "close");
+                }
+                size += cat(dest, "deviceio_service_files/GetRelayOutputOptions_item.xml", 2,
+                        "%RELAY_OUTPUT_TOKEN%", stoken);
+            }
+        } else if ((strlen(token) == 18) && (strncasecmp("RelayOutputToken_", token, 17) == 0)) {
+            itoken = token[17] - 48;
+
+            if ((itoken >= 0) && (itoken < service_ctx.relay_outputs_num)) {
+                sprintf(stoken, "RelayOutputToken_%d", itoken);
+
+                if (service_ctx.relay_outputs[itoken].idle_state == IDLE_STATE_OPEN) {
+                    strcpy(idle_state, "open");
+                } else {
+                    strcpy(idle_state, "close");
+                }
+                size += cat(dest, "deviceio_service_files/GetRelayOutputOptions_item.xml", 2,
+                        "%RELAY_OUTPUT_TOKEN%", stoken);
+            }
+        }
+        size += cat(dest, "deviceio_service_files/GetRelayOutputOptions_footer.xml", 0);
+    }
+}
+
+int deviceio_set_relay_output_settings()
+{
+    int itoken;
+    ezxml_t node;
+    const char *token = NULL;
+
+    node = get_element_ptr(node, "RelayOutput", "Body");
+    if (node != NULL) {
+        token = get_attribute(node, "token");
+    }
+
+    if ((token != NULL) && (strlen(token) == 18) && (strncasecmp("RelayOutputToken_", token, 17) == 0)) {
+        itoken = token[17] - 48;
+
+        if ((itoken >= 0) && (itoken < service_ctx.relay_outputs_num)) {
+            long size = cat(NULL, "deviceio_service_files/SetRelayOutputSettings.xml", 0);
+
+            fprintf(stdout, "Content-type: application/soap+xml\r\n");
+            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+            return cat("stdout", "deviceio_service_files/SetRelayOutputSettings.xml", 0);
+        } else {
+            send_fault("deviceio_service", "Sender", "ter:InvalidArgVal", "ter:RelayToken", "Relay token",  "Unknown relay token reference");
+            return -1;
+        }
+    } else {
+        send_fault("deviceio_service", "Sender", "ter:InvalidArgVal", "ter:RelayToken", "Relay token", "Unknown relay token reference");
+        return -2;
+    }
+}
+
+int deviceio_set_relay_output_state()
+{
+    int itoken;
+    const char *token = get_element("RelayOutputToken", "Body");
+    const char *state = get_element("LogicalState", "Body");
+    char sys_command[MAX_LEN];
+
+    sys_command[0] = '\0';
+
+    if ((token != NULL) && (strlen(token) == 18) && (strncasecmp("RelayOutputToken_", token, 17) == 0)) {
+        itoken = token[17] - 48;
+
+        if ((itoken >= 0) && (itoken < service_ctx.relay_outputs_num)) {
+            if (strcasecmp("active", state) == 0) {
+                if (service_ctx.relay_outputs[itoken].idle_state == IDLE_STATE_OPEN) {
+                    sprintf(sys_command, service_ctx.relay_outputs[itoken].close);
+                } else {
+                    sprintf(sys_command, service_ctx.relay_outputs[itoken].open);
+                }
+            } else {
+                if (service_ctx.relay_outputs[itoken].idle_state == IDLE_STATE_OPEN) {
+                    sprintf(sys_command, service_ctx.relay_outputs[itoken].open);
+                } else {
+                    sprintf(sys_command, service_ctx.relay_outputs[itoken].close);
+                }
+            }
+        } else {
+            send_fault("deviceio_service", "Sender", "ter:InvalidArgVal", "ter:RelayToken", "Relay token",  "Unknown relay token reference");
+            return -1;
+        }
+    } else {
+        send_fault("deviceio_service", "Sender", "ter:InvalidArgVal", "ter:RelayToken", "Relay token",  "Unknown relay token reference");
+        return -2;
+    }
+
+    if (sys_command[0] != '\0') {
+        system(sys_command);
+    }
+
+    long size = cat(NULL, "deviceio_service_files/SetRelayOutputState.xml", 0);
+
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+    return cat("stdout", "deviceio_service_files/SetRelayOutputState.xml", 0);
 }
 
 int deviceio_unsupported(const char *method)

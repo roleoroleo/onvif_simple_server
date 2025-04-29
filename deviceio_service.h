@@ -22,6 +22,9 @@ int deviceio_get_service_capabilities();
 int deviceio_get_audio_outputs();
 int deviceio_get_audio_sources();
 int deviceio_get_relay_outputs();
+int deviceio_get_relay_output_options();
+int deviceio_set_relay_output_settings();
+int deviceio_set_relay_output_state();
 
 int deviceio_unsupported(const char *method);
 

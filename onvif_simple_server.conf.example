@@ -61,6 +61,16 @@ jump_to_abs=/usr/local/bin/ptz_move -j %f,%f,%f
 jump_to_rel=/usr/local/bin/ptz_move -J %f,%f,%f
 get_presets=/usr/local/bin/ptz_presets.sh -a get_presets
 
+#RELAY OUTPUTS
+#Relay 0
+idle_state=open
+close=/usr/local/bin/set_relay -n 0 -a close
+open=/usr/local/bin/set_relay -n 0 -a open
+#Relay 1
+idle_state=open
+close=/usr/local/bin/set_relay -n 1 -a close
+open=/usr/local/bin/set_relay -n 1 -a open
+
 #EVENT
 events=3
 #Event 0

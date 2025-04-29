@@ -36,6 +36,7 @@ int process_conf_file(char *file)
     char line[MAX_LEN];
     char param[MAX_LEN];
     char value[MAX_LEN];
+    char stmp[MAX_LEN];
 
     int i, errno;
     char *endptr;
@@ -61,6 +62,8 @@ int process_conf_file(char *file)
     service_ctx.profiles_num = 0;
     service_ctx.scopes = NULL;
     service_ctx.scopes_num = 0;
+    service_ctx.relay_outputs = NULL;
+    service_ctx.relay_outputs_num = 0;
     service_ctx.ptz_node.enable = 0;
     service_ctx.events = NULL;
     service_ctx.events_enable = EVENTS_NONE;
@@ -260,6 +263,28 @@ int process_conf_file(char *file)
                 service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = G726;
             else if (strcasecmp(value, "AAC") == 0)
                 service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AAC;
+
+        //Relay outputs
+        } else if (strcasecmp(param, "idle_state") == 0) {
+            service_ctx.relay_outputs_num++;
+            if (service_ctx.relay_outputs_num >= MAX_RELAY_OUTPUTS) {
+                log_error("Too many relay outputs, max is: %d", MAX_RELAY_OUTPUTS);
+                return -2;
+            }
+            service_ctx.relay_outputs = (relay_output_t *) realloc(service_ctx.relay_outputs, service_ctx.relay_outputs_num * sizeof(relay_output_t));
+            if (strcasecmp(value, "close") == 0) {
+                service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
+            } else {
+                service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_OPEN;
+            }
+            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = NULL;
+            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = NULL;
+        } else if (strcasecmp(param, "close") == 0) {
+            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = (char *) malloc(strlen(value) + 1);
+            strcpy(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close, value);
+        } else if (strcasecmp(param, "open") == 0) {
+            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = (char *) malloc(strlen(value) + 1);
+            strcpy(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open, value);
 
         //PTZ Profile for ONVIF PTZ Service
         } else if (strcasecmp(param, "ptz") == 0) {
@@ -538,6 +563,37 @@ int process_conf_file(char *file)
         }
     }
 
+    if (service_ctx.relay_outputs != NULL) {
+        if (service_ctx.events_enable == EVENTS_NONE) service_ctx.events_enable = EVENTS_PULLPOINT;
+
+        for (i = 0; i < service_ctx.relay_outputs_num; i++) {
+            service_ctx.events_num++;
+            if (service_ctx.events_num > MAX_EVENTS) {
+                log_error("Unable to add relay event, too many events, max is: %d", MAX_EVENTS);
+                return -2;
+            }
+            log_debug("Adding event for relay output %d", i);
+            service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
+            service_ctx.events[service_ctx.events_num - 1].topic = (char *) malloc(strlen("tns1:Device/Trigger/Relay") + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].topic, "tns1:Device/Trigger/Relay");
+            log_debug("topic: tns1:Device/Trigger/Relay");
+            service_ctx.events[service_ctx.events_num - 1].source_name = (char *) malloc(strlen("RelayToken") + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].source_name, "RelayToken");
+            log_debug("source_name: RelayToken");
+            service_ctx.events[service_ctx.events_num - 1].source_type = (char *) malloc(strlen("tt:ReferenceToken") + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].source_type, "tt:ReferenceToken");
+            log_debug("source_type: tt:ReferenceToken");
+            sprintf(stmp, "RelayOutputToken_%d", i);
+            service_ctx.events[service_ctx.events_num - 1].source_value = (char *) malloc(strlen(stmp) + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].source_value, stmp);
+            log_debug("source_value: %s", stmp);
+            sprintf(stmp, "/tmp/onvif_notify_server/relay_output_%d", i);
+            service_ctx.events[service_ctx.events_num - 1].input_file = (char *) malloc(strlen(stmp) + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].input_file, stmp);
+            log_debug("input_file: %s", stmp);
+        }
+    }
+
     // If a string option is NULL, set a default value
     if (service_ctx.manufacturer == NULL) {
         service_ctx.manufacturer = (char *) malloc(strlen(DEFAULT_MANUFACTURER) + 1);
@@ -598,6 +654,12 @@ void free_conf_file()
         if (service_ctx.ptz_node.is_moving != NULL) free(service_ctx.ptz_node.is_moving);
         if (service_ctx.ptz_node.get_position != NULL) free(service_ctx.ptz_node.get_position);
     }
+
+    for (i = service_ctx.relay_outputs_num - 1; i >= 0; i--) {
+        if (service_ctx.relay_outputs[i].open != NULL) free(service_ctx.relay_outputs[i].open);
+        if (service_ctx.relay_outputs[i].close != NULL) free(service_ctx.relay_outputs[i].close);
+    }
+    if (service_ctx.relay_outputs != NULL) free(service_ctx.relay_outputs);
 
     for (i = service_ctx.profiles_num - 1; i >= 0; i--) {
         if (service_ctx.profiles[i].snapurl != NULL) free(service_ctx.profiles[i].snapurl);
@@ -661,6 +723,16 @@ void print_conf_help()
     fprintf(stderr, "\ttype=H264\n");
     fprintf(stderr, "\taudio_encoder=AAC\n");
     fprintf(stderr, "\taudio_decoder=NONE\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "\t#RELAY OUTPUTS\n");
+    fprintf(stderr, "\t#Relay 0\n");
+    fprintf(stderr, "\tidle_state=open\n");
+    fprintf(stderr, "\tclose=/usr/local/bin/set_relay -n 0 -a close\n");
+    fprintf(stderr, "\topen=/usr/local/bin/set_relay -n 0 -a open\n");
+    fprintf(stderr, "\t#Relay 1\n");
+    fprintf(stderr, "\tidle_state=open\n");
+    fprintf(stderr, "\tclose=/usr/local/bin/set_relay -n 1 -a close\n");
+    fprintf(stderr, "\topen=/usr/local/bin/set_relay -n 1 -a open\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "\t#PTZ\n");
     fprintf(stderr, "\tptz=1\n");

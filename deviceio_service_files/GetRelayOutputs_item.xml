@@ -1,0 +1,7 @@
+            <tds:RelayOutputs token="%RELAY_OUTPUT_TOKEN%">
+                <tt:Properties>
+                    <tt:Mode>Bistable</tt:Mode>
+                    <tt:DelayTime>PT1S</tt:DelayTime>
+                    <tt:IdleState>%RELAY_IDLE_STATE%</tt:IdleState>
+                </tt:Properties>
+            </tds:RelayOutputs>

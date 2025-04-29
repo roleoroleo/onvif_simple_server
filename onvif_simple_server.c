@@ -644,6 +644,12 @@ int main(int argc, char ** argv)
                 deviceio_get_audio_sources();
             } else if (strcasecmp(method, "GetRelayOutputs") == 0) {
                 deviceio_get_relay_outputs();
+            } else if (strcasecmp(method, "GetRelayOutputOptions") == 0) {
+                deviceio_get_relay_output_options();
+            } else if (strcasecmp(method, "SetRelayOutputSettings") == 0) {
+                deviceio_set_relay_output_settings();
+            } else if (strcasecmp(method, "SetRelayOutputState") == 0) {
+                deviceio_set_relay_output_state();
             } else {
                 deviceio_unsupported(method);
             }

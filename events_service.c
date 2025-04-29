@@ -347,12 +347,23 @@ int events_pull_messages()
                     to_iso_date(iso_str_3, sizeof(iso_str_3), subs_evts->events[i].e_time);
                 }
                 if (subs_evts->events[i].is_on) {
-                    strcpy(data_value, "true");
+                    if (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
+                        strcpy(data_value, "active");
+                    } else {
+                        strcpy(data_value, "true");
+                    }
                 } else {
-                    strcpy(data_value, "false");
+                    if (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
+                        strcpy(data_value, "inactive");
+                    } else {
+                        strcpy(data_value, "false");
+                    }
                 }
-                strcpy(data_name, "State");
-
+                if (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
+                    strcpy(data_name, "LogicalState");
+                } else {
+                    strcpy(data_name, "State");
+                }
                 size = cat(dest, "events_service_files/PullMessages_2.xml", 14,
                     "%TOPIC%", service_ctx.events[i].topic,
                     "%UTC_TIME%", iso_str_3,
@@ -681,8 +692,14 @@ int events_get_event_properties()
                 send_action_failed_fault("events_service", -1);
                 return -1;
             }
-            strcpy(data_name, "State");
-            strcpy(data_type, "xsd:boolean");
+
+            if (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
+                strcpy(data_name, "LogicalState");
+                strcpy(data_type, "tt:RelayLogicalState");
+            } else {
+                strcpy(data_name, "State");
+                strcpy(data_type, "xsd:boolean");
+            }
 
             size = cat(dest, "events_service_files/GetEventProperties_2.xml", 20,
                 "%TOPIC_L1_START%", topic_ls[0],

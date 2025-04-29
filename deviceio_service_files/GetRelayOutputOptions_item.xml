@@ -1,0 +1,3 @@
+            <tmd:RelayOutputOptions token="%RELAY_OUTPUT_TOKEN%">
+                <tmd:Mode>Bistable</tmd:Mode>
+            </tmd:RelayOutputOptions>
