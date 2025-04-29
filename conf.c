@@ -62,9 +62,9 @@ int process_conf_file(char *file)
     service_ctx.profiles_num = 0;
     service_ctx.scopes = NULL;
     service_ctx.scopes_num = 0;
+    service_ctx.ptz_node.enable = 0;
     service_ctx.relay_outputs = NULL;
     service_ctx.relay_outputs_num = 0;
-    service_ctx.ptz_node.enable = 0;
     service_ctx.events = NULL;
     service_ctx.events_enable = EVENTS_NONE;
     service_ctx.events_num = 0;
@@ -263,28 +263,6 @@ int process_conf_file(char *file)
                 service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = G726;
             else if (strcasecmp(value, "AAC") == 0)
                 service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AAC;
-
-        //Relay outputs
-        } else if (strcasecmp(param, "idle_state") == 0) {
-            service_ctx.relay_outputs_num++;
-            if (service_ctx.relay_outputs_num >= MAX_RELAY_OUTPUTS) {
-                log_error("Too many relay outputs, max is: %d", MAX_RELAY_OUTPUTS);
-                return -2;
-            }
-            service_ctx.relay_outputs = (relay_output_t *) realloc(service_ctx.relay_outputs, service_ctx.relay_outputs_num * sizeof(relay_output_t));
-            if (strcasecmp(value, "close") == 0) {
-                service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
-            } else {
-                service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_OPEN;
-            }
-            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = NULL;
-            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = NULL;
-        } else if (strcasecmp(param, "close") == 0) {
-            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close, value);
-        } else if (strcasecmp(param, "open") == 0) {
-            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = (char *) malloc(strlen(value) + 1);
-            strcpy(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open, value);
 
         //PTZ Profile for ONVIF PTZ Service
         } else if (strcasecmp(param, "ptz") == 0) {
@@ -513,6 +491,28 @@ int process_conf_file(char *file)
                 strcpy(service_ctx.ptz_node.get_presets, value);
             }
 
+        //Relay outputs
+        } else if (strcasecmp(param, "idle_state") == 0) {
+            service_ctx.relay_outputs_num++;
+            if (service_ctx.relay_outputs_num >= MAX_RELAY_OUTPUTS) {
+                log_error("Too many relay outputs, max is: %d", MAX_RELAY_OUTPUTS);
+                return -2;
+            }
+            service_ctx.relay_outputs = (relay_output_t *) realloc(service_ctx.relay_outputs, service_ctx.relay_outputs_num * sizeof(relay_output_t));
+            if (strcasecmp(value, "close") == 0) {
+                service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
+            } else {
+                service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_OPEN;
+            }
+            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = NULL;
+            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = NULL;
+        } else if (strcasecmp(param, "close") == 0) {
+            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = (char *) malloc(strlen(value) + 1);
+            strcpy(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close, value);
+        } else if (strcasecmp(param, "open") == 0) {
+            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = (char *) malloc(strlen(value) + 1);
+            strcpy(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open, value);
+
         //Events Profile for ONVIF Events Service
         } else if (strcasecmp(param, "events") == 0) {
             if (strcasecmp(value, "1") == 0) {
@@ -724,16 +724,6 @@ void print_conf_help()
     fprintf(stderr, "\taudio_encoder=AAC\n");
     fprintf(stderr, "\taudio_decoder=NONE\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "\t#RELAY OUTPUTS\n");
-    fprintf(stderr, "\t#Relay 0\n");
-    fprintf(stderr, "\tidle_state=open\n");
-    fprintf(stderr, "\tclose=/usr/local/bin/set_relay -n 0 -a close\n");
-    fprintf(stderr, "\topen=/usr/local/bin/set_relay -n 0 -a open\n");
-    fprintf(stderr, "\t#Relay 1\n");
-    fprintf(stderr, "\tidle_state=open\n");
-    fprintf(stderr, "\tclose=/usr/local/bin/set_relay -n 1 -a close\n");
-    fprintf(stderr, "\topen=/usr/local/bin/set_relay -n 1 -a open\n");
-    fprintf(stderr, "\n");
     fprintf(stderr, "\t#PTZ\n");
     fprintf(stderr, "\tptz=1\n");
     fprintf(stderr, "\tmin_step_x=0\n");
@@ -759,6 +749,16 @@ void print_conf_help()
     fprintf(stderr, "\tjump_to_abs=/tmp/sd/yi-hack/bin/ipc_cmd -j %%f,%%f,%%f\n");
     fprintf(stderr, "\tjump_to_rel=/tmp/sd/yi-hack/bin/ipc_cmd -J %%f,%%f,%%f\n");
     fprintf(stderr, "\tget_presets=/tmp/sd/yi-hack/script/ptz_presets.sh -a get_presets\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "\t#RELAY OUTPUTS\n");
+    fprintf(stderr, "\t#Relay 0\n");
+    fprintf(stderr, "\tidle_state=open\n");
+    fprintf(stderr, "\tclose=/usr/local/bin/set_relay -n 0 -a close\n");
+    fprintf(stderr, "\topen=/usr/local/bin/set_relay -n 0 -a open\n");
+    fprintf(stderr, "\t#Relay 1\n");
+    fprintf(stderr, "\tidle_state=open\n");
+    fprintf(stderr, "\tclose=/usr/local/bin/set_relay -n 1 -a close\n");
+    fprintf(stderr, "\topen=/usr/local/bin/set_relay -n 1 -a open\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "\t#EVENTS\n");
     fprintf(stderr, "\tevents=1\n");
