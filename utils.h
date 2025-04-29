@@ -55,8 +55,8 @@ typedef struct {
 typedef struct {
     time_t e_time;
     int is_on;
-    uint32_t pull_send_initialized; // Bit mask: 1 if the value is not known to the client (new subscription) and must be sent
-    uint32_t pull_notify; // Bit mask: 1 if the client must be notified
+    u_int32_t pull_send_initialized; // Bit mask: 1 if the value is not known to the client (new subscription) and must be sent
+    u_int32_t pull_notify; // Bit mask: 1 if the client must be notified
 } event_shm_t;
 
 typedef struct {
