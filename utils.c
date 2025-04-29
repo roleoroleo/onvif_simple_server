@@ -57,6 +57,10 @@
 
 sem_t *sem_memory_lock = SEM_FAILED;
 
+/**
+ * Open a semaphore
+ * @return 0 on success, -1 on error
+ */
 int sem_memory_open()
 {
     sem_memory_lock = sem_open(MEM_LOCK_FILE, O_CREAT, S_IRUSR | S_IWUSR, 1);
@@ -67,8 +71,10 @@ int sem_memory_open()
     return 0;
 }
 
+/**
+ * Close a semaphore
+ */
 void sem_memory_close()
-
 {
     if (sem_memory_lock != SEM_FAILED) {
         sem_close(sem_memory_lock);
@@ -78,6 +84,11 @@ void sem_memory_close()
     return;
 }
 
+/**
+ * Create or open shared memory to share subscriptions and events
+ * @param create Set to 1 if the memory must be created, 0 if not
+ * @return a pointer to the shared memory
+ */
 void *create_shared_memory(int create) {
     int shmfd, rc;
     int shared_seg_size = sizeof(shm_t);
@@ -145,6 +156,11 @@ void *create_shared_memory(int create) {
     return shared_area;
 }
 
+/**
+ * Destroy shared memory
+ * @param shared_area Pointer to the shared memory
+ * @param destroy_all Set to 1 to unlink the file
+ */
 void destroy_shared_memory(void *shared_area, int destroy_all)
 {
     int shared_seg_size = sizeof(shm_t);
@@ -180,6 +196,7 @@ int sem_memory_post()
  * Decompress a gzipped file
  * @param file_in The input file name
  * @param file_out The output file pointer
+ * @return 0 on success, negative on error
  */
 int gzip_d(FILE *file_out, char *file_in)
 {
@@ -225,6 +242,7 @@ int gzip_d(FILE *file_out, char *file_in)
  * @param filename The input file to process
  * @param num The number of variable arguments
  * @param ... The argument list to replace: src1, dst1, src2, dst2, etc...
+ * @return the number of processed bytes
  */
 long cat(char *out, char *filename, int num, ...)
 {
@@ -310,6 +328,13 @@ long cat(char *out, char *filename, int num, ...)
     return ret;
 }
 
+/**
+ * Get the IP address/netmask of an interface "name"
+ * @param name The name of the interface
+ * @param netmask String that will contain the netmask
+ * @param address String that will contain the address
+ * @return 0 on success, negative on error
+ */
 int get_ip_address(char *address, char *netmask, char *name)
 {
     struct ifaddrs *ifaddr, *ifa;
@@ -350,6 +375,12 @@ int get_ip_address(char *address, char *netmask, char *name)
     return 0;
 }
 
+/**
+ * Get the MAC address of an interface "name"
+ * @param name The name of the interface
+ * @param address String that will contain the address
+ * @return 0 on success, negative on error
+ */
 int get_mac_address(char *address, char *name)
 {
     struct ifreq ifr;
@@ -403,6 +434,11 @@ int get_mac_address(char *address, char *name)
     return 0;
 }
 
+/**
+ * Convert the netmask to a len
+ * @param netmask The netmask to convert
+ * @return the len of the netmask
+ */
 int netmask2prefixlen(char *netmask)
 {
     int n;
@@ -716,6 +752,11 @@ void b64_encode(unsigned char *input, unsigned int input_size, unsigned char *ou
 #endif
 }
 
+/**
+ * Convert an interval in ONVIF notation to a interval in seconds
+ * @param interval String that represents the interval
+ * @return Time interval in seconds
+ */
 int interval2sec(const char *interval)
 {
     int d1 = -1, d2 = -1, d3 = -1, n, ret;
@@ -781,6 +822,12 @@ int interval2sec(const char *interval)
     return ret;
 }
 
+/**
+ * Convert a time_t to a datetime in ISO format
+ * @param timestamp Time in time_t
+ * @param iso_date Output time in ISO format
+ * @return 0 on success, negative on error
+ */
 int to_iso_date(char *iso_date, int size, time_t timestamp)
 {
     struct tm my_tm;
@@ -795,6 +842,11 @@ int to_iso_date(char *iso_date, int size, time_t timestamp)
     return 0;
 }
 
+/**
+ * Convert a datetime in ISO format to a time_t
+ * @param iso_date Time in ISO format
+ * @return Time in time_t
+ */
 time_t from_iso_date(const char *date)
 {
     struct tm tt = {0};
@@ -822,6 +874,11 @@ time_t from_iso_date(const char *date)
     return timegm(&tt);
 }
 
+/**
+ * Create a random UUID
+ * @param g_uuid output to store the UUID
+ * @return 0 on success, negative on error
+ */
 int gen_uuid(char *g_uuid)
 {
     int i;
@@ -852,6 +909,13 @@ int gen_uuid(char *g_uuid)
     return 0;
 }
 
+/**
+ * Get the value of a parameter in the query string
+ * @param par The name of the parameter
+ * @param ret_size the size of the destination string
+ * @param ret The output string
+ * @return 0 on success, negative on error
+ */
 int get_from_query_string(char **ret, int *ret_size, char *par)
 {
     char *query_string = getenv("QUERY_STRING");
@@ -876,6 +940,14 @@ int get_from_query_string(char **ret, int *ret_size, char *par)
     return -1;
 }
 
+/**
+ * Convert a video codec from number to string
+ * @param ver The version of media service
+ * @param codec The number of the codec
+ * @param buffer_len The size of the destination buffer
+ * @param buffer The output buffer
+ * @return 0 on success, negative on error
+ */
 int set_video_codec(char *buffer, int buffer_len, int codec, int ver)
 {
     if (buffer_len < 16) return -1;
@@ -899,6 +971,14 @@ int set_video_codec(char *buffer, int buffer_len, int codec, int ver)
     return 0;
 }
 
+/**
+ * Convert an audio codec from number to string
+ * @param ver The version of media service
+ * @param codec The number of the codec
+ * @param buffer_len The size of the destination buffer
+ * @param buffer The output buffer
+ * @return 0 on success, negative on error
+ */
 int set_audio_codec(char *buffer, int buffer_len, int codec, int ver)
 {
     if (buffer_len < 16) return -1;
@@ -924,7 +1004,11 @@ int set_audio_codec(char *buffer, int buffer_len, int codec, int ver)
     return 0;
 }
 
-// Remember to free the memory
+/**
+ * Convert a TopicExpression string to a struct
+ * @param input The string containing the expression
+ * @return The pointer to a new allocated struct: remember to free it
+ */
 topic_expressions_t *parse_topic_expression(const char *input)
 {
     char input_copy[MAX_LEN];
@@ -981,6 +1065,10 @@ topic_expressions_t *parse_topic_expression(const char *input)
     return out;
 }
 
+/**
+ * Free the struct topic_expressions_t
+ * @param p The pointer to the struct
+ */
 void free_topic_expression(topic_expressions_t *p)
 {
     int i;
@@ -992,7 +1080,12 @@ void free_topic_expression(topic_expressions_t *p)
     free(p);
 }
 
-// If topic_expression is empty the function returns 1
+/**
+ * Check if a TopicExpression contains a topic
+ * @param topic The topic to find
+ * @param topic_expression The TopicExpression string
+ * @return 1 on success or if topic_expression is empty, 1 if not found
+ */
 int is_topic_in_expression(const char *topic_expression, char *topic)
 {
     int i;
@@ -1022,6 +1115,11 @@ int is_topic_in_expression(const char *topic_expression, char *topic)
     return 0;
 }
 
+/**
+ * Thread function to run a reboot
+ * @param arg Not used
+ * @return NULL
+ */
 void *reboot_thread(void *arg)
 {
     sync();
