@@ -1399,7 +1399,7 @@ int media_get_audio_decoder_configuration_options()
     // G726 is not suppoerted
     if ((decoder_type != AUDIO_NONE) && (decoder_type != G726)) {
 
-        set_audio_codec(audio_decoder, 16, decoder_type, 2);
+        set_audio_codec(audio_decoder, 16, decoder_type, 1);
         if (decoder_type == G711) {
             sprintf(bitrate, "%d", 64);
             sprintf(samplerate, "%d", 8);
