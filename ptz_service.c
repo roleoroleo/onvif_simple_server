@@ -794,6 +794,8 @@ int ptz_stop()
 {
     char sys_command[MAX_LEN];
     ezxml_t node;
+    int pantilt = 1;
+    int zoom = 1;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
     if (node == NULL) {
@@ -811,8 +813,25 @@ int ptz_stop()
         return -3;
     }
 
-    sprintf(sys_command, service_ctx.ptz_node.move_stop);
-    system(sys_command);
+    const char *pantilt_node = get_element("PanTilt", "Body");
+    if ((pantilt_node != NULL) && (strcasecmp("false", pantilt_node) == 0)) {
+        pantilt = 0;
+    }
+    const char *zoom_node = get_element("Zoom", "Body");
+    if ((zoom_node != NULL) && (strcasecmp("false", zoom_node) == 0)) {
+        zoom = 0;
+    }
+
+    if (pantilt && zoom) {
+        sprintf(sys_command, service_ctx.ptz_node.move_stop, "all");
+        system(sys_command);
+    } else if (pantilt) {
+        sprintf(sys_command, service_ctx.ptz_node.move_stop, "pantilt");
+        system(sys_command);
+    } else if (zoom) {
+        sprintf(sys_command, service_ctx.ptz_node.move_stop, "zoom");
+        system(sys_command);
+    }
 
     long size = cat(NULL, "ptz_service_files/Stop.xml", 0);
 
