@@ -1,0 +1,132 @@
+{
+    "model": "Model",
+    "manufacturer": "Manufacturer",
+    "firmware_ver": "0.0.1",
+    "hardware_id": "HWID",
+    "serial_num": "SN1234567890",
+    "ifs": "wlan0",
+    "port": 8080,
+    "scopes": [
+        "onvif://www.onvif.org/Profile/Streaming",
+        "onvif://www.onvif.org/Profile/T",
+        "onvif://www.onvif.org/hardware",
+        "onvif://www.onvif.org/name"
+    ],
+    "user": "admin",
+    "password": "admin",
+    "adv_enable_media2": false,
+    "adv_fault_if_unknown": false,
+    "adv_fault_if_set": false,
+    "adv_synology_nvr": false,
+
+    "profiles" : [
+        {
+            "name": "Profile_0",
+            "width": 1920,
+            "height": 1080,
+            "url": "rtsp://%s/ch0_0.h264",
+            "snapurl": "http://%s/cgi-bin/snapshot.sh",
+            "type": "H264",
+            "audio_encoder": "AAC",
+            "audio_decoder": "G711"
+        },
+        {
+            "name": "Profile_1",
+            "width": 640,
+            "height": 360,
+            "url": "rtsp://%s/ch0_1.h264",
+            "snapurl": "http://%s/cgi-bin/snapshot.sh",
+            "type": "H264",
+            "audio_encoder": "AAC",
+            "audio_decoder": "NONE"
+        }
+    ],
+
+    "ptz": {
+        "enable": 1,
+        "min_step_x": 0.0,
+        "max_step_x": 360.0,
+        "min_step_y": 0.0,
+        "max_step_y": 180.0,
+        "min_step_z": 0.0,
+        "max_step_z": 0.0,
+        "get_position": "/usr/local/bin/get_position",
+        "is_moving": "/usr/local/bin/is_moving",
+        "move_left": "/usr/local/bin/ptz_move -m left -s %f",
+        "move_right": "/usr/local/bin/ptz_move -m right -s %f",
+        "move_up": "/usr/local/bin/ptz_move -m up -s %f",
+        "move_down": "/usr/local/bin/ptz_move -m down -s %f",
+        "move_in": "/usr/local/bin/ptz_move -m in -s %f",
+        "move_out": "/usr/local/bin/ptz_move -m out -s %f",
+        "move_stop": "/usr/local/bin/ptz_move -m stop -t %s",
+        "move_preset": "/usr/local/bin/ptz_move -p %d",
+        "goto_home_position": "/usr/local/bin/ptz_move -h",
+        "set_preset": "/usr/local/bin/ptz_presets.sh -a add_preset -m %s",
+        "set_home_position": "/usr/local/bin/ptz_presets.sh -a set_home_position",
+        "remove_preset": "/usr/local/bin/ptz_presets.sh -a del_preset -n %d",
+        "jump_to_abs": "/usr/local/bin/ptz_move -j %f,%f,%f",
+        "jump_to_rel": "/usr/local/bin/ptz_move -J %f,%f,%f",
+        "get_presets": "/usr/local/bin/ptz_presets.sh -a get_presets"
+    },
+
+    "relays" : [
+        {
+            "idle_state": "open",
+            "close": "/usr/local/bin/set_relay -n 0 -a close",
+            "open": "/usr/local/bin/set_relay -n 0 -a open"
+        },
+        {
+            "idle_state": "open",
+            "close": "/usr/local/bin/set_relay -n 1 -a close",
+            "open": "/usr/local/bin/set_relay -n 1 -a open"
+        }
+    ],
+
+    "events": {
+        "enable": 3,
+        "events": [
+            {
+                "topic": "tns1:VideoSource/MotionAlarm",
+                "source_name": "Source",
+                "source_type": "tt:ReferenceToken",
+                "source_value": "VideoSourceToken",
+                "input_file": "/tmp/onvif_notify_server/motion_alarm"
+            },
+            {
+                "topic": "tns1:RuleEngine/MyRuleDetector/PeopleDetect",
+                "source_name": "VideoSourceConfigurationToken",
+                "source_type": "xsd:string",
+                "source_value": "VideoSourceToken",
+                "input_file": "/tmp/onvif_notify_server/human_detection"
+            },
+            {
+                "topic": "tns1:RuleEngine/MyRuleDetector/VehicleDetect",
+                "source_name": "VideoSourceConfigurationToken",
+                "source_type": "xsd:string",
+                "source_value": "VideoSourceToken",
+                "input_file": "/tmp/onvif_notify_server/vehicle_detection"
+            },
+            {
+                "topic": "tns1:RuleEngine/MyRuleDetector/DogCatDetect",
+                "source_name": "VideoSourceConfigurationToken",
+                "source_type": "xsd:string",
+                "source_value": "VideoSourceToken",
+                "input_file": "/tmp/onvif_notify_server/animal_detection"
+            },
+            {
+                "topic": "tns1:RuleEngine/MyRuleDetector/BabyCryingDetect",
+                "source_name": "AudioSourceConfigurationToken",
+                "source_type": "xsd:string",
+                "source_value": "AudioSourceToken",
+                "input_file": "/tmp/onvif_notify_server/baby_crying"
+            },
+            {
+                "topic": "tns1:AudioAnalytics/Audio/DetectedSound",
+                "source_name": "AudioSourceConfigurationToken",
+                "source_type": "tt:ReferenceToken",
+                "source_value": "AudioSourceToken",
+                "input_file": "/tmp/onvif_notify_server/sound_detection"
+            }
+        ]
+    }
+}
