@@ -23,7 +23,7 @@
 #include <limits.h>
 #include <errno.h>
 
-#include "cJSON.h"
+#include "cjson/cJSON.h"
 #include "conf.h"
 #include "utils.h"
 #include "log.h"
