@@ -6,7 +6,7 @@ diff -Naur onvif_simple_server.ori/onvif_notify_server.c onvif_simple_server/onv
  #include "onvif_simple_server.h"
  
 -#define DEFAULT_CONF_FILE "/etc/onvif_simple_server.conf"
--#define DEFAULT_JSON_FILE "/etc/onvif_simple_server.json"
+-#define DEFAULT_JSON_CONF_FILE "/etc/onvif_simple_server.json"
 -#define DEFAULT_LOG_FILE "/var/log/onvif_notify_server.log"
 +#define DEFAULT_CONF_FILE "/usr/local/etc/onvif_simple_server.conf"
 +#define DEFAULT_JSON_CONF_FILE "/usr/local/etc/onvif_simple_server.json"
