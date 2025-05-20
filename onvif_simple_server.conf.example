@@ -7,6 +7,8 @@ ifs=wlan0
 port=8080
 scope=onvif://www.onvif.org/Profile/Streaming
 scope=onvif://www.onvif.org/Profile/T
+scope=onvif://www.onvif.org/hardware
+scope=onvif://www.onvif.org/name
 #user=admin
 #password=admin
 #Advanced options
