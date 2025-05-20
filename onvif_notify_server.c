@@ -40,6 +40,7 @@
 #include "onvif_simple_server.h"
 
 #define DEFAULT_CONF_FILE "/etc/onvif_simple_server.conf"
+#define DEFAULT_JSON_CONF_FILE "/etc/onvif_simple_server.json"
 #define DEFAULT_LOG_FILE "/var/log/onvif_notify_server.log"
 #define DEFAULT_PID_FILE "/var/run/onvif_notify_server.pid"
 #define TEMPLATE_DIR "/etc/onvif_notify_server"
@@ -529,6 +530,11 @@ int main(int argc, char **argv)  {
 
     conf_file = (char *) malloc((strlen(DEFAULT_CONF_FILE) + 1) * sizeof(char));
     strcpy(conf_file, DEFAULT_CONF_FILE);
+    if (access(conf_file, F_OK) == -1) {
+        free(conf_file);
+        conf_file = (char *) malloc((strlen(DEFAULT_JSON_CONF_FILE) + 1) * sizeof(char));
+        strcpy(conf_file, DEFAULT_JSON_CONF_FILE);
+    }
 
     strcpy(pid_file, DEFAULT_PID_FILE);
     foreground = 0;
@@ -626,6 +632,17 @@ int main(int argc, char **argv)  {
         fprintf(stderr, "Don't daemonize\n");
     }
 
+    if (conf_file[0] == '\0') {
+        print_usage(argv[0]);
+        free(conf_file);
+        exit(EXIT_SUCCESS);
+    }
+    if (strlen(conf_file) <= 5) {
+        print_usage(argv[0]);
+        free(conf_file);
+        exit(EXIT_SUCCESS);
+    }
+
     // Open file log
     fLog = fopen(DEFAULT_LOG_FILE, "w");
     log_add_fp(fLog, debug);
@@ -650,7 +667,11 @@ int main(int argc, char **argv)  {
 
     // Read configuration file
     log_info("Processing configuration file %s...", conf_file);
-    itmp = process_conf_file(conf_file);
+    if (strcasecmp(".json", &conf_file[strlen(conf_file) - 5]) == 0) {
+        itmp = process_json_conf_file(conf_file);
+    } else {
+        itmp = process_conf_file(conf_file);
+    }
     if (itmp == -1) {
         log_fatal("Unable to find configuration file %s", conf_file);
         fclose(fLog);

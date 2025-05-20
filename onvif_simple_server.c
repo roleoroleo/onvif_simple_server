@@ -39,6 +39,7 @@
 #include "log.h"
 
 #define DEFAULT_CONF_FILE "/etc/onvif_simple_server.conf"
+#define DEFAULT_JSON_CONF_FILE "/etc/onvif_simple_server.json"
 #define DEFAULT_LOG_FILE "/var/log/onvif_simple_server.log"
 #define DEBUG_FILE "/tmp/onvif_simple_server.debug"
 
@@ -166,6 +167,11 @@ int main(int argc, char ** argv)
     }
     conf_file = (char *) malloc((strlen(DEFAULT_CONF_FILE) + 1) * sizeof(char));
     strcpy(conf_file, DEFAULT_CONF_FILE);
+    if (access(conf_file, F_OK) == -1) {
+        free(conf_file);
+        conf_file = (char *) malloc((strlen(DEFAULT_JSON_CONF_FILE) + 1) * sizeof(char));
+        strcpy(conf_file, DEFAULT_JSON_CONF_FILE);
+    }
 
     while (1) {
         static struct option long_options[] =
@@ -269,6 +275,11 @@ int main(int argc, char ** argv)
         free(conf_file);
         exit(EXIT_SUCCESS);
     }
+    if (strlen(conf_file) <= 5) {
+        print_usage(argv[0]);
+        free(conf_file);
+        exit(EXIT_SUCCESS);
+    }
 
     int debug2 = check_debug_file(DEBUG_FILE);
     if (debug2 != -1) debug = debug2 - 5;
@@ -281,7 +292,11 @@ int main(int argc, char ** argv)
     dump_env();
 
     log_info("Processing configuration file %s...", conf_file);
-    itmp = process_conf_file(conf_file);
+    if (strcasecmp(".json", &conf_file[strlen(conf_file) - 5]) == 0) {
+        itmp = process_json_conf_file(conf_file);
+    } else {
+        itmp = process_conf_file(conf_file);
+    }
     if (itmp == -1) {
         log_fatal("Unable to find configuration file %s", conf_file);
         fclose(fLog);

@@ -22,5 +22,6 @@
 #define DEFAULT_IFS          "wlan0"
 
 int process_conf_file(char *file);
+int process_json_conf_file(char *file);
 void free_conf_file();
 void print_conf_help();
