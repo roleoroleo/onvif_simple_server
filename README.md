@@ -144,7 +144,7 @@ move_out=/tmp/sd/yi-hack/bin/ipc_cmd -m out -s %f
 move_stop=/tmp/sd/yi-hack/bin/ipc_cmd -m stop -t %s
 move_preset=/tmp/sd/yi-hack/bin/ipc_cmd -p %d
 goto_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -p 0
-set_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a add_preset -m %s
+set_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a add_preset -n %d -m %s
 set_home_position=/tmp/sd/yi-hack/script/ptz_presets.sh -a set_home_position
 remove_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a del_preset -n %d
 jump_to_abs=/tmp/sd/yi-hack/bin/ipc_cmd -j %f,%f,%f
@@ -211,6 +211,33 @@ Note:
   example: move_right=/tmp/sd/yi-hack/bin/ipc_cmd -m right > /dev/null
 
 - %s, %d and %f are placeholders replaced runtime with the proper parameter
+
+  move_left=/tmp/sd/yi-hack/bin/ipc_cmd -m left -s %f
+  %s is the velocity of the pan movement
+  move_right=/tmp/sd/yi-hack/bin/ipc_cmd -m right -s %f
+  %s is the velocity of the pan movement
+  move_up=/tmp/sd/yi-hack/bin/ipc_cmd -m up -s %f
+  %s is the velocity of the tilt movement
+  move_down=/tmp/sd/yi-hack/bin/ipc_cmd -m down -s %f
+  %s is the velocity of the tilt movement
+  move_in=/tmp/sd/yi-hack/bin/ipc_cmd -m in -s %f
+  %s is the velocity of the zoom movement
+  move_out=/tmp/sd/yi-hack/bin/ipc_cmd -m out -s %f
+  %s is the velocity of the zoom movement
+  move_stop=/tmp/sd/yi-hack/bin/ipc_cmd -m stop -t %s
+  %s is what you want to stop: "pantilt", "zoom" or "all"
+  move_preset=/tmp/sd/yi-hack/bin/ipc_cmd -p %d
+  %d is the number of the preset you want to move
+  set_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a add_preset -n %d -m %s
+  %d is the nunmber of the preset you want to update or -1 if you are adding a preset
+  %s is the name of the preset you are adding or changing
+  remove_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a del_preset -n %d
+  %d is the nunmber of the preset you want to remove
+  jump_to_abs=/tmp/sd/yi-hack/bin/ipc_cmd -j %f,%f,%f
+  %f are the pan/tilt/zoom coordinates you want to move
+  jump_to_rel=/tmp/sd/yi-hack/bin/ipc_cmd -J %f,%f,%f
+  %f are the pan/tilt/zoom coordinates you want to move
+
 - use the same folder for the input files of the events
 - max 8 events are currently supported (relay_output feature uses events messages to get the relay state, so each relay uses 1 event and the sum of events and relays cannot be greater than 8)
 
