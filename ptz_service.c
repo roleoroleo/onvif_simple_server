@@ -44,7 +44,6 @@ int init_presets()
 
     // Run command that returns to stdout the list of the presets in the form number=name,pan,tilt,zoom (zoom is optional)
     if (service_ctx.ptz_node.get_presets == NULL) {
-        pclose(fp);
         return -1;
     }
     fp = popen(service_ctx.ptz_node.get_presets, "r");
@@ -946,11 +945,14 @@ int ptz_set_preset()
     int i;
     char sys_command[MAX_LEN];
     const char *preset_name;
-    char preset_name_out[16];
+    char preset_name_out[UUID_LEN + 8];
     const char *preset_token;
     ezxml_t node;
     char preset_token_out[16];
     int preset_number = -1;
+    int preset_found;
+    int presets_total_number;
+    char name_uuid[UUID_LEN + 1];
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
     if (node == NULL) {
@@ -963,46 +965,101 @@ int ptz_set_preset()
         return -2;
     }
 
+    preset_name = get_element("PresetName", "Body");
     preset_token = get_element("PresetToken", "Body");
-    if (preset_token != NULL) {
-        if (sscanf(preset_token, "PresetToken_%s", &preset_number) != 1) {
-            send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
+    init_presets();
+    presets_total_number = presets.count;
+
+    if (preset_token == NULL) {
+
+        // Add new preset
+        if (preset_name == NULL) {
+            // No name and no token, how to identify it? Create a random name.
+            gen_uuid(name_uuid);
+            sprintf(preset_name_out, "Preset_%s", name_uuid);
+        } else {
+            strcpy(preset_name_out, preset_name);
+        }
+
+        if ((strchr(preset_name_out, ' ') != NULL) || (strlen(preset_name_out) == 0) || (strlen(preset_name_out) > 64)) {
+            destroy_presets();
+            send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:InvalidPresetName", "Invalid preset name", "The preset name is either too long or contains invalid characters");
             return -3;
         }
-        // Update of an existing preset is not supported
-        send_action_failed_fault("ptz_service", -4);
-        return -4;
-    }
+        for (i = 0; i < presets.count; i++) {
+            if (strcasecmp(presets.items[i].name, preset_name_out) == 0) {
+                destroy_presets();
+                send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:PresetExist", "Preset exists", "The requested name already exist for another preset");
+                return -4;
+            }
+        }
 
-    init_presets();
-    preset_name = get_element("PresetName", "Body");
-    if (preset_name == NULL)
-        sprintf(preset_name_out, "PRESET_%d", presets.count);
-    else
-        strcpy(preset_name_out, preset_name);
+        preset_number = -1;
 
-    if ((strchr(preset_name_out, ' ') != NULL) || (strlen(preset_name_out) == 0) || (strlen(preset_name_out) > 64)) {
-        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:InvalidPresetName", "Invalid preset name", "The preset name is either too long or contains invalid characters");
-        return -5;
-    }
-    for (i = 0; i < presets.count; i++) {
-        if (strcasecmp(presets.items[i].name, preset_name_out) == 0) {
-            send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:PresetExist", "Preset exists", "The requested name already exist for another preset");
+    } else {
+
+        // Update existing preset
+        if (sscanf(preset_token, "PresetToken_%d", &preset_number) != 1) {
+            destroy_presets();
+            send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
+            return -5;
+        }
+
+        preset_found = 0;
+        for (i = 0; i < presets.count; i++) {
+            if (presets.items[i].number == preset_number) {
+                strcpy(preset_name_out, presets.items[i].name);
+                preset_found = 1;
+                break;
+            }
+        }
+        if (preset_found == 0) {
+            destroy_presets();
+            send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
             return -6;
         }
+
+        if (preset_name != NULL) {
+            // Overwrite the name with the new one
+            memset(preset_name_out, '\0', sizeof(preset_name_out));
+            strncpy(preset_name_out, preset_name, strlen(preset_name));
+        }
+
+        if ((strchr(preset_name_out, ' ') != NULL) || (strlen(preset_name_out) == 0) || (strlen(preset_name_out) > 64)) {
+            destroy_presets();
+            send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:InvalidPresetName", "Invalid preset name", "The preset name is either too long or contains invalid characters");
+            return -7;
+        }
+
+        for (i = 0; i < presets.count; i++) {
+            if ((presets.items[i].number != preset_number) &&
+                    (strcasecmp(presets.items[i].name, preset_name_out) == 0)) {
+                destroy_presets();
+                send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:PresetExist", "Preset exists", "The requested name already exist for another preset");
+                return -8;
+            }
+        }
     }
-    destroy_presets();
 
     if (service_ctx.ptz_node.set_preset == NULL) {
-        send_action_failed_fault("ptz_service", -7);
-        return -7;
+        destroy_presets();
+        send_action_failed_fault("ptz_service", -9);
+        return -9;
     }
 
-    sprintf(sys_command, service_ctx.ptz_node.set_preset, (char *) preset_name_out);
+    destroy_presets();
+
+    // Unhandled race condition
+    sprintf(sys_command, service_ctx.ptz_node.set_preset, preset_number, (char *) preset_name_out);
     system(sys_command);
     sleep(1);
 
     init_presets();
+    if ((preset_token == NULL) && (presets_total_number == presets.count)) {
+        destroy_presets();
+        send_fault("ptz_service", "Receiver", "ter:Action", "ter:TooManyPresets", "Too many presets", "Maximum number of presets reached");
+        return -10;
+    }
     preset_token_out[0] = '\0';
     for (i = 0; i < presets.count; i++) {
         if (strcasecmp(presets.items[i].name, preset_name_out) == 0) {
@@ -1011,10 +1068,6 @@ int ptz_set_preset()
         }
     }
     destroy_presets();
-    if (preset_token_out[0] == '\0') {
-        send_fault("ptz_service", "Receiver", "ter:Action", "ter:TooManyPresets", "Too many presets", "Maximum number of presets reached");
-        return -8;
-    }
 
     long size = cat(NULL, "ptz_service_files/SetPreset.xml", 2,
             "%PRESET_TOKEN%", preset_token_out);
