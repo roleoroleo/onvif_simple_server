@@ -97,6 +97,9 @@ serial_num=AFUSY12ABCDE3F456789
 ifs=wlan0
 port=80
 scope=onvif://www.onvif.org/Profile/Streaming
+scope=onvif://www.onvif.org/Profile/T
+scope=onvif://www.onvif.org/hardware
+scope=onvif://www.onvif.org/name
 user=
 password=
 #Advanced options
