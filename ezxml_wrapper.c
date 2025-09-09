@@ -151,7 +151,7 @@ const char *get_element_rec(ezxml_t xml, char *name, char *first_node)
         }
 
         // Check brothers
-        while(pk = xml->ordered) {
+        if((pk = xml->ordered)) {
             ret = get_element_rec(pk, name, first_node);
             if (go_to_parent) return NULL;
             if (ret != NULL) return ret;
@@ -230,7 +230,7 @@ ezxml_t get_element_rec_ptr(ezxml_t xml, char *name, char *first_node)
         }
 
         // Check brothers
-        while(pk = xml->ordered) {
+        if((pk = xml->ordered)) {
             ret = get_element_rec_ptr(pk, name, first_node);
             if (go_to_parent) return NULL;
             if (ret != NULL) return ret;
@@ -288,7 +288,7 @@ const char *get_element_in_element(const char *name, ezxml_t father)
         }
 
         // Check brothers
-        while(pk = child->ordered) {
+        while((pk = child->ordered)) {
             // Check if this node is "<name>"
             if (strcmp(name, pk->name) == 0) {
                 return pk->txt;
@@ -332,7 +332,7 @@ ezxml_t get_element_in_element_ptr(const char *name, ezxml_t father)
         }
 
         // Check brothers
-        while(pk = child->ordered) {
+        while((pk = child->ordered)) {
             // Check if this node is "<name>"
             if (strcmp(name, pk->name) == 0) {
                 return pk;
