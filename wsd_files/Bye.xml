@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope"
-                   xmlns:SOAP-ENC="http://www.w3.org/2003/05/soap-encoding"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
                    xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing"
                    xmlns:wsdd="http://schemas.xmlsoap.org/ws/2005/04/discovery"
                    xmlns:tdn="http://www.onvif.org/ver10/network/wsdl">
@@ -13,8 +10,7 @@
         </wsa:ReplyTo>
         <wsa:To SOAP-ENV:mustUnderstand="true">urn:schemas-xmlsoap-org:ws:2005:04:discovery</wsa:To>
         <wsa:Action SOAP-ENV:mustUnderstand="true">http://schemas.xmlsoap.org/ws/2005/04/discovery/Bye</wsa:Action>
-        <wsdd:AppSequence InstanceId="0"
-                          MessageNumber="%MSG_NUMBER%"/>
+        <wsdd:AppSequence InstanceId="0" MessageNumber="%MSG_NUMBER%"/>
     </SOAP-ENV:Header>
     <SOAP-ENV:Body>
         <wsdd:Bye>

@@ -1,7 +1,4 @@
-                <tt:PTZConfiguration token="PTZCfgToken"
-                                     MoveRamp="0"
-                                     PresetRamp="0"
-                                     PresetTourRamp="0">
+                <tt:PTZConfiguration token="PTZCfgToken" MoveRamp="0" PresetRamp="0" PresetTourRamp="0">
                     <tt:Name>PTZCfg</tt:Name>
                     <tt:UseCount>0</tt:UseCount>
                     <tt:NodeToken>PTZNodeToken</tt:NodeToken>
@@ -12,11 +9,8 @@
                     <tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
                     <tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>
                     <tt:DefaultPTZSpeed>
-                        <tt:PanTilt x="1.0"
-                                    y="1.0"
-                                    space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace"/>
-                        <tt:Zoom x="1.0"
-                                 space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace"/>
+                        <tt:PanTilt x="1.0" y="1.0" space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace"/>
+                        <tt:Zoom x="1.0" space="http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace"/>
                     </tt:DefaultPTZSpeed>
                     <tt:DefaultPTZTimeout>PT00H00M05S</tt:DefaultPTZTimeout>
                     <tt:PanTiltLimits>

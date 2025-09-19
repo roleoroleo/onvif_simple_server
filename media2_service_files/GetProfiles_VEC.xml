@@ -1,6 +1,4 @@
-                    <tr2:VideoEncoder Profile="%H264PROFILE%"
-                                     GovLength="40"
-                                     token="%PROFILE%_VideoEncoderToken">
+                    <tr2:VideoEncoder Profile="%H264PROFILE%" GovLength="40" token="%PROFILE%_VideoEncoderToken">
                         <tt:Name>%PROFILE%_VideoEncoder</tt:Name>
                         <tt:UseCount>1</tt:UseCount>
                         <tt:Encoding>%VIDEO_ENCODING%</tt:Encoding>

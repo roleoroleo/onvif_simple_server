@@ -1,4 +1,3 @@
             </trt:Profiles>
-            <trt:Profiles token="Profile_1"
-                          fixed="true">
+            <trt:Profiles token="Profile_1" fixed="true">
                 <tt:Name>Profile_1</tt:Name>
