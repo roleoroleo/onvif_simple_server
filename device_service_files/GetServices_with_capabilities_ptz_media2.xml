@@ -104,7 +104,7 @@
                 <tds:Namespace>http://www.onvif.org/ver10/deviceIO/wsdl</tds:Namespace>
                 <tds:XAddr>%DEVICEIO_SERVICE_ADDRESS%</tds:XAddr>
                 <tds:Capabilities>
-                    <tmd:Capabilities VideoSources="1" VideoOutputs="0" AudioSources="%AUDIO_SOURCES%" AudioOutputs="%AUDIO_OUTPUTS%" RelayOutputs="0" DigitalInputs="0" SerialPorts="0"></tmd:Capabilities>
+                    <tmd:Capabilities VideoSources="1" VideoOutputs="0" AudioSources="%AUDIO_SOURCES%" AudioOutputs="%AUDIO_OUTPUTS%" RelayOutputs="%RELAY_OUTPUTS%" DigitalInputs="0" SerialPorts="0"></tmd:Capabilities>
                 </tds:Capabilities>
                 <tds:Version>
                     <tt:Major>17</tt:Major>

@@ -65,7 +65,7 @@
                         <tt:VideoOutputs>0</tt:VideoOutputs>
                         <tt:AudioSources>%AUDIO_SOURCES%</tt:AudioSources>
                         <tt:AudioOutputs>%AUDIO_OUTPUTS%</tt:AudioOutputs>
-                        <tt:RelayOutputs>0</tt:RelayOutputs>
+                        <tt:RelayOutputs>%RELAY_OUTPUTS%</tt:RelayOutputs>
                     </tt:DeviceIO>
                 </tt:Extension>
             </tds:Capabilities>
