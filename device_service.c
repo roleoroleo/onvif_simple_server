@@ -382,14 +382,22 @@ int device_system_reboot()
 int device_get_scopes()
 {
     int i;
-    char *scopes = (char *) malloc(service_ctx.scopes_num * MAX_LEN * sizeof(char));
+    size_t count = (size_t) service_ctx.scopes_num;
+    size_t alloc = count > 0 ? count * MAX_LEN : 1;
+    char* scopes = (char*) malloc(alloc);
     char line[MAX_LEN];
     int ret;
+
+    if (!scopes) {
+        log_error("device_get_scopes: out of memory");
+        send_action_failed_fault("device_service", -1);
+        return -1;
+    }
 
     scopes[0] = '\0';
     for (i = 0; i < service_ctx.scopes_num; i++) {
         sprintf(line, "\t    <tds:Scopes>\n\t\t<tt:ScopeDef>Fixed</tt:ScopeDef>\n\t\t<tt:ScopeItem>%s</tt:ScopeItem>\n\t    </tds:Scopes>\n", service_ctx.scopes[i]);
-        strcat(scopes, line);
+        strncat(scopes, line, alloc - strlen(scopes) - 1);
     }
 
     long size = cat(NULL, "device_service_files/GetScopes.xml", 2,
