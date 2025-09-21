@@ -258,11 +258,11 @@ long cat(char *out, char *filename, int num, ...)
 #ifdef USE_ZLIB
     file = tmpfile();
     if (file == NULL) {
-        log_error("Unable to open file %s\n", filename);
+        log_error("Unable to open file %s", filename);
         return -1;
     }
     if (gzip_d(file, filename) != 0) {
-        log_error("Unable to decompress file %s\n", filename);
+        log_error("Unable to decompress file %s", filename);
         fclose(file);
         return -2;
     }
@@ -270,7 +270,7 @@ long cat(char *out, char *filename, int num, ...)
 #else
     file = fopen(filename, "r");
     if (!file) {
-        log_error("Unable to open file %s\n", filename);
+        log_error("Unable to open file %s", filename);
         return -3;
     }
 #endif
