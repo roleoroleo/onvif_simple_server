@@ -451,9 +451,9 @@ int device_get_capabilities()
     int icategory;
     const char *category;
 
-    char ebasesubscription[8], epullpoint[8], relay_outputs[2];
+    char ebasesubscription[8], epullpoint[8];
 
-    char audio_sources[2], audio_outputs[2];
+    char audio_sources[2], audio_outputs[2], relay_outputs[2];
 
     category = get_element("Category", "Body");
     if (category != NULL) {
