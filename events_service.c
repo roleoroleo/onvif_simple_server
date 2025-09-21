@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2024 roleo.
+ * Copyright (c) 2025 roleo.
+ * Copyright (c) 2025 Thingino project.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -146,8 +147,10 @@ int events_create_pull_point_subscription()
 
     // Force notification with Property "Initialized"
     sem_memory_wait();
-    for (i = 0; i < service_ctx.events_num; i++) {
-        if (is_topic_in_expression(subs_evts->subscriptions[sub_index].topic_expression, service_ctx.events[i].topic)) {
+    for (i = 0; (i < service_ctx.events_num) && (i < MAX_EVENTS); i++) {
+        if ((service_ctx.events[i].topic != NULL) &&
+                (is_topic_in_expression(subs_evts->subscriptions[sub_index].topic_expression, service_ctx.events[i].topic))) {
+
             subs_evts->events[i].pull_send_initialized |= (1 << sub_index);
             subs_evts->events[i].pull_notify |= (1 << sub_index);
             log_debug("Event %d matches topic expression %s", i, subs_evts->subscriptions[sub_index].topic_expression);
@@ -202,6 +205,9 @@ int events_pull_messages()
     char *dest;
     long size, total_size;
 
+    // Initialize subs_evts to NULL to prevent crashes in error paths
+    subs_evts = NULL;
+
     // Subscription manager replies to address http://%s%s/onvif/events_service?sub=%d
     log_info("PullMessages request received");
 
@@ -227,7 +233,6 @@ int events_pull_messages()
     timeout = get_element("Timeout", "Body");
     if (timeout == NULL) {
         log_error("No Timeout element for PullMessages method");
-        destroy_shared_memory((void *) subs_evts, 0);
         send_action_failed_fault("events_service", -3);
         return -3;
     }
@@ -235,7 +240,6 @@ int events_pull_messages()
     message_limit = get_element("MessageLimit", "Body");
     if (message_limit == NULL) {
         log_error("No MessageLimit element for PullMessages method");
-        destroy_shared_memory((void *) subs_evts, 0);
         send_action_failed_fault("events_service", -4);
         return -4;
     }
@@ -244,7 +248,6 @@ int events_pull_messages()
     /* Check for various possible errors */
     if ((errno == ERANGE && (limit == LONG_MAX || limit == LONG_MIN)) || (errno != 0 && limit == 0)) {
         log_error("Wrong MessageLimit value for PullMessages method");
-        destroy_shared_memory((void *) subs_evts, 0);
         send_action_failed_fault("events_service", -5);
         return -5;
     }
@@ -294,7 +297,7 @@ int events_pull_messages()
     // or SetSynchronizationPoint request is received
     at_least_one_message = 0;
     while ((at_least_one_message == 0) && (now <= now_p_timeout)) {
-        for (i = 0; i < service_ctx.events_num; i++) {
+        for (i = 0; (i < service_ctx.events_num) && (i < MAX_EVENTS); i++) {
             sem_memory_wait();
             if (subs_evts->events[i].pull_notify & (1 << sub_index)) {
                 at_least_one_message = 1;
@@ -340,7 +343,7 @@ int events_pull_messages()
         if (c == 0) total_size = size;
 
         count = 0;
-        for (i = 0; i < service_ctx.events_num; i++) {
+        for (i = 0; (i < service_ctx.events_num) && (i < MAX_EVENTS); i++) {
             if (count >= limit)
                 break;
             if ((subs_evts->events[i].pull_notify & (1 << sub_index))) {
@@ -352,19 +355,19 @@ int events_pull_messages()
                     to_iso_date(iso_str_3, sizeof(iso_str_3), subs_evts->events[i].e_time);
                 }
                 if (subs_evts->events[i].is_on) {
-                    if (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
+                    if ((service_ctx.events[i].topic != NULL) && (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0)) {
                         strcpy(data_value, "active");
                     } else {
                         strcpy(data_value, "true");
                     }
                 } else {
-                    if (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
+                    if ((service_ctx.events[i].topic != NULL) && (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0)) {
                         strcpy(data_value, "inactive");
                     } else {
                         strcpy(data_value, "false");
                     }
                 }
-                if (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
+                if ((service_ctx.events[i].topic != NULL) && (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0)) {
                     strcpy(data_name, "LogicalState");
                 } else {
                     strcpy(data_name, "State");
@@ -861,8 +864,10 @@ int events_set_synchronization_point()
 
     subs_evts->subscriptions[sub_index].push_need_sync = 1;
 
-    for (i = 0; i < service_ctx.events_num; i++) {
-        if (is_topic_in_expression(subs_evts->subscriptions[sub_index].topic_expression, service_ctx.events[i].topic)) {
+    for (i = 0; i < service_ctx.events_num && i < MAX_EVENTS; i++) {
+        if ((service_ctx.events[i].topic != NULL) &&
+                (is_topic_in_expression(subs_evts->subscriptions[sub_index].topic_expression, service_ctx.events[i].topic))) {
+
             subs_evts->events[i].pull_send_initialized |= (1 << sub_index);
             subs_evts->events[i].pull_notify |= (1 << sub_index);
             log_debug("Event %d matches topic expression %s", i, subs_evts->subscriptions[sub_index].topic_expression);

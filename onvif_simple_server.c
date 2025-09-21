@@ -405,19 +405,31 @@ int main(int argc, char ** argv)
             if (auth_error == 0) {
                 // Calculate digest and check the password
                 // Digest = B64ENCODE( SHA1( B64DECODE( Nonce ) + Date + Password ) )
-                memcpy(auth, nonce, nonce_size);
-                memcpy(&auth[nonce_size], security.created, strlen(security.created));
-                memcpy(&auth[nonce_size + strlen(security.created)], service_ctx.password, strlen(service_ctx.password));
-                auth_size = nonce_size + strlen(security.created) + strlen(service_ctx.password);
-                hashSHA1(auth, auth_size, sha1, sha1_size);
-                b64_encode(sha1, sha1_size, digest, &digest_size);
-                log_debug("Calculated digest: %s", digest);
-                log_debug("Received digest: %s", security.password);
-
-                if ((strcmp(service_ctx.user, security.username) != 0) ||
-                        (strcmp(security.password, digest) != 0)) {
-
+                if (nonce_size + strlen(security.created) + strlen(service_ctx.password) > sizeof(auth)) {
+                    log_error("Authentication data too large");
                     auth_error = 10;
+                } else {
+                    memcpy(auth, nonce, nonce_size);
+                    memcpy(&auth[nonce_size], security.created, strlen(security.created));
+                    memcpy(&auth[nonce_size + strlen(security.created)], service_ctx.password, strlen(service_ctx.password));
+                    auth_size = nonce_size + strlen(security.created) + strlen(service_ctx.password);
+                    hashSHA1((char*) auth, auth_size, sha1, (int) sha1_size);
+
+                    b64_encode((unsigned char*) sha1, (unsigned int) sha1_size, (unsigned char*) digest, &digest_size);
+                    // Ensure null-termination for safe string operations/logging
+                    if (digest_size >= sizeof(digest)) {
+                        digest[sizeof(digest) - 1] = '\0';
+                    } else {
+                        digest[digest_size] = '\0';
+                    }
+                    log_debug("Calculated digest: %s", digest);
+                    log_debug("Received digest: %s", security.password);
+
+                    if ((strcmp(service_ctx.user, security.username) != 0) ||
+                            (strcmp(security.password, digest) != 0)) {
+
+                        auth_error = 10;
+                    }
                 }
             }
         } else {
