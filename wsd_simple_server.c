@@ -189,7 +189,7 @@ void signal_handler(int signal)
 
     message = (char *) malloc((size + 1) * sizeof(char));
     if (message == NULL) {
-        log_fatal("Malloc error.\n");
+        log_fatal("Malloc error.");
         shutdown(sock, SHUT_RDWR);
         // Exit from main loop
         exit_main = 1;
@@ -204,7 +204,7 @@ void signal_handler(int signal)
             "%ADDRESS%", xaddr);
 
     if (sendto(sock, message, strlen(message), 0, (struct sockaddr *) &addr_in, sizeof(addr_in)) < 0) {
-        log_fatal("Error sending Bye message.\n");
+        log_fatal("Error sending Bye message.");
         free(message);
         shutdown(sock, SHUT_RDWR);
         // Exit from main loop
@@ -399,12 +399,12 @@ int main(int argc, char **argv)  {
 
     // Checking pid file
     if (check_pid(pid_file) == 1) {
-        log_fatal("Program is already running.\n");
+        log_fatal("Program is already running.");
         fclose(fLog);
         exit(EXIT_FAILURE);
     }
     if (create_pid(pid_file) < 0) {
-        log_fatal("Error creating pid file %s\n", pid_file);
+        log_fatal("Error creating pid file %s", pid_file);
         fclose(fLog);
         exit(EXIT_FAILURE);
     }
@@ -438,13 +438,13 @@ int main(int argc, char **argv)  {
     log_debug("Address = %s", address);
 
     if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
-        log_fatal("Unable to create socket.\n");
+        log_fatal("Unable to create socket.");
         fclose(fLog);
         exit(EXIT_FAILURE);
     }
 
     if (bind(sock, (struct sockaddr *) &addr_in, sizeof(addr_in)) == -1) {
-        log_fatal("Unable to bind socket\n");
+        log_fatal("Unable to bind socket");
         shutdown(sock, SHUT_RDWR);
         fclose(fLog);
         exit(EXIT_FAILURE);
@@ -453,7 +453,7 @@ int main(int argc, char **argv)  {
     mr.imr_multiaddr.s_addr = inet_addr(MULTICAST_ADDRESS);
     mr.imr_interface.s_addr = inet_addr(address);
     if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *) &mr, sizeof(mr)) == -1) {
-        log_fatal("Error joining multicast group\n");
+        log_fatal("Error joining multicast group");
         shutdown(sock, SHUT_RDWR);
         fclose(fLog);
         exit(EXIT_FAILURE);
@@ -480,7 +480,7 @@ int main(int argc, char **argv)  {
 
     message = (char *) malloc((size + 1) * sizeof(char));
     if (message == NULL) {
-        log_fatal("Malloc error.\n");
+        log_fatal("Malloc error.");
         shutdown(sock, SHUT_RDWR);
         fclose(fLog);
         exit(EXIT_FAILURE);
@@ -496,7 +496,7 @@ int main(int argc, char **argv)  {
 
     addr_in.sin_addr.s_addr = inet_addr(MULTICAST_ADDRESS);
     if (sendto(sock, message, strlen(message), 0, (struct sockaddr *) &addr_in, sizeof(addr_in)) < 0) {
-        log_fatal("Error sending Hello message.\n");
+        log_fatal("Error sending Hello message.");
         free(message);
         shutdown(sock, SHUT_RDWR);
         fclose(fLog);
@@ -543,7 +543,7 @@ int main(int argc, char **argv)  {
 
                 relates_to_uuid = get_element("MessageID", "Header");
                 if (relates_to_uuid == NULL) {
-                    log_error("Cannot find MessageID.\n");
+                    log_error("Cannot find MessageID.");
                     continue;
                 }
                 close_xml();
@@ -562,7 +562,7 @@ int main(int argc, char **argv)  {
 
                 message_loop = (char *) malloc((size + 1) * sizeof(char));
                 if (message_loop == NULL) {
-                    log_error("Malloc error.\n");
+                    log_error("Malloc error.");
                     continue;
                 }
 
@@ -576,7 +576,7 @@ int main(int argc, char **argv)  {
                         "%ADDRESS%", xaddr);
 
                 if (sendto(sock, message_loop, strlen(message_loop), 0, (struct sockaddr *) &addr_in, sizeof(addr_in)) < 0) {
-                    log_error("Error sending ProbeMatches message.\n");
+                    log_error("Error sending ProbeMatches message.");
                     free(message_loop);
                     continue;
                 }
