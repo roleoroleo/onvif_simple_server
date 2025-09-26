@@ -678,19 +678,32 @@ int process_json_conf_file(char *file)
     char stmp[MAX_LEN];
 
     fF = fopen(file, "r");
-    if(fF == NULL)
+    if (fF == NULL) {
+        log_error("Failed to open JSON configuration file");
         return -1;
+    }
 
     fseek(fF, 0L, SEEK_END);
     json_size = ftell(fF);
     fseek(fF, 0L, SEEK_SET);
 
     buffer = (char *) malloc((json_size + 1) * sizeof(char));
+    if (buffer == NULL) {
+        log_error("Failed to allocate memory for JSON configuration file");
+        fclose(fF);
+        return -1;
+    }
+
     if (fread(buffer, 1, json_size, fF) != json_size) {
+        log_error("Failed to read JSON configuration file");
+        free(buffer);
         fclose(fF);
         return -1;
     }
     fclose(fF);
+
+    // Null-terminate the buffer to prevent buffer overflow in json_tokener_parse
+    buffer[json_size] = '\0';
 
     json_file = cJSON_Parse(buffer);
     if (json_file == NULL) {
@@ -767,12 +780,44 @@ int process_json_conf_file(char *file)
             strcpy(service_ctx.scopes[service_ctx.scopes_num - 1], item->valuestring);
         }
     }
-    get_string_from_json(&(service_ctx.model), json_file, "user");
-    get_string_from_json(&(service_ctx.model), json_file, "password");
+    get_string_from_json(&(service_ctx.user), json_file, "user");
+    get_string_from_json(&(service_ctx.password), json_file, "password");
     get_bool_from_json(&(service_ctx.adv_enable_media2), json_file, "adv_enable_media2");
     get_bool_from_json(&(service_ctx.adv_fault_if_unknown), json_file, "adv_fault_if_unknown");
     get_bool_from_json(&(service_ctx.adv_fault_if_set), json_file, "adv_fault_if_set");
     get_bool_from_json(&(service_ctx.adv_synology_nvr), json_file, "adv_synology_nvr");
+
+    // Apply sane defaults for required fields if not provided in config
+    if (service_ctx.manufacturer == NULL) {
+        service_ctx.manufacturer = (char*) malloc(strlen(DEFAULT_MANUFACTURER) + 1);
+        if (service_ctx.manufacturer)
+            strcpy(service_ctx.manufacturer, DEFAULT_MANUFACTURER);
+    }
+    if (service_ctx.model == NULL) {
+        service_ctx.model = (char*) malloc(strlen(DEFAULT_MODEL) + 1);
+        if (service_ctx.model)
+            strcpy(service_ctx.model, DEFAULT_MODEL);
+    }
+    if (service_ctx.firmware_ver == NULL) {
+        service_ctx.firmware_ver = (char*) malloc(strlen(DEFAULT_FW_VER) + 1);
+        if (service_ctx.firmware_ver)
+            strcpy(service_ctx.firmware_ver, DEFAULT_FW_VER);
+    }
+    if (service_ctx.serial_num == NULL) {
+        service_ctx.serial_num = (char*) malloc(strlen(DEFAULT_SERIAL_NUM) + 1);
+        if (service_ctx.serial_num)
+            strcpy(service_ctx.serial_num, DEFAULT_SERIAL_NUM);
+    }
+    if (service_ctx.hardware_id == NULL) {
+        service_ctx.hardware_id = (char*) malloc(strlen(DEFAULT_HW_ID) + 1);
+        if (service_ctx.hardware_id)
+            strcpy(service_ctx.hardware_id, DEFAULT_HW_ID);
+    }
+    if (service_ctx.ifs == NULL) {
+        service_ctx.ifs = (char*) malloc(strlen(DEFAULT_IFS) + 1);
+        if (service_ctx.ifs)
+            strcpy(service_ctx.ifs, DEFAULT_IFS);
+    }
 
     // Print debug
     log_debug("model: %s", service_ctx.model);
@@ -796,13 +841,14 @@ int process_json_conf_file(char *file)
     log_debug("adv_synology_nvr: %d", service_ctx.adv_synology_nvr);
     log_debug("");
 
+    // Load profiles from main configuration file
     value = cJSON_GetObjectItemCaseSensitive(json_file, "profiles");
     if ((!cJSON_IsNull(value)) && (cJSON_IsArray(value))) {
         cJSON_ArrayForEach(item, value) {
             service_ctx.profiles_num++;
             service_ctx.profiles = (stream_profile_t *) realloc(service_ctx.profiles, service_ctx.profiles_num * sizeof(stream_profile_t));
 
-            // Init variables before reading
+            // Init defaults
             service_ctx.profiles[service_ctx.profiles_num - 1].name = NULL;
             service_ctx.profiles[service_ctx.profiles_num - 1].width = 0;
             service_ctx.profiles[service_ctx.profiles_num - 1].height = 0;
@@ -871,6 +917,7 @@ int process_json_conf_file(char *file)
         }
     }
 
+    // Load PTZ configuration from main configuration file
     value = cJSON_GetObjectItemCaseSensitive(json_file, "ptz");
     if (!cJSON_IsNull(value)) {
         get_int_from_json(&(service_ctx.ptz_node.enable), value, "enable");
@@ -926,6 +973,7 @@ int process_json_conf_file(char *file)
         log_debug("");
     }
 
+    // Load relays configuration from main configuration file
     value = cJSON_GetObjectItemCaseSensitive(json_file, "relays");
     if ((!cJSON_IsNull(value)) && (cJSON_IsArray(value))) {
         log_debug("Relays");
@@ -966,6 +1014,7 @@ int process_json_conf_file(char *file)
         }
     }
 
+    // Load events configuration from main configuration file
     value = cJSON_GetObjectItemCaseSensitive(json_file, "events");
     if (!cJSON_IsNull(value)) {
         get_int_from_json(&(service_ctx.events_enable), value, "enable");
