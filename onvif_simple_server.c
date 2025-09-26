@@ -157,6 +157,10 @@ int main(int argc, char ** argv)
     const char *method;
     username_token_t security;
     int auth_error = 0;
+    int conf_file_specified = 0; // Flag to track if user provided -c parameter
+
+    // Use static buffer instead of malloc to avoid heap issues
+    static char conf_file_buffer[256];
 
     // Set default log file and conf file
     rotate_log();
@@ -165,11 +169,9 @@ int main(int argc, char ** argv)
         fprintf(stderr, "Unable to open log file %s\n", DEFAULT_LOG_FILE);
         exit(EXIT_FAILURE);
     }
-    conf_file = (char *) malloc((strlen(DEFAULT_CONF_FILE) + 1) * sizeof(char));
+    conf_file = conf_file_buffer;
     strcpy(conf_file, DEFAULT_CONF_FILE);
     if (access(conf_file, F_OK) == -1) {
-        free(conf_file);
-        conf_file = (char *) malloc((strlen(DEFAULT_JSON_CONF_FILE) + 1) * sizeof(char));
         strcpy(conf_file, DEFAULT_JSON_CONF_FILE);
     }
 
@@ -197,7 +199,6 @@ int main(int argc, char ** argv)
         case 'c':
             /* Check for various possible errors */
             if (strlen(optarg) < MAX_LEN - 1) {
-                free(conf_file);
                 conf_file = (char *) malloc((strlen(optarg) + 1) * sizeof(char));
                 strcpy(conf_file, optarg);
             } else {
@@ -212,18 +213,21 @@ int main(int argc, char ** argv)
             /* Check for various possible errors */
             if ((errno == ERANGE && (debug == LONG_MAX || debug == LONG_MIN)) || (errno != 0 && debug == 0)) {
                 print_usage(argv[0]);
-                free(conf_file);
+                if (conf_file_specified == 1)
+                    free(conf_file);
                 exit(EXIT_FAILURE);
             }
             if (endptr == optarg) {
                 print_usage(argv[0]);
-                free(conf_file);
+                if (conf_file_specified == 1)
+                    free(conf_file);
                 exit(EXIT_FAILURE);
             }
 
             if ((debug < LOG_TRACE) || (debug > LOG_FATAL)) {
                 print_usage(argv[0]);
-                free(conf_file);
+                if (conf_file_specified == 1)
+                    free(conf_file);
                 exit(EXIT_FAILURE);
             }
             debug = 5 - debug;
@@ -231,13 +235,15 @@ int main(int argc, char ** argv)
 
         case 'f':
             print_conf_help();
-            free(conf_file);
+            if (conf_file_specified == 1)
+                free(conf_file);
             exit(EXIT_SUCCESS);
             break;
 
         case 'h':
             print_usage(argv[0]);
-            free(conf_file);
+            if (conf_file_specified == 1)
+                free(conf_file);
             exit(EXIT_SUCCESS);
             break;
 
@@ -247,7 +253,8 @@ int main(int argc, char ** argv)
 
         default:
             print_usage(argv[0]);
-            free(conf_file);
+            if (conf_file_specified == 1)
+                free(conf_file);
             exit(EXIT_SUCCESS);
         }
     }
@@ -272,12 +279,14 @@ int main(int argc, char ** argv)
 
     if (conf_file[0] == '\0') {
         print_usage(argv[0]);
-        free(conf_file);
+        if (conf_file_specified == 1)
+            free(conf_file);
         exit(EXIT_SUCCESS);
     }
     if (strlen(conf_file) <= 5) {
         print_usage(argv[0]);
-        free(conf_file);
+        if (conf_file_specified == 1)
+            free(conf_file);
         exit(EXIT_SUCCESS);
     }
 
@@ -300,12 +309,14 @@ int main(int argc, char ** argv)
     if (itmp == -1) {
         log_fatal("Unable to find configuration file %s", conf_file);
         fclose(fLog);
-        free(conf_file);
+        if (conf_file_specified == 1)
+            free(conf_file);
         exit(EXIT_FAILURE);
     } else if (itmp < -1) {
         log_fatal("Wrong syntax in configuration file %s", conf_file);
         fclose(fLog);
-        free(conf_file);
+        if (conf_file_specified == 1)
+            free(conf_file);
         exit(EXIT_FAILURE);
     }
     log_info("Completed.");
@@ -317,36 +328,24 @@ int main(int argc, char ** argv)
         fprintf(stdout, "<html><head><title>Error</title></head><body>HTTP method not supported</body></html>\r\n");
         log_fatal("HTTP method not supported");
         fclose(fLog);
-        free(conf_file);
+        if (conf_file_specified == 1)
+            free(conf_file);
         exit(EXIT_FAILURE);
     }
     int input_size;
-    char *input = (char *) malloc (16 * 1024 * sizeof(char));
-    log_debug("Malloc finished,input pointer points to %p",input);
-    if (input == NULL) {
-        log_fatal("Memory error");
-        fclose(fLog);
-        free(conf_file);
-        exit(EXIT_FAILURE);
-    }
+    // Use static buffer instead of malloc to avoid heap issues
+    static char input_buffer[16 * 1024];
+    char* input = input_buffer;
+    log_debug("Static buffer allocated, input pointer points to %p", input);
     input_size = fread(input, 1, 16 * 1024 * sizeof(char), stdin);
     if (input_size == 0) {
         log_fatal("Error: input is empty");
-        free(input);
         fclose(fLog);
-        free(conf_file);
+        if (conf_file_specified == 1)
+            free(conf_file);
         exit(EXIT_FAILURE);
     }
-    input = (char *) realloc(input, input_size * sizeof(char));
-    //realloc returns new address which is not always the same as "input", if not updated the old pointer address causes segmentation fault when trying to use teh variable
-    log_debug("Realloc finished,input pointer is now pointing to %p",input);
-    if (input == NULL) {
-        log_fatal("Memory error trying to allocate %d bytes", input_size);
-        free(input);
-        fclose(fLog);
-        free(conf_file);
-        exit(EXIT_FAILURE);
-    }
+    log_debug("Using static buffer, input pointer is %p", input);
     log_debug("Input:\n%s", input);
     log_debug("Url: %s", prog_name);
 
@@ -356,9 +355,9 @@ int main(int argc, char ** argv)
     if (method == NULL) {
         log_fatal("XML parsing error");
         close_xml();
-        free(input);
         fclose(fLog);
-        free(conf_file);
+        if (conf_file_specified == 1)
+            free(conf_file);
         exit(EXIT_FAILURE);
     }
 
@@ -694,11 +693,11 @@ int main(int argc, char ** argv)
     }
 
     close_xml();
-    free(input);
 
     free_conf_file();
 
-    free(conf_file);
+    if (conf_file_specified == 1)
+        free(conf_file);
 
     log_info("Program terminated.");
     fclose(fLog);
