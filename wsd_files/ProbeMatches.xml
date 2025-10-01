@@ -21,7 +21,7 @@
                     <wsa:Address>urn:uuid:%UUID%</wsa:Address>
                 </wsa:EndpointReference>
                 <wsdd:Types>tdn:NetworkVideoTransmitter</wsdd:Types>
-                <wsdd:Scopes>onvif://www.onvif.org/type/video_encoder onvif://www.onvif.org/type/audio_encoder onvif://www.onvif.org/type/ptz onvif://www.onvif.org/hardware/%HARDWARE% onvif://www.onvif.org/name/%NAME% onvif://www.onvif.org/location/anywhere</wsdd:Scopes>
+                <wsdd:Scopes>onvif://www.onvif.org/type/video_encoder onvif://www.onvif.org/type/audio_encoder onvif://www.onvif.org/type/ptz onvif://www.onvif.org/hardware/%HARDWARE% onvif://www.onvif.org/name/%NAME% onvif://www.onvif.org/location/anywhere onvif://www.onvif.org/Profile/Streaming</wsdd:Scopes>
                 <wsdd:XAddrs>%ADDRESS%</wsdd:XAddrs>
                 <wsdd:MetadataVersion>0</wsdd:MetadataVersion>
             </wsdd:ProbeMatch>
