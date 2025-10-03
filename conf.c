@@ -23,7 +23,7 @@
 #include <limits.h>
 #include <errno.h>
 
-#include "cjson/cJSON.h"
+#include <json-c/json.h>
 #include "conf.h"
 #include "utils.h"
 #include "log.h"
@@ -624,44 +624,53 @@ int process_conf_file(char *file)
 }
 
 // Remember to free the string
-void get_string_from_json(char **var, cJSON *j, char *name)
+void get_string_from_json(char** var, json_object* j, char* name)
 {
-    const cJSON *s = NULL;
+    json_object* s = NULL;
 
-    s = cJSON_GetObjectItemCaseSensitive(j, name);
-    if (cJSON_IsString(s) && (s->valuestring != NULL)) {
-        *var = (char *) malloc((strlen(s->valuestring) + 1) * sizeof(char));
-        strcpy(*var, s->valuestring);
+    if (json_object_object_get_ex(j, name, &s)) {
+        if (json_object_is_type(s, json_type_string)) {
+            const char* str_val = json_object_get_string(s);
+            if (str_val != NULL) {
+                *var = (char*) malloc((strlen(str_val) + 1) * sizeof(char));
+                strcpy(*var, str_val);
+            }
+        }
     }
 }
 
-void get_int_from_json(int *var, cJSON *j, char *name)
+void get_int_from_json(int* var, json_object* j, char* name)
 {
-    const cJSON *i = NULL;
+    json_object* i = NULL;
 
-    i = cJSON_GetObjectItemCaseSensitive(j, name);
-    if (cJSON_IsNumber(i)) {
-        *var = i->valueint;
+    if (json_object_object_get_ex(j, name, &i)) {
+        if (json_object_is_type(i, json_type_int)) {
+            *var = json_object_get_int(i);
+        }
     }
 }
 
-void get_double_from_json(double *var, cJSON *j, char *name)
+void get_double_from_json(double* var, json_object* j, char* name)
 {
-    const cJSON *d = NULL;
+    json_object* d = NULL;
 
-    d = cJSON_GetObjectItemCaseSensitive(j, name);
-    if (cJSON_IsNumber(d)) {
-        *var = d->valuedouble;
+    if (json_object_object_get_ex(j, name, &d)) {
+        if (json_object_is_type(d, json_type_double)) {
+            *var = json_object_get_double(d);
+        }
     }
 }
 
-void get_bool_from_json(int *var, cJSON *j, char *name)
+void get_bool_from_json(int* var, json_object* j, char* name)
 {
-    const cJSON *b = NULL;
+    json_object* b = NULL;
 
-    b = cJSON_GetObjectItemCaseSensitive(j, name);
-    if (cJSON_IsTrue(b)) {
-        *var = 1;
+    if (json_object_object_get_ex(j, name, &b)) {
+        if (json_object_is_type(b, json_type_boolean)) {
+            *var = json_object_get_boolean(b) ? 1 : 0;
+        } else {
+            *var = 0;
+        }
     } else {
         *var = 0;
     }
@@ -670,9 +679,9 @@ void get_bool_from_json(int *var, cJSON *j, char *name)
 int process_json_conf_file(char *file)
 {
     FILE *fF;
-    cJSON *value, *item;
+    json_object *value, *item;
     char *buffer, *tmp;
-    cJSON *json_file;
+    json_object* json_file;
 
     int i, json_size;
     char stmp[MAX_LEN];
@@ -705,13 +714,9 @@ int process_json_conf_file(char *file)
     // Null-terminate the buffer to prevent buffer overflow in json_tokener_parse
     buffer[json_size] = '\0';
 
-    json_file = cJSON_Parse(buffer);
+    json_file = json_tokener_parse(buffer);
     if (json_file == NULL) {
-        const char *error_ptr = cJSON_GetErrorPtr();
-        if (error_ptr != NULL) {
-            log_error("Error before: %s", error_ptr);
-        }
-
+        log_error("Failed to parse JSON configuration file");
         free(buffer);
         return -2;
     }
@@ -771,13 +776,20 @@ int process_json_conf_file(char *file)
     get_string_from_json(&(service_ctx.serial_num), json_file, "serial_num");
     get_string_from_json(&(service_ctx.ifs), json_file, "ifs");
     get_int_from_json(&(service_ctx.port), json_file, "port");
-    value = cJSON_GetObjectItemCaseSensitive(json_file, "scopes");
-    if ((!cJSON_IsNull(value)) && (cJSON_IsArray(value))) {
-        cJSON_ArrayForEach(item, value) {
-            service_ctx.scopes_num++;
-            service_ctx.scopes = (char **) realloc(service_ctx.scopes, service_ctx.scopes_num * sizeof(char *));
-            service_ctx.scopes[service_ctx.scopes_num - 1] = (char *) malloc((strlen(item->valuestring) + 1) * sizeof(char));
-            strcpy(service_ctx.scopes[service_ctx.scopes_num - 1], item->valuestring);
+
+    if (json_object_object_get_ex(json_file, "scopes", &value)) {
+        if (json_object_is_type(value, json_type_array)) {
+            size_t array_len = json_object_array_length(value);
+            for (size_t i = 0; i < array_len; i++) {
+                item = json_object_array_get_idx(value, i);
+                if (item && json_object_is_type(item, json_type_string)) {
+                    service_ctx.scopes_num++;
+                    service_ctx.scopes = (char**) realloc(service_ctx.scopes, service_ctx.scopes_num * sizeof(char*));
+                    const char* str_val = json_object_get_string(item);
+                    service_ctx.scopes[service_ctx.scopes_num - 1] = (char*) malloc((strlen(str_val) + 1) * sizeof(char));
+                    strcpy(service_ctx.scopes[service_ctx.scopes_num - 1], str_val);
+                }
+            }
         }
     }
     get_string_from_json(&(service_ctx.user), json_file, "user");
@@ -842,84 +854,92 @@ int process_json_conf_file(char *file)
     log_debug("");
 
     // Load profiles from main configuration file
-    value = cJSON_GetObjectItemCaseSensitive(json_file, "profiles");
-    if ((!cJSON_IsNull(value)) && (cJSON_IsArray(value))) {
-        cJSON_ArrayForEach(item, value) {
-            service_ctx.profiles_num++;
-            service_ctx.profiles = (stream_profile_t *) realloc(service_ctx.profiles, service_ctx.profiles_num * sizeof(stream_profile_t));
+    if (json_object_object_get_ex(json_file, "profiles", &value)) {
+        if (json_object_is_type(value, json_type_array)) {
+            size_t array_len = json_object_array_length(value);
+            log_debug("Found %zu profile entries in configuration", array_len);
+            for (size_t i = 0; i < array_len; i++) {
+                item = json_object_array_get_idx(value, i);
+                if (!item)
+                    continue;
 
-            // Init defaults
-            service_ctx.profiles[service_ctx.profiles_num - 1].name = NULL;
-            service_ctx.profiles[service_ctx.profiles_num - 1].width = 0;
-            service_ctx.profiles[service_ctx.profiles_num - 1].height = 0;
-            service_ctx.profiles[service_ctx.profiles_num - 1].url = NULL;
-            service_ctx.profiles[service_ctx.profiles_num - 1].snapurl = NULL;
-            service_ctx.profiles[service_ctx.profiles_num - 1].type = H264;
-            service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
-            service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
+                service_ctx.profiles_num++;
+                service_ctx.profiles = (stream_profile_t *) realloc(service_ctx.profiles, service_ctx.profiles_num * sizeof(stream_profile_t));
 
-            get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].name), item, "name");
-            get_int_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].width), item, "width");
-            get_int_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].height), item, "height");
-            get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].url), item, "url");
-            get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].snapurl), item, "snapurl");
-            tmp = NULL;
-            get_string_from_json(&tmp, item, "type");
-            if (tmp != NULL) {
-                if (strcasecmp(tmp, "JPEG") == 0)
-                    service_ctx.profiles[service_ctx.profiles_num - 1].type = JPEG;
-                else if (strcasecmp(tmp, "MPEG4") == 0)
-                    service_ctx.profiles[service_ctx.profiles_num - 1].type = MPEG4;
-                else if (strcasecmp(tmp, "H264") == 0)
-                    service_ctx.profiles[service_ctx.profiles_num - 1].type = H264;
-                else if (strcasecmp(tmp, "H265") == 0)
-                    service_ctx.profiles[service_ctx.profiles_num - 1].type = H265;
-                free(tmp);
-            }
-            tmp = NULL;
-            get_string_from_json(&tmp, item, "audio_encoder");
-            if (tmp != NULL) {
-                if (strcasecmp(tmp, "NONE") == 0)
-                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AUDIO_NONE;
-                else if (strcasecmp(tmp, "G711") == 0)
-                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = G711;
-                else if (strcasecmp(tmp, "G726") == 0)
-                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = G726;
-                else if (strcasecmp(tmp, "AAC") == 0)
-                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
-                free(tmp);
-            }
-            tmp = NULL;
-            get_string_from_json(&tmp, item, "audio_decoder");
-            if (tmp != NULL) {
-                if (strcasecmp(tmp, "NONE") == 0)
-                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
-                else if (strcasecmp(tmp, "G711") == 0)
-                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = G711;
-                else if (strcasecmp(tmp, "G726") == 0)
-                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = G726;
-                else if (strcasecmp(tmp, "AAC") == 0)
-                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AAC;
-                free(tmp);
-            }
+                // Init defaults
+                service_ctx.profiles[service_ctx.profiles_num - 1].name = NULL;
+                service_ctx.profiles[service_ctx.profiles_num - 1].width = 0;
+                service_ctx.profiles[service_ctx.profiles_num - 1].height = 0;
+                service_ctx.profiles[service_ctx.profiles_num - 1].url = NULL;
+                service_ctx.profiles[service_ctx.profiles_num - 1].snapurl = NULL;
+                service_ctx.profiles[service_ctx.profiles_num - 1].type = H264;
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
 
-            // Print debug
-            log_debug("Profile %d", service_ctx.profiles_num - 1);
-            log_debug("\tname: %s", service_ctx.profiles[service_ctx.profiles_num - 1].name);
-            log_debug("\twidth: %d", service_ctx.profiles[service_ctx.profiles_num - 1].width);
-            log_debug("\theight: %d", service_ctx.profiles[service_ctx.profiles_num - 1].height);
-            log_debug("\turl: %s", service_ctx.profiles[service_ctx.profiles_num - 1].url);
-            log_debug("\tsnapurl: %s", service_ctx.profiles[service_ctx.profiles_num - 1].snapurl);
-            log_debug("\ttype: %d", service_ctx.profiles[service_ctx.profiles_num - 1].type);
-            log_debug("\taudio_encoder: %d", service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder);
-            log_debug("\taudio_decoder: %d", service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder);
-            log_debug("");
+                get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].name), item, "name");
+                get_int_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].width), item, "width");
+                get_int_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].height), item, "height");
+                get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].url), item, "url");
+                get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].snapurl), item, "snapurl");
+                tmp = NULL;
+                get_string_from_json(&tmp, item, "type");
+                if (tmp != NULL) {
+                    if (strcasecmp(tmp, "JPEG") == 0)
+                        service_ctx.profiles[service_ctx.profiles_num - 1].type = JPEG;
+                    else if (strcasecmp(tmp, "MPEG4") == 0)
+                        service_ctx.profiles[service_ctx.profiles_num - 1].type = MPEG4;
+                    else if (strcasecmp(tmp, "H264") == 0)
+                        service_ctx.profiles[service_ctx.profiles_num - 1].type = H264;
+                    else if (strcasecmp(tmp, "H265") == 0)
+                        service_ctx.profiles[service_ctx.profiles_num - 1].type = H265;
+                    free(tmp);
+                }
+                tmp = NULL;
+                get_string_from_json(&tmp, item, "audio_encoder");
+                if (tmp != NULL) {
+                    if (strcasecmp(tmp, "NONE") == 0)
+                        service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AUDIO_NONE;
+                    else if (strcasecmp(tmp, "G711") == 0)
+                        service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = G711;
+                    else if (strcasecmp(tmp, "G726") == 0)
+                        service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = G726;
+                    else if (strcasecmp(tmp, "AAC") == 0)
+                        service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
+                    free(tmp);
+                }
+                tmp = NULL;
+                get_string_from_json(&tmp, item, "audio_decoder");
+                if (tmp != NULL) {
+                    if (strcasecmp(tmp, "NONE") == 0)
+                        service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
+                    else if (strcasecmp(tmp, "G711") == 0)
+                        service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = G711;
+                    else if (strcasecmp(tmp, "G726") == 0)
+                        service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = G726;
+                    else if (strcasecmp(tmp, "AAC") == 0)
+                        service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AAC;
+                    free(tmp);
+                }
+
+                // Print debug
+                log_debug("Profile %d", service_ctx.profiles_num - 1);
+                log_debug("\tname: %s", service_ctx.profiles[service_ctx.profiles_num - 1].name);
+                log_debug("\twidth: %d", service_ctx.profiles[service_ctx.profiles_num - 1].width);
+                log_debug("\theight: %d", service_ctx.profiles[service_ctx.profiles_num - 1].height);
+                log_debug("\turl: %s", service_ctx.profiles[service_ctx.profiles_num - 1].url);
+                log_debug("\tsnapurl: %s", service_ctx.profiles[service_ctx.profiles_num - 1].snapurl);
+                log_debug("\ttype: %d", service_ctx.profiles[service_ctx.profiles_num - 1].type);
+                log_debug("\taudio_encoder: %d", service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder);
+                log_debug("\taudio_decoder: %d", service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder);
+                log_debug("");
+            }
         }
     }
 
     // Load PTZ configuration from main configuration file
-    value = cJSON_GetObjectItemCaseSensitive(json_file, "ptz");
-    if (!cJSON_IsNull(value)) {
+    if (json_object_object_get_ex(json_file, "ptz", &value)) {
+        log_debug("Found PTZ section in configuration");
+
         get_int_from_json(&(service_ctx.ptz_node.enable), value, "enable");
         get_double_from_json(&(service_ctx.ptz_node.min_step_x), value, "min_step_x");
         get_double_from_json(&(service_ctx.ptz_node.max_step_x), value, "max_step_x");
@@ -974,84 +994,97 @@ int process_json_conf_file(char *file)
     }
 
     // Load relays configuration from main configuration file
-    value = cJSON_GetObjectItemCaseSensitive(json_file, "relays");
-    if ((!cJSON_IsNull(value)) && (cJSON_IsArray(value))) {
-        log_debug("Relays");
-        log_debug("");
-        cJSON_ArrayForEach(item, value) {
-            service_ctx.relay_outputs_num++;
-            if (service_ctx.relay_outputs_num >= MAX_RELAY_OUTPUTS) {
-                log_error("Ignore relay, too many relay outputs, max is: %d", MAX_RELAY_OUTPUTS);
-                service_ctx.relay_outputs_num--;
-            } else {
-                service_ctx.relay_outputs = (relay_output_t *) realloc(service_ctx.relay_outputs, service_ctx.relay_outputs_num * sizeof(relay_output_t));
+    if (json_object_object_get_ex(json_file, "relays", &value)) {
+        if (json_object_is_type(value, json_type_array)) {
+            size_t array_len = json_object_array_length(value);
+            log_debug("Found %zu relay entries in configuration", array_len);
+            for (size_t i = 0; i < array_len; i++) {
+                item = json_object_array_get_idx(value, i);
+                if (!item)
+                    continue;
 
-                // Init variables before reading
-                service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
-                service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = NULL;
-                service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = NULL;
+                service_ctx.relay_outputs_num++;
+                if (service_ctx.relay_outputs_num >= MAX_RELAY_OUTPUTS) {
+                    log_error("Ignore relay, too many relay outputs, max is: %d", MAX_RELAY_OUTPUTS);
+                    service_ctx.relay_outputs_num--;
+                } else {
+                    service_ctx.relay_outputs = (relay_output_t *) realloc(service_ctx.relay_outputs, service_ctx.relay_outputs_num * sizeof(relay_output_t));
 
-                tmp = NULL;
-                get_string_from_json(&tmp, item, "name");
-                if (tmp != NULL) {
-                    if (strcasecmp(tmp, "close") == 0) {
-                        service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
-                    } else {
-                        service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_OPEN;
+                    // Init variables before reading
+                    service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
+                    service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = NULL;
+                    service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = NULL;
+
+                    tmp = NULL;
+                    get_string_from_json(&tmp, item, "idle_state");
+                    if (tmp != NULL) {
+                        if (strcasecmp(tmp, "close") == 0) {
+                            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
+                        } else {
+                            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_OPEN;
+                        }
+                        free(tmp);
                     }
-                    free(tmp);
-                }
-                get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close), item, "close");
-                get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open), item, "open");
+                    get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close), item, "close");
+                    get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open), item, "open");
 
-                // Print debug
-                log_debug("Relay: %d", service_ctx.relay_outputs_num - 1);
-                log_debug("\tidle_state: %d", service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state);
-                log_debug("\tclose: %s", service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close);
-                log_debug("\topen: %s", service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open);
-                log_debug("");
+                    // Print debug
+                    log_debug("Relay: %d", service_ctx.relay_outputs_num - 1);
+                    log_debug("\tidle_state: %d", service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state);
+                    log_debug("\tclose: %s", service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close);
+                    log_debug("\topen: %s", service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open);
+                    log_debug("");
+                }
             }
         }
     }
 
     // Load events configuration from main configuration file
-    value = cJSON_GetObjectItemCaseSensitive(json_file, "events");
-    if (!cJSON_IsNull(value)) {
+    if (json_object_object_get_ex(json_file, "events", &value)) {
         get_int_from_json(&(service_ctx.events_enable), value, "enable");
+
+        log_debug("Found Events section in configuration");
         log_debug("Events");
         log_debug("\tenable: %d", service_ctx.events_enable);
         log_debug("");
-        value = cJSON_GetObjectItemCaseSensitive(value, "events");
-        if ((!cJSON_IsNull(value)) && (cJSON_IsArray(value))) {
-            cJSON_ArrayForEach(item, value) {
-                service_ctx.events_num++;
-                if (service_ctx.events_num >= MAX_EVENTS) {
-                    log_error("Ignore event, too many events, max is: %d", MAX_EVENTS);
-                    service_ctx.events_num--;
-                } else {
-                    service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
 
-                    // Init variables before reading
-                    service_ctx.events[service_ctx.events_num - 1].topic = NULL;
-                    service_ctx.events[service_ctx.events_num - 1].source_name = NULL;
-                    service_ctx.events[service_ctx.events_num - 1].source_type = NULL;
-                    service_ctx.events[service_ctx.events_num - 1].source_value = NULL;
-                    service_ctx.events[service_ctx.events_num - 1].input_file = NULL;
+        if (json_object_object_get_ex(json_file, "events", &value)) {
+            if (value && json_object_is_type(value, json_type_array)) {
+                size_t array_len = json_object_array_length(value);
+                for (size_t i = 0; i < array_len; i++) {
+                    item = json_object_array_get_idx(value, i);
+                    if (!item)
+                        continue;
 
-                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].topic), item, "topic");
-                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_name), item, "source_name");
-                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_type), item, "source_type");
-                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_value), item, "source_value");
-                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].input_file), item, "input_file");
+                    service_ctx.events_num++;
+                    if (service_ctx.events_num >= MAX_EVENTS) {
+                        log_error("Ignore event, too many events, max is: %d", MAX_EVENTS);
+                        service_ctx.events_num--;
+                    } else {
+                        service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
 
-                    // Print debug
-                    log_debug("Event: %d", service_ctx.events_num - 1);
-                    log_debug("\ttopic: %s", service_ctx.events[service_ctx.events_num - 1].topic);
-                    log_debug("\tsource_name: %s", service_ctx.events[service_ctx.events_num - 1].source_name);
-                    log_debug("\tsource_type: %s", service_ctx.events[service_ctx.events_num - 1].source_type);
-                    log_debug("\tsource_value: %s", service_ctx.events[service_ctx.events_num - 1].source_value);
-                    log_debug("\tinput_file: %s", service_ctx.events[service_ctx.events_num - 1].input_file);
-                    log_debug("");
+                        // Init variables before reading
+                        service_ctx.events[service_ctx.events_num - 1].topic = NULL;
+                        service_ctx.events[service_ctx.events_num - 1].source_name = NULL;
+                        service_ctx.events[service_ctx.events_num - 1].source_type = NULL;
+                        service_ctx.events[service_ctx.events_num - 1].source_value = NULL;
+                        service_ctx.events[service_ctx.events_num - 1].input_file = NULL;
+
+                        get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].topic), item, "topic");
+                        get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_name), item, "source_name");
+                        get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_type), item, "source_type");
+                        get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_value), item, "source_value");
+                        get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].input_file), item, "input_file");
+
+                        // Print debug
+                        log_debug("Event: %d", service_ctx.events_num - 1);
+                        log_debug("\ttopic: %s", service_ctx.events[service_ctx.events_num - 1].topic);
+                        log_debug("\tsource_name: %s", service_ctx.events[service_ctx.events_num - 1].source_name);
+                        log_debug("\tsource_type: %s", service_ctx.events[service_ctx.events_num - 1].source_type);
+                        log_debug("\tsource_value: %s", service_ctx.events[service_ctx.events_num - 1].source_value);
+                        log_debug("\tinput_file: %s", service_ctx.events[service_ctx.events_num - 1].input_file);
+                        log_debug("");
+                    }
                 }
             }
         }
@@ -1088,7 +1121,7 @@ int process_json_conf_file(char *file)
         }
     }
 
-    cJSON_Delete(json_file);
+    json_object_put(json_file);
     free(buffer);
 
     return 0;
