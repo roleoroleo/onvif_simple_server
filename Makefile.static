@@ -5,16 +5,16 @@ OBJECTS_O = onvif_simple_server.o device_service.o media_service.o media2_servic
 OBJECTS_N = onvif_notify_server.o conf.o utils.o log.o ezxml_wrapper.o ezxml/ezxml.o
 OBJECTS_W = wsd_simple_server.o utils.o log.o ezxml_wrapper.o ezxml/ezxml.o
 ifdef HAVE_WOLFSSL
-INCLUDE = -DHAVE_WOLFSSL -Iextras/wolfssl -Iextras/zlib -Iextras/cjson -Iextras -ffunction-sections -fdata-sections -lrt
+INCLUDE = -DHAVE_WOLFSSL -Iextras/wolfssl -Iextras/zlib -Iextras/json-c/build/_install/include -Iextras -ffunction-sections -fdata-sections -lrt
 LIBS_O = -Wl,--gc-sections extras/wolfssl/src/.libs/libwolfssl.a extras/zlib/libz.a extras/json-c/build/libjson-c.a -lpthread -lrt
 LIBS_N = -Wl,--gc-sections extras/wolfssl/src/.libs/libwolfssl.a extras/json-c/build/libjson-c.a -lpthread -lrt
 else
 ifdef HAVE_MBEDTLS
-INCLUDE = -DHAVE_MBEDTLS -Iextras/mbedtls/include -Iextras/zlib -Iextras/cjson -Iextras -ffunction-sections -fdata-sections -lrt
+INCLUDE = -DHAVE_MBEDTLS -Iextras/mbedtls/include -Iextras/zlib -Iextras/json-c/build/_install/include -Iextras -ffunction-sections -fdata-sections -lrt
 LIBS_O = -Wl,--gc-sections extras/mbedtls/library/libmbedcrypto.a extras/zlib/libz.a extras/json-c/build/libjson-c.a -lpthread -lrt
 LIBS_N = -Wl,--gc-sections extras/mbedtls/library/libmbedcrypto.a extras/json-c/build/libjson-c.a -lpthread -lrt
 else
-INCLUDE = -Iextras/libtomcrypt/src/headers -Iextras/zlib -Iextras/cjson -Iextras -ffunction-sections -fdata-sections -lrt
+INCLUDE = -Iextras/libtomcrypt/src/headers -Iextras/zlib -Iextras/json-c/build/_install/include -Iextras -ffunction-sections -fdata-sections -lrt
 LIBS_O = -Wl,--gc-sections extras/libtomcrypt/libtomcrypt.a extras/zlib/libz.a extras/json-c/build/libjson-c.a -lpthread -lrt
 LIBS_N = -Wl,--gc-sections extras/libtomcrypt/libtomcrypt.a extras/json-c/build/libjson-c.a -lpthread -lrt
 endif
