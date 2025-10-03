@@ -948,11 +948,11 @@ int process_json_conf_file(char *file)
         // Print debug
         log_debug("enable: %d", service_ctx.ptz_node.enable);
         log_debug("min_step_x: %.1f", service_ctx.ptz_node.min_step_x);
-        log_debug("min_step_x: %.1f", service_ctx.ptz_node.max_step_x);
-        log_debug("min_step_x: %.1f", service_ctx.ptz_node.min_step_y);
-        log_debug("min_step_x: %.1f", service_ctx.ptz_node.max_step_y);
-        log_debug("min_step_x: %.1f", service_ctx.ptz_node.min_step_z);
-        log_debug("min_step_x: %.1f", service_ctx.ptz_node.max_step_z);
+        log_debug("max_step_x: %.1f", service_ctx.ptz_node.max_step_x);
+        log_debug("min_step_y: %.1f", service_ctx.ptz_node.min_step_y);
+        log_debug("max_step_y: %.1f", service_ctx.ptz_node.max_step_y);
+        log_debug("min_step_z: %.1f", service_ctx.ptz_node.min_step_z);
+        log_debug("max_step_z: %.1f", service_ctx.ptz_node.max_step_z);
         log_debug("get_position: %s", service_ctx.ptz_node.get_position);
         log_debug("is_moving: %s", service_ctx.ptz_node.is_moving);
         log_debug("move_left: %s", service_ctx.ptz_node.move_left);
