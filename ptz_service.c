@@ -117,8 +117,7 @@ int ptz_get_service_capabilities()
             "%MOVE_STATUS%", move_status,
             "%STATUS_POSITION%", status_position);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "ptz_service_files/GetServiceCapabilities.xml", 4,
             "%MOVE_STATUS%", move_status,
@@ -149,8 +148,7 @@ int ptz_get_configurations()
             "%MIN_Z%", min_z,
             "%MAX_Z%", max_z);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "ptz_service_files/GetConfigurations.xml", 12,
             "%MIN_X%", min_x,
@@ -185,8 +183,7 @@ int ptz_get_configuration()
             "%MIN_Z%", min_z,
             "%MAX_Z%", max_z);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "ptz_service_files/GetConfiguration.xml", 12,
             "%MIN_X%", min_x,
@@ -221,8 +218,7 @@ int ptz_get_configuration_options()
             "%MIN_Z%", min_z,
             "%MAX_Z%", max_z);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "ptz_service_files/GetConfigurationOptions.xml", 12,
             "%MIN_X%", min_x,
@@ -257,8 +253,7 @@ int ptz_get_nodes()
             "%MIN_Z%", min_z,
             "%MAX_Z%", max_z);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "ptz_service_files/GetNodes.xml", 12,
             "%MIN_X%", min_x,
@@ -299,8 +294,7 @@ int ptz_get_node()
             "%MIN_Z%", min_z,
             "%MAX_Z%", max_z);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "ptz_service_files/GetNode.xml", 12,
             "%MIN_X%", min_x,
@@ -340,8 +334,7 @@ int ptz_get_presets()
             dest = NULL;
         } else {
             dest = dest_a;
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", total_size);
+            output_http_headers(size);
         }
 
         size = cat(dest, "ptz_service_files/GetPresets_1.xml", 0);
@@ -418,8 +411,7 @@ int ptz_goto_preset()
     system(sys_command);
     long size = cat(NULL, "ptz_service_files/GotoPreset.xml", 0);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "ptz_service_files/GotoPreset.xml", 0);
 }
@@ -447,8 +439,7 @@ int ptz_goto_home_position()
 
     long size = cat(NULL, "ptz_service_files/GotoHomePosition.xml", 0);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "ptz_service_files/GotoHomePosition.xml", 0);
 }
@@ -555,8 +546,7 @@ int ptz_continuous_move()
 
     long size = cat(NULL, "ptz_service_files/ContinuousMove.xml", 0);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "ptz_service_files/ContinuousMove.xml", 0);
 }
@@ -689,8 +679,7 @@ int ptz_relative_move()
 
         long size = cat(NULL, "ptz_service_files/RelativeMove.xml", 0);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "ptz_service_files/RelativeMove.xml", 0);
 
@@ -778,8 +767,7 @@ int ptz_absolute_move()
 
         long size = cat(NULL, "ptz_service_files/AbsoluteMove.xml", 0);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "ptz_service_files/AbsoluteMove.xml", 0);
 
@@ -834,8 +822,7 @@ int ptz_stop()
 
     long size = cat(NULL, "ptz_service_files/Stop.xml", 0);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "ptz_service_files/Stop.xml", 0);
 }
@@ -924,8 +911,7 @@ int ptz_get_status()
                 "%MOVE_STATUS_ZOOM%", "IDLE",
                 "%TIME%", utctime);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "ptz_service_files/GetStatus.xml", 12,
                 "%X%", sx,
@@ -1072,8 +1058,7 @@ int ptz_set_preset()
     long size = cat(NULL, "ptz_service_files/SetPreset.xml", 2,
             "%PRESET_TOKEN%", preset_token_out);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "ptz_service_files/SetPreset.xml", 2,
             "%PRESET_TOKEN%", preset_token_out);
@@ -1105,8 +1090,7 @@ int ptz_set_home_position()
 
     long size = cat(NULL, "ptz_service_files/SetHomePosition.xml", 0);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "ptz_service_files/SetHomePosition.xml", 0);
 }
@@ -1144,8 +1128,7 @@ int ptz_remove_preset()
 
     long size = cat(NULL, "ptz_service_files/RemovePreset.xml", 0);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "ptz_service_files/RemovePreset.xml", 0);
 }

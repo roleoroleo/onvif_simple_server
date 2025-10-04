@@ -251,6 +251,78 @@ int gzip_d(FILE *file_out, char *file_in)
 #endif
 
 /**
+ * Generate ONVIF-compliant SOAP fault response
+ * @param out The output type: "stdout", char *ptr or NULL
+ * @param fault_subcode The ONVIF fault subcode (e.g., "ter:ActionNotSupported")
+ * @param fault_reason The human-readable fault reason
+ * @param fault_detail Additional fault details
+ * @return the number of bytes written
+ */
+// Global flag to indicate if the last cat() call returned a SOAP fault
+int g_last_response_was_soap_fault = 0;
+
+/**
+ * Output appropriate HTTP headers based on whether the response is a SOAP fault
+ * @param content_length The content length to include in headers
+ */
+void output_http_headers(long content_length)
+{
+    if (g_last_response_was_soap_fault) {
+        fprintf(stdout, "Status: 500 Internal Server Error\r\n");
+    }
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", content_length);
+}
+
+long cat_soap_fault(char* out, const char* fault_subcode, const char* fault_reason, const char* fault_detail)
+{
+    const char* soap_fault_template = "<?xml version=\"1.0\" ?>"
+                                      "<soapenv:Envelope xmlns:soapenv=\"http://www.w3.org/2003/05/soap-envelope\""
+                                      " xmlns:ter=\"http://www.onvif.org/ver10/error\""
+                                      " xmlns:xs=\"http://www.w3.org/2000/10/XMLSchema\">"
+                                      "<soapenv:Body>"
+                                      "<soapenv:Fault>"
+                                      "<soapenv:Code>"
+                                      "<soapenv:Value>env:Receiver</soapenv:Value>"
+                                      "<soapenv:Subcode>"
+                                      "<soapenv:Value>%s</soapenv:Value>"
+                                      "</soapenv:Subcode>"
+                                      "</soapenv:Code>"
+                                      "<soapenv:Reason>"
+                                      "<soapenv:Text xml:lang=\"en\">%s</soapenv:Text>"
+                                      "</soapenv:Reason>"
+                                      "<soapenv:Node>http://www.w3.org/2003/05/soap-envelope/node/ultimateReceiver</soapenv:Node>"
+                                      "<soapenv:Role>http://www.w3.org/2003/05/soap-envelope/role/ultimateReceiver</soapenv:Role>"
+                                      "<soapenv:Detail>"
+                                      "<soapenv:Text>%s</soapenv:Text>"
+                                      "</soapenv:Detail>"
+                                      "</soapenv:Fault>"
+                                      "</soapenv:Body>"
+                                      "</soapenv:Envelope>\r\n";
+
+    char soap_fault[4096];
+    int len = snprintf(soap_fault, sizeof(soap_fault), soap_fault_template, fault_subcode, fault_reason, fault_detail);
+
+    // Set global flag to indicate this is a SOAP fault
+    g_last_response_was_soap_fault = 1;
+
+    if (out == NULL) {
+        // First call - just return size for Content-Length calculation
+        return len;
+    } else if (strcmp(out, "stdout") == 0) {
+        // Second call - output the SOAP fault body only
+        // The service function will handle HTTP status and headers
+        printf("%s", soap_fault);
+        fflush(stdout);
+    } else {
+        // Output to buffer
+        strcpy(out, soap_fault);
+    }
+
+    return len;
+}
+
+/**
  * Read a file line by line and send to output after replacing arguments
  * @param out The output type: "sdout", char *ptr or NULL
  * @param filename The input file to process
@@ -268,6 +340,9 @@ long cat(char *out, char *filename, int num, ...)
     int i;
     long ret = 0;
     FILE *file;
+
+    // Reset SOAP fault flag for normal file operations
+    g_last_response_was_soap_fault = 0;
 
 #ifdef USE_ZLIB
     file = tmpfile();
@@ -288,6 +363,15 @@ long cat(char *out, char *filename, int num, ...)
         return -3;
     }
 #endif
+
+    if (!file) {
+        log_error("Unable to open file %s", filename);
+        // Return ONVIF-compliant SOAP fault instead of empty response
+        return cat_soap_fault(out,
+                              "ter:ActionNotSupported",
+                              "Optional Action Not Implemented",
+                              "The requested XML template is not available on this device");
+    }
 
     char line[MAX_CAT_LEN];
 

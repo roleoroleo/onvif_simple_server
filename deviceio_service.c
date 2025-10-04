@@ -34,8 +34,7 @@ int deviceio_get_video_sources()
 {
     long size = cat(NULL, "deviceio_service_files/GetVideoSources.xml", 0);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "deviceio_service_files/GetVideoSources.xml", 0);
 }
@@ -65,8 +64,7 @@ int deviceio_get_service_capabilities()
             "%AUDIO_SOURCES%", audio_sources,
             "%AUDIO_OUTPUTS%", audio_outputs);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "deviceio_service_files/GetServiceCapabilities.xml", 6,
             "%RELAY_OUTPUTS%", relay_outputs,
@@ -89,8 +87,7 @@ int deviceio_get_audio_outputs()
     long size = cat(NULL, "deviceio_service_files/GetAudioOutputs.xml", 2,
             "%AUDIO_OUTPUT_TOKEN%", audio_output_token);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "deviceio_service_files/GetAudioOutputs.xml", 2,
             "%AUDIO_OUTPUT_TOKEN%", audio_output_token);
@@ -111,8 +108,7 @@ int deviceio_get_audio_sources()
     long size = cat(NULL, "deviceio_service_files/GetAudioSources.xml", 2,
             "%AUDIO_SOURCE_TOKEN%", audio_source_token);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "deviceio_service_files/GetAudioSources.xml", 2,
             "%AUDIO_SOURCE_TOKEN%", audio_source_token);
@@ -133,8 +129,7 @@ int deviceio_get_relay_outputs()
             dest = NULL;
         } else {
             dest = dest_a;
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
         }
         size = cat(dest, "deviceio_service_files/GetRelayOutputs_header.xml", 0);
 
@@ -171,8 +166,7 @@ int deviceio_get_relay_output_options()
             dest = NULL;
         } else {
             dest = dest_a;
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
         }
 
         size = cat(dest, "deviceio_service_files/GetRelayOutputOptions_header.xml", 0);
@@ -224,8 +218,7 @@ int deviceio_set_relay_output_settings()
         if ((itoken >= 0) && (itoken < service_ctx.relay_outputs_num)) {
             long size = cat(NULL, "deviceio_service_files/SetRelayOutputSettings.xml", 0);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout", "deviceio_service_files/SetRelayOutputSettings.xml", 0);
         } else {
@@ -279,8 +272,7 @@ int deviceio_set_relay_output_state()
 
     long size = cat(NULL, "deviceio_service_files/SetRelayOutputState.xml", 0);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "deviceio_service_files/SetRelayOutputState.xml", 0);
 }
