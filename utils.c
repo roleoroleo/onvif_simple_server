@@ -271,7 +271,8 @@ void output_http_headers(long content_length)
         fprintf(stdout, "Status: 500 Internal Server Error\r\n");
     }
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", content_length);
+    fprintf(stdout, "Content-Length: %ld\r\n", content_length);
+    fprintf(stdout, "Connection: close\r\n\r\n");
 }
 
 long cat_soap_fault(char* out, const char* fault_subcode, const char* fault_reason, const char* fault_detail)
@@ -506,6 +507,7 @@ int get_mac_address(char *address, char *name)
     ifc.ifc_len = sizeof(buf);
     ifc.ifc_buf = buf;
     if (ioctl(sock, SIOCGIFCONF, &ifc) == -1) {
+        close(sock);
         return -2;
     }
 
@@ -536,10 +538,12 @@ int get_mac_address(char *address, char *name)
                 (unsigned char) ifr.ifr_hwaddr.sa_data[5]);
     } else {
         log_error("Unable to get  mac address");
+        close(sock);
         return -4;
     }
 
     log_debug("MAC address: <%s>", address);
+    close(sock);
 
     return 0;
 }

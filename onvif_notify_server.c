@@ -216,7 +216,7 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
     char host[1024];
     int port = 80;
     char page[1024];
-    char header_fmt[] = "POST %s HTTP/1.1\r\nHost: %s\r\nContent-Type: application/soap+xml\r\nContent-Length: %s\r\n\r\n";
+    char header_fmt[] = "POST %s HTTP/1.1\r\nHost: %s\r\nContent-Type: application/soap+xml\r\nContent-Length: %s\r\nConnection: close\r\n\r\n";
     char *header;
     char *message;
     int size;
@@ -256,6 +256,7 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
 
     if (connect(sockfd, (struct sockaddr *) &remote, sizeof(remote)) != 0) {
         log_error("Connection failed");
+        close(sockfd);
         return -2;
     }
 
@@ -274,6 +275,7 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
     header = (char *) malloc((strlen(header_fmt) + strlen(page) + strlen(host) + strlen(size_string) + 4) * sizeof(char));
     if (header == NULL) {
         log_error("Malloc error.\n");
+        close(sockfd);
         return -3;
     }
     sprintf(header, header_fmt, page, host, size_string);
@@ -282,6 +284,7 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
     if (message == NULL) {
         log_error("Malloc error.\n");
         free(header);
+        close(sockfd);
         return -3;
     }
 
@@ -298,6 +301,7 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
         log_error("Error sending Notify message.\n");
         free(header);
         free(message);
+        close(sockfd);
         return -4;
     }
 
@@ -305,8 +309,9 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
     free(message);
     log_info("Sent.");
 
-    // Close socket
+    // Close socket properly
     shutdown(sockfd, SHUT_RDWR);
+    close(sockfd);
 
     return 0;
 }
