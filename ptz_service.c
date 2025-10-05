@@ -334,7 +334,7 @@ int ptz_get_presets()
             dest = NULL;
         } else {
             dest = dest_a;
-            output_http_headers(size);
+            output_http_headers(total_size);
         }
 
         size = cat(dest, "ptz_service_files/GetPresets_1.xml", 0);
