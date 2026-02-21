@@ -43,7 +43,7 @@
 #define DEFAULT_JSON_CONF_FILE "/etc/onvif_simple_server.json"
 #define DEFAULT_LOG_FILE "/var/log/onvif_notify_server.log"
 #define DEFAULT_PID_FILE "/var/run/onvif_notify_server.pid"
-#define TEMPLATE_DIR "/etc/onvif_notify_server"
+#define DEFAULT_TEMPLATE_DIR "/etc/onvif_notify_server"
 #define INOTIFY_DIR "/tmp/onvif_notify_server"
 
 #define ALARM_OFF 0
@@ -63,6 +63,7 @@ service_context_t service_ctx;
 
 // Global variables
 char *conf_file;
+char template_dir[1024];
 int debug;
 FILE *fLog;
 int exit_main;
@@ -262,7 +263,7 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
 
     // Get size of message content
     log_info("Sending Notify message.");
-    sprintf(template_file, "%s/Notify.xml", TEMPLATE_DIR);
+    sprintf(template_file, "%s/Notify.xml", template_dir);
     size = cat(NULL, template_file, 12,
             "%TOPIC%", service_ctx.events[alarm_index].topic,
             "%UTC_TIME%", utctime,
@@ -502,11 +503,13 @@ int handle_inotify_events(int fd, char *dir)
 
 void print_usage(char *progname)
 {
-    fprintf(stderr, "\nUsage: %s [-c CONF_FILE] [-p PID_FILE] [-f] [-d LEVEL]\n\n", progname);
+    fprintf(stderr, "\nUsage: %s [-c CONF_FILE] [-p PID_FILE] [-t TEMPLATE_DIR] [-f] [-d LEVEL]\n\n", progname);
     fprintf(stderr, "\t-c CONF_FILE, --conf_file CONF_FILE\n");
     fprintf(stderr, "\t\tpath of the configuration file\n");
     fprintf(stderr, "\t-p PID_FILE, --pid_file PID_FILE\n");
     fprintf(stderr, "\t\tpid file\n");
+    fprintf(stderr, "\t-t TEMPLATE_DIR, --template_dir TEMPLATE_DIR\n");
+    fprintf(stderr, "\t\ttemplate directory (default: %s)\n", DEFAULT_TEMPLATE_DIR);
     fprintf(stderr, "\t-f, --foreground\n");
     fprintf(stderr, "\t\tdon't daemonize\n");
     fprintf(stderr, "\t-d LEVEL, --debug LEVEL\n");
@@ -542,6 +545,7 @@ int main(int argc, char **argv)  {
     }
 
     strcpy(pid_file, DEFAULT_PID_FILE);
+    strcpy(template_dir, DEFAULT_TEMPLATE_DIR);
     foreground = 0;
     debug = 5;
 
@@ -550,6 +554,7 @@ int main(int argc, char **argv)  {
         {
             {"conf_file",  required_argument, 0, 'c'},
             {"pid_file",  required_argument, 0, 'p'},
+            {"template_dir",  required_argument, 0, 't'},
             {"foreground",  no_argument, 0, 'f'},
             {"debug",  required_argument, 0, 'd'},
             {"help",  no_argument, 0, 'h'},
@@ -558,7 +563,7 @@ int main(int argc, char **argv)  {
         /* getopt_long stores the option index here. */
         int option_index = 0;
 
-        c = getopt_long (argc, argv, "c:p:fd:h",
+        c = getopt_long (argc, argv, "c:p:t:fd:h",
                          long_options, &option_index);
 
         /* Detect the end of the options. */
@@ -581,6 +586,11 @@ int main(int argc, char **argv)  {
         case 'p':
             if (strlen(optarg) < 1024)
                 strcpy(pid_file, optarg);
+            break;
+
+        case 't':
+            if (strlen(optarg) < sizeof(template_dir))
+                strcpy(template_dir, optarg);
             break;
 
         case 'f':
@@ -690,20 +700,20 @@ int main(int argc, char **argv)  {
     }
     log_info("Completed.");
 
-    // Check if TEMPLATE_DIR exists
-    if (access(TEMPLATE_DIR, F_OK ) != -1) {
+    // Check if template_dir exists
+    if (access(template_dir, F_OK ) != -1) {
         // file exists
         DIR *dirptr;
-        if ((dirptr = opendir(TEMPLATE_DIR)) != NULL) {
+        if ((dirptr = opendir(template_dir)) != NULL) {
             closedir (dirptr);
         } else {
-            log_fatal("Unable to open directory %s", TEMPLATE_DIR);
+            log_fatal("Unable to open directory %s", template_dir);
             fclose(fLog);
             free(conf_file);
             exit(EXIT_FAILURE);
         }
     } else {
-        log_fatal("Unable to open directory %s", TEMPLATE_DIR);
+        log_fatal("Unable to open directory %s", template_dir);
         fclose(fLog);
         free(conf_file);
         exit(EXIT_FAILURE);
