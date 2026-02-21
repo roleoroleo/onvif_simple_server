@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope"
-                   xmlns:tds="http://www.onvif.org/ver10/device/wsdl"
+                   xmlns:tmd="http://www.onvif.org/ver10/deviceIO/wsdl"
                    xmlns:tt="http://www.onvif.org/ver10/schema">
     <SOAP-ENV:Body>
         <tmd:GetAudioSourcesResponse>

@@ -2,6 +2,6 @@
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope"
                    xmlns:tptz="http://www.onvif.org/ver20/ptz/wsdl">
     <SOAP-ENV:Body>
-        <tptz:SetHomePosition/>
+        <tptz:SetHomePositionResponse/>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
