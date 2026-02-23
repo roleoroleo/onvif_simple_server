@@ -39,7 +39,7 @@
 #define TYPE "NetworkVideoTransmitter"
 
 #define DEFAULT_LOG_FILE "/var/log/wsd_simple_server.log"
-#define TEMPLATE_DIR "/etc/wsd_simple_server"
+#define DEFAULT_TEMPLATE_DIR "/etc/wsd_simple_server"
 
 #define RECV_BUFFER_LEN 4096
 
@@ -63,6 +63,7 @@ int sock;
 struct sockaddr_in addr_in;
 int addr_len;
 char xaddr[1024];
+char template_dir[1024];
 int exit_main;
 int msg_number;
 char uuid[UUID_LEN + 1];
@@ -178,7 +179,7 @@ void signal_handler(int signal)
 
     // Send Bye message
     log_info("Sending Bye message.");
-    sprintf(template_file, "%s/Bye.xml", TEMPLATE_DIR);
+    sprintf(template_file, "%s/Bye.xml", template_dir);
     size = cat(NULL, template_file, 12,
             "%MSG_UUID%", msg_uuid,
             "%MSG_NUMBER%", s_tmp,
@@ -224,7 +225,7 @@ void signal_handler(int signal)
 
 void print_usage(char *progname)
 {
-    fprintf(stderr, "\nUsage: %s -i INTERFACE -x XADDR [-m MODEL] [-n MANUFACTURER] -p PID_FILE [-f] [-d LEVEL]\n\n", progname);
+    fprintf(stderr, "\nUsage: %s -i INTERFACE -x XADDR [-m MODEL] [-n MANUFACTURER] -p PID_FILE [-t TEMPLATE_DIR] [-f] [-d LEVEL]\n\n", progname);
     fprintf(stderr, "\t-i, --if_name\n");
     fprintf(stderr, "\t\tnetwork interface\n");
     fprintf(stderr, "\t-x, --xaddr\n");
@@ -235,6 +236,8 @@ void print_usage(char *progname)
     fprintf(stderr, "\t\thardware manufacturer\n");
     fprintf(stderr, "\t-p, --pid_file\n");
     fprintf(stderr, "\t\tpid file\n");
+    fprintf(stderr, "\t-t, --template_dir\n");
+    fprintf(stderr, "\t\ttemplate directory (default: %s)\n", DEFAULT_TEMPLATE_DIR);
     fprintf(stderr, "\t-f, --foreground\n");
     fprintf(stderr, "\t\tdon't daemonize\n");
     fprintf(stderr, "\t-d LEVEL, --debug LEVEL\n");
@@ -266,6 +269,7 @@ int main(int argc, char **argv)  {
     xaddr_s = NULL;
     strcpy(model, "MODEL_NAME");
     strcpy(hardware, "HARDWARE_MANUFACTURER");
+    strcpy(template_dir, DEFAULT_TEMPLATE_DIR);
     foreground = 0;
     debug = 5;
 
@@ -277,6 +281,7 @@ int main(int argc, char **argv)  {
             {"xaddr",  required_argument, 0, 'x'},
             {"model",  required_argument, 0, 'm'},
             {"hardware",  required_argument, 0, 'n'},
+            {"template_dir",  required_argument, 0, 't'},
             {"foreground",  no_argument, 0, 'f'},
             {"debug",  required_argument, 0, 'd'},
             {"help",  no_argument, 0, 'h'},
@@ -285,7 +290,7 @@ int main(int argc, char **argv)  {
         /* getopt_long stores the option index here. */
         int option_index = 0;
 
-        c = getopt_long (argc, argv, "i:p:x:m:n:fd:h",
+        c = getopt_long (argc, argv, "i:p:x:m:n:t:fd:h",
                          long_options, &option_index);
 
         /* Detect the end of the options. */
@@ -321,6 +326,15 @@ int main(int argc, char **argv)  {
 
         case 'p':
             pid_file = optarg;
+            break;
+
+        case 't':
+            if (strlen(optarg) < sizeof(template_dir)) {
+                strcpy(template_dir, optarg);
+            } else {
+                print_usage(argv[0]);
+                exit(EXIT_FAILURE);
+            }
             break;
 
         case 'f':
@@ -412,19 +426,19 @@ int main(int argc, char **argv)  {
         exit(EXIT_FAILURE);
     }
 
-    // Check if TEMPLATE_DIR exists
-    if (access(TEMPLATE_DIR, F_OK ) != -1) {
+    // Check if template_dir exists
+    if (access(template_dir, F_OK ) != -1) {
         // file exists
         DIR *dirptr;
-        if ((dirptr = opendir(TEMPLATE_DIR)) != NULL) {
+        if ((dirptr = opendir(template_dir)) != NULL) {
             closedir (dirptr);
         } else {
-            log_fatal("Unable to open directory %s", TEMPLATE_DIR);
+            log_fatal("Unable to open directory %s", template_dir);
             fclose(fLog);
             exit(EXIT_FAILURE);
         }
     } else {
-        log_fatal("Unable to open directory %s", TEMPLATE_DIR);
+        log_fatal("Unable to open directory %s", template_dir);
         fclose(fLog);
         exit(EXIT_FAILURE);
     }
@@ -474,7 +488,7 @@ int main(int argc, char **argv)  {
 
     // Send Hello message
     log_info("Sending Hello message.");
-    sprintf(template_file, "%s/Hello.xml", TEMPLATE_DIR);
+    sprintf(template_file, "%s/Hello.xml", template_dir);
     size = cat(NULL, template_file, 12,
             "%MSG_UUID%", msg_uuid,
             "%MSG_NUMBER%", s_tmp,
@@ -557,7 +571,7 @@ int main(int argc, char **argv)  {
 
                 // Send ProbeMatches message
                 log_info("Sending ProbeMatches message.");
-                sprintf(template_file, "%s/ProbeMatches.xml", TEMPLATE_DIR);
+                sprintf(template_file, "%s/ProbeMatches.xml", template_dir);
                 size = cat(NULL, template_file, 14,
                         "%MSG_UUID%", msg_uuid,
                         "%REL_TO_UUID%", relates_to_uuid,
