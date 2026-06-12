@@ -72,6 +72,49 @@ char msg_uuid[UUID_LEN + 1];
 char model[64];
 char hardware[64];
 
+/*
+ * Auto-detect the outbound IPv4 address for WS-Discovery by querying the
+ * kernel's routing table: connect a UDP socket (no packet is sent) to the
+ * WS-Discovery multicast group and read back the local address the kernel
+ * would select.  Falls back to -i / --if_name for multi-homed systems.
+ * Returns 0 on success and writes a dotted-decimal string into addr_str
+ * (caller must provide at least 16 bytes).  Returns -1 on failure.
+ */
+static int detect_outbound_address(char *addr_str)
+{
+    int fd;
+    struct sockaddr_in dst, src;
+    socklen_t src_len = sizeof(src);
+
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0)
+        return -1;
+
+    memset(&dst, 0, sizeof(dst));
+    dst.sin_family      = AF_INET;
+    dst.sin_addr.s_addr = inet_addr(MULTICAST_ADDRESS);
+    dst.sin_port        = htons(PORT);
+
+    if (connect(fd, (struct sockaddr *)&dst, sizeof(dst)) < 0) {
+        close(fd);
+        return -1;
+    }
+
+    memset(&src, 0, sizeof(src));
+    if (getsockname(fd, (struct sockaddr *)&src, &src_len) < 0) {
+        close(fd);
+        return -1;
+    }
+    close(fd);
+
+    if (src.sin_addr.s_addr == htonl(INADDR_ANY))
+        return -1;
+
+    strncpy(addr_str, inet_ntoa(src.sin_addr), 15);
+    addr_str[15] = 0;
+    return 0;
+}
+
 int daemonize(int flags)
 {
     int maxfd, fd;
@@ -225,9 +268,9 @@ void signal_handler(int signal)
 
 void print_usage(char *progname)
 {
-    fprintf(stderr, "\nUsage: %s -i INTERFACE -x XADDR [-m MODEL] [-n MANUFACTURER] -p PID_FILE [-t TEMPLATE_DIR] [-f] [-d LEVEL]\n\n", progname);
+    fprintf(stderr, "\nUsage: %s [-i INTERFACE] -x XADDR [-m MODEL] [-n MANUFACTURER] -p PID_FILE [-t TEMPLATE_DIR] [-f] [-d LEVEL]\n\n", progname);
     fprintf(stderr, "\t-i, --if_name\n");
-    fprintf(stderr, "\t\tnetwork interface\n");
+    fprintf(stderr, "\t\tnetwork interface (auto-detected; use -i to force a specific interface)\n");
     fprintf(stderr, "\t-x, --xaddr\n");
     fprintf(stderr, "\t\tresource address\n");
     fprintf(stderr, "\t-m, --model\n");
@@ -376,11 +419,6 @@ int main(int argc, char **argv)  {
         }
     }
 
-    if (if_name == NULL) {
-        print_usage(argv[0]);
-        exit(EXIT_SUCCESS);
-    }
-
     if (xaddr_s == NULL) {
         print_usage(argv[0]);
         exit(EXIT_SUCCESS);
@@ -410,7 +448,7 @@ int main(int argc, char **argv)  {
     log_set_quiet(1);
     log_info("Starting program.");
 
-    log_debug("Argument if_name = %s", if_name);
+    log_debug("Argument if_name = %s", if_name ? if_name : "(auto-detect)");
     log_debug("Argument pid_file = %s", pid_file);
     log_debug("Argument xaddr = %s", xaddr_s);
 
@@ -451,7 +489,17 @@ int main(int argc, char **argv)  {
     addr_in.sin_family = AF_INET;
     addr_in.sin_port = htons(PORT);
 
-    get_ip_address(address, netmask, if_name);
+    if (if_name != NULL) {
+        get_ip_address(address, netmask, if_name);
+    } else {
+        if (detect_outbound_address(address) != 0) {
+            log_fatal("Cannot auto-detect network interface. Use -i <interface> to specify one.");
+            close(sock);
+            fclose(fLog);
+            exit(EXIT_FAILURE);
+        }
+        log_info("Auto-detected outbound address: %s", address);
+    }
     log_debug("Address = %s", address);
 
     if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
