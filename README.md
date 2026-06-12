@@ -279,10 +279,11 @@ Check the code for information.
 wsd_simple server supports the following options
 
 ```
-Usage: wsd_simple_server -i INTERFACE -x XADDR [-m MODEL] [-n MANUFACTURER] -p PID_FILE [-f] [-d LEVEL]
+Usage: wsd_simple_server [-i INTERFACE] -x XADDR [-m MODEL] [-n MANUFACTURER] -p PID_FILE [-f] [-d LEVEL]
 
         -i, --if_name
-                network interface
+                network interface (auto-detected from routing table if omitted;
+                use -i to force a specific interface on multi-homed systems)
         -x, --xaddr
                 resource address
         -m, --model
@@ -300,7 +301,7 @@ Usage: wsd_simple_server -i INTERFACE -x XADDR [-m MODEL] [-n MANUFACTURER] -p P
 ```
 | Option | Description | Example |
 | --- | --- | --- |
-| if_name | the network interface that the device binds | eth0 |
+| if_name | network interface (optional; auto-detected if omitted) | eth0 |
 | xaddr | the resource address associated to the onvif server |  http://%s/onvif/device_service |
 | pid_file | is the pid file created by the daemon | /var/run/wsd_simple_server.pid |
 | foreground | don't fork | - |
