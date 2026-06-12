@@ -17,12 +17,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <arpa/inet.h>
+#include <ifaddrs.h>
 #include <time.h>
 #include <signal.h>
 #include <getopt.h>
@@ -113,6 +115,172 @@ static int detect_outbound_address(char *addr_str)
     strncpy(addr_str, inet_ntoa(src.sin_addr), 15);
     addr_str[15] = 0;
     return 0;
+}
+
+/* -------------------------------------------------------------------------
+ * Compact SHA-1 (RFC 3174 / FIPS 180-4) -- used only for UUID v5 generation.
+ * No external dependencies.
+ * ---------------------------------------------------------------------- */
+
+static void sha1_store32(uint8_t *b, uint32_t v)
+{
+    b[0] = v >> 24; b[1] = v >> 16; b[2] = v >> 8; b[3] = v;
+}
+
+static void sha1_compress(uint32_t h[5], const uint8_t blk[64])
+{
+    uint32_t w[80], a, b, c, d, e, f, k, t;
+    int i;
+
+    for (i = 0; i < 16; i++)
+        w[i] = ((uint32_t)blk[i*4] << 24) | ((uint32_t)blk[i*4+1] << 16) |
+               ((uint32_t)blk[i*4+2] << 8) | blk[i*4+3];
+    for (i = 16; i < 80; i++) {
+        t = w[i-3] ^ w[i-8] ^ w[i-14] ^ w[i-16];
+        w[i] = (t << 1) | (t >> 31);
+    }
+
+    a = h[0]; b = h[1]; c = h[2]; d = h[3]; e = h[4];
+    for (i = 0; i < 80; i++) {
+        if      (i < 20) { f = (b & c) | (~b & d); k = 0x5A827999U; }
+        else if (i < 40) { f = b ^ c ^ d;           k = 0x6ED9EBA1U; }
+        else if (i < 60) { f = (b&c)|(b&d)|(c&d);  k = 0x8F1BBCDCU; }
+        else             { f = b ^ c ^ d;            k = 0xCA62C1D6U; }
+        t = ((a << 5) | (a >> 27)) + f + e + k + w[i];
+        e = d; d = c; c = (b << 30) | (b >> 2); b = a; a = t;
+    }
+    h[0] += a; h[1] += b; h[2] += c; h[3] += d; h[4] += e;
+}
+
+static void sha1(const uint8_t *data, size_t len, uint8_t out[20])
+{
+    uint32_t h[5] = { 0x67452301U, 0xEFCDAB89U, 0x98BADCFEU,
+                      0x10325476U, 0xC3D2E1F0U };
+    uint8_t block[64];
+    size_t i, r = len % 64;
+    uint64_t bits;
+
+    for (i = 0; i + 64 <= len; i += 64)
+        sha1_compress(h, data + i);
+
+    memset(block, 0, 64);
+    if (r) memcpy(block, data + i, r);
+    block[r] = 0x80;
+    if (r >= 56) {
+        sha1_compress(h, block);
+        memset(block, 0, 64);
+    }
+    bits = (uint64_t)len * 8;
+    sha1_store32(block + 56, (uint32_t)(bits >> 32));
+    sha1_store32(block + 60, (uint32_t)bits);
+    sha1_compress(h, block);
+
+    for (i = 0; i < 5; i++) sha1_store32(out + i*4, h[i]);
+}
+
+/* -------------------------------------------------------------------------
+ * UUID v5 (SHA-1 name-based, RFC 4122).
+ *
+ * Generates a stable, deterministic UUID from the device's MAC address.
+ * The DNS namespace UUID is used as per RFC 4122 Appendix C.
+ * Satisfies the WS-Discovery 1.1 requirement:
+ *   "The endpoint reference MUST be stable across restarts of the Target Service."
+ * ---------------------------------------------------------------------- */
+
+/* RFC 4122 DNS namespace: 6ba7b810-9dad-11d1-80b4-00c04fd430c8 */
+static const uint8_t UUID_NS_DNS[16] = {
+    0x6b, 0xa7, 0xb8, 0x10,  0x9d, 0xad,  0x11, 0xd1,
+    0x80, 0xb4,  0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8
+};
+
+/*
+ * Build a UUID v5 from a MAC address and write it into uuid_str.
+ * The name fed to the hash is "mac:xx:xx:xx:xx:xx:xx" (lower-case hex).
+ * uuid_str must hold at least UUID_LEN + 1 bytes.
+ */
+static void gen_uuid_v5_mac(char *uuid_str, const uint8_t mac[6])
+{
+    char name[32];
+    uint8_t input[16 + 24];  /* namespace (16) + name (max 23 + NUL) */
+    uint8_t hash[20];
+
+    snprintf(name, sizeof(name), "mac:%02x:%02x:%02x:%02x:%02x:%02x",
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+    memcpy(input, UUID_NS_DNS, 16);
+    memcpy(input + 16, name, strlen(name));
+
+    sha1(input, 16 + strlen(name), hash);
+
+    /* Set version 5 and RFC 4122 variant bits */
+    hash[6] = (hash[6] & 0x0F) | 0x50;   /* version = 5 */
+    hash[8] = (hash[8] & 0x3F) | 0x80;   /* variant = 10xx */
+
+    snprintf(uuid_str, UUID_LEN + 1,
+             "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x"
+             "-%02x%02x%02x%02x%02x%02x",
+             hash[0],  hash[1],  hash[2],  hash[3],
+             hash[4],  hash[5],
+             hash[6],  hash[7],
+             hash[8],  hash[9],
+             hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
+}
+
+/*
+ * Look up the MAC address for a named network interface.
+ * Returns 0 on success, -1 on failure.
+ */
+static int get_mac_by_ifname(const char *if_name, uint8_t mac_out[6])
+{
+    struct ifreq ifr;
+    int fd, ret;
+
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0)
+        return -1;
+
+    memset(&ifr, 0, sizeof(ifr));
+    strncpy(ifr.ifr_name, if_name, IFNAMSIZ - 1);
+    ret = ioctl(fd, SIOCGIFHWADDR, &ifr);
+    close(fd);
+
+    if (ret < 0)
+        return -1;
+
+    memcpy(mac_out, ifr.ifr_hwaddr.sa_data, 6);
+    return 0;
+}
+
+/*
+ * Find which interface owns ip_str (dotted-decimal) and return its MAC.
+ * Used in auto-detect mode when no interface name is available.
+ * Returns 0 on success, -1 on failure.
+ */
+static int get_mac_by_ip(const char *ip_str, uint8_t mac_out[6])
+{
+    struct ifaddrs *ifap, *ifa;
+    char found[IFNAMSIZ] = {0};
+
+    if (getifaddrs(&ifap) < 0)
+        return -1;
+
+    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr || ifa->ifa_addr->sa_family != AF_INET)
+            continue;
+        char buf[16];
+        struct sockaddr_in *sin = (struct sockaddr_in *)ifa->ifa_addr;
+        inet_ntop(AF_INET, &sin->sin_addr, buf, sizeof(buf));
+        if (strcmp(buf, ip_str) == 0) {
+            strncpy(found, ifa->ifa_name, IFNAMSIZ - 1);
+            break;
+        }
+    }
+    freeifaddrs(ifap);
+
+    if (found[0] == '\0')
+        return -1;
+
+    return get_mac_by_ifname(found, mac_out);
 }
 
 int daemonize(int flags)
@@ -502,6 +670,25 @@ int main(int argc, char **argv)  {
     }
     log_debug("Address = %s", address);
 
+    // Generate stable UUID from MAC address (WS-Discovery 1.1: EPR MUST be stable across restarts)
+    {
+        uint8_t mac[6] = {0};
+        int mac_ok;
+
+        if (if_name != NULL)
+            mac_ok = (get_mac_by_ifname(if_name, mac) == 0);
+        else
+            mac_ok = (get_mac_by_ip(address, mac) == 0);
+
+        if (mac_ok) {
+            gen_uuid_v5_mac(uuid, mac);
+            log_info("Device UUID (stable, MAC-based): %s", uuid);
+        } else {
+            gen_uuid(uuid);
+            log_info("Device UUID (random, MAC unavailable): %s", uuid);
+        }
+    }
+
     if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
         log_fatal("Unable to create socket.");
         fclose(fLog);
@@ -529,7 +716,6 @@ int main(int argc, char **argv)  {
     // Prepare Hello message
     msg_number = 1;
     sprintf(s_tmp, "%d", msg_number);
-    gen_uuid(uuid);
     gen_uuid(msg_uuid);
 
     sprintf(xaddr, xaddr_s, address);
