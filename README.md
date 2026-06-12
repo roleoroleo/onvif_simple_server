@@ -280,13 +280,16 @@ Check the code for information.
 wsd_simple server supports the following options
 
 ```
-Usage: wsd_simple_server [-i INTERFACE] -x XADDR [-m MODEL] [-n MANUFACTURER] -p PID_FILE [-f] [-d LEVEL]
+Usage: wsd_simple_server [-i INTERFACE] -x XADDR [-6 XADDR6] [-m MODEL] [-n MANUFACTURER] -p PID_FILE [-f] [-d LEVEL]
 
         -i, --if_name
-                network interface (auto-detected from routing table if omitted;
-                use -i to force a specific interface on multi-homed systems)
+                network interface (auto-detected if omitted; use -i to force a specific interface)
         -x, --xaddr
-                resource address
+                IPv4 resource address (use %s as placeholder for the detected IP)
+        -6, --xaddr6
+                IPv6 resource address template (use %s as placeholder for the detected
+                IPv6 address; include brackets, e.g. http://[%s]:PORT/path)
+                IPv6 WS-Discovery is enabled only when this option is provided
         -m, --model
                 model name
         -n, --hardware
@@ -303,12 +306,30 @@ Usage: wsd_simple_server [-i INTERFACE] -x XADDR [-m MODEL] [-n MANUFACTURER] -p
 | Option | Description | Example |
 | --- | --- | --- |
 | if_name | network interface (optional; auto-detected if omitted) | eth0 |
-| xaddr | the resource address associated to the onvif server |  http://%s/onvif/device_service |
+| xaddr | IPv4 resource address for the ONVIF server | http://%s/onvif/device_service |
+| xaddr6 | IPv6 resource address for the ONVIF server (optional) | http://[%s]:8080/onvif/device_service |
 | pid_file | is the pid file created by the daemon | /var/run/wsd_simple_server.pid |
 | foreground | don't fork | - |
 | debug | debug level from 0 to 5 | - |
 
 %s is replaced runtime with the IP address of the device.
+
+#### IPv6 / dual-stack WS-Discovery
+
+When `-6 XADDR6` is given, `wsd_simple_server` operates in dual-stack mode:
+
+- Joins the IPv4 WSD multicast group `239.255.255.250:3702` (as always)
+- Joins the IPv6 WSD multicast group `FF02::C:3702` (WS-Discovery 1.1)
+- Multiplexes both sockets via `select()`; Hello and Bye on each socket
+- Each Probe is answered on the same socket and protocol it arrived on,
+  advertising only the matching address family (per ONVIF Core Specification)
+
+IPv6 is gracefully degraded: socket setup failure keeps IPv4-only mode running.
+
+Auto-detection for IPv6 uses the same routing-table connect trick as IPv4:
+connect a UDP socket to `FF02::C` with no scope ID and call `getsockname()`. On multi-homed systems use `-i`.
+
+Note: `onvif_simple_server` IPv6 advertising is tracked separately.
 
 ### onvif_notify_server
 onvif_notify_server checks the files related to the events and sends the notify message when an event is fired.
