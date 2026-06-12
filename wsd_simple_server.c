@@ -175,7 +175,8 @@ static void sha1(const uint8_t *data, size_t len, uint8_t out[20])
     sha1_store32(block + 60, (uint32_t)bits);
     sha1_compress(h, block);
 
-    for (i = 0; i < 5; i++) sha1_store32(out + i*4, h[i]);
+    for (i = 0; i < 5; i++)
+        sha1_store32(out + i*4, h[i]);
 }
 
 /* -------------------------------------------------------------------------
@@ -203,14 +204,16 @@ static void gen_uuid_v5_mac(char *uuid_str, const uint8_t mac[6])
     char name[32];
     uint8_t input[16 + 24];  /* namespace (16) + name (max 23 + NUL) */
     uint8_t hash[20];
+    size_t name_len;
 
     snprintf(name, sizeof(name), "mac:%02x:%02x:%02x:%02x:%02x:%02x",
              mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    name_len = strlen(name);
 
     memcpy(input, UUID_NS_DNS, 16);
-    memcpy(input + 16, name, strlen(name));
+    memcpy(input + 16, name, name_len);
 
-    sha1(input, 16 + strlen(name), hash);
+    sha1(input, 16 + name_len, hash);
 
     /* Set version 5 and RFC 4122 variant bits */
     hash[6] = (hash[6] & 0x0F) | 0x50;   /* version = 5 */
