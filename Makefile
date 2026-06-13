@@ -60,7 +60,7 @@ test: test/test_utils
 	./test/test_utils
 
 test/test_utils: test/test_utils.c test/stubs.c utils.c log.c
-	cc -I. -Itest -DHAVE_MBEDTLS -std=c99 \
+	cc -I. -Itest -DHAVE_MBEDTLS -D_GNU_SOURCE -std=c99 \
 		test/test_utils.c test/stubs.c utils.c log.c \
 		-lz -lpthread -lrt -o test/test_utils
 
