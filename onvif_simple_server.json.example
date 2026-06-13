@@ -4,7 +4,6 @@
     "firmware_ver": "0.0.1",
     "hardware_id": "HWID",
     "serial_num": "SN1234567890",
-    "ifs": "wlan0",
     "port": 8080,
     "scopes": [
         "onvif://www.onvif.org/Profile/Streaming",

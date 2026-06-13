@@ -1247,15 +1247,11 @@ int media2_get_audio_decoder_configuration_options()
 
 int media2_get_snapshot_uri()
 {
-    char address[16];
-    char netmask[16];
     char *s;
     char line[MAX_LEN];
     const char *profile_token = get_element("ProfileToken", "Body");
 
     memset(line, '\0', sizeof(line));
-
-    get_ip_address(address, netmask, service_ctx.ifs);
 
     if (profile_token == NULL) {
         send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile does not exist");
@@ -1270,7 +1266,7 @@ int media2_get_snapshot_uri()
             return -2;
         }
 
-        if (sprintf(line, service_ctx.profiles[0].snapurl, address) < 0) {
+        if (sprintf(line, service_ctx.profiles[0].snapurl, service_ctx.address_url) < 0) {
             strcpy(line, service_ctx.profiles[0].snapurl);
         }
         // Escape html chars
@@ -1292,7 +1288,7 @@ int media2_get_snapshot_uri()
             return -3;
         }
 
-        if (sprintf(line, service_ctx.profiles[1].snapurl, address) < 0) {
+        if (sprintf(line, service_ctx.profiles[1].snapurl, service_ctx.address_url) < 0) {
             strcpy(line, service_ctx.profiles[1].snapurl);
         }
         // Escape html chars
@@ -1314,15 +1310,11 @@ int media2_get_snapshot_uri()
 
 int media2_get_stream_uri()
 {
-    char address[16];
-    char netmask[16];
     char *s;
     char line[MAX_LEN];
     const char *profile_token = get_element("ProfileToken", "Body");
 
     memset(line, '\0', sizeof(line));
-
-    get_ip_address(address, netmask, service_ctx.ifs);
 
     if (profile_token == NULL) {
         send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile does not exist");
@@ -1336,7 +1328,7 @@ int media2_get_stream_uri()
             return -2;
         }
 
-        if (sprintf(line, service_ctx.profiles[0].url, address) < 0) {
+        if (sprintf(line, service_ctx.profiles[0].url, service_ctx.address_url) < 0) {
             strcpy(line, service_ctx.profiles[0].url);
         }
         // Escape html chars
@@ -1358,7 +1350,7 @@ int media2_get_stream_uri()
             return -3;
         }
 
-        if (sprintf(line, service_ctx.profiles[1].url, address) < 0) {
+        if (sprintf(line, service_ctx.profiles[1].url, service_ctx.address_url) < 0) {
             strcpy(line, service_ctx.profiles[1].url);
         }
         // Escape html chars

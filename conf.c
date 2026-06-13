@@ -617,10 +617,39 @@ int process_conf_file(char *file)
         service_ctx.hardware_id = (char *) malloc(strlen(DEFAULT_HW_ID) + 1);
         strcpy(service_ctx.hardware_id, DEFAULT_HW_ID);
     }
-    if (service_ctx.ifs == NULL) {
-        service_ctx.ifs = (char *) malloc(strlen(DEFAULT_IFS) + 1);
-        strcpy(service_ctx.ifs, DEFAULT_IFS);
+    /* Address and interface resolution */
+    if (service_ctx.ifs != NULL) {
+        /* Interface explicitly configured: derive address from it */
+        char netmask[16];
+        if (get_ip_address(service_ctx.address, netmask, service_ctx.ifs) < 0) {
+            log_fatal("Cannot get IP address from interface %s.", service_ctx.ifs);
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        /* Auto-detect: derive address from REMOTE_ADDR, then detect interface */
+        const char *remote = getenv("REMOTE_ADDR");
+        if (!remote || detect_local_address(remote, service_ctx.address,
+                                            sizeof(service_ctx.address)) != 0) {
+            log_fatal("Cannot determine local address: REMOTE_ADDR not available.");
+            exit(EXIT_FAILURE);
+        }
+        char auto_ifs[IFNAMSIZ];
+        if (get_ifname_by_addr(service_ctx.address, auto_ifs, sizeof(auto_ifs)) == 0) {
+            service_ctx.ifs = (char *) malloc(strlen(auto_ifs) + 1);
+            strcpy(service_ctx.ifs, auto_ifs);
+        } else {
+            service_ctx.ifs = (char *) malloc(strlen(DEFAULT_IFS) + 1);
+            strcpy(service_ctx.ifs, DEFAULT_IFS);
+        }
     }
+    if (strchr(service_ctx.address, ':'))
+        snprintf(service_ctx.address_url, sizeof(service_ctx.address_url),
+                 "[%s]", service_ctx.address);
+    else
+        strncpy(service_ctx.address_url, service_ctx.address,
+                sizeof(service_ctx.address_url) - 1);
+    service_ctx.address_url[sizeof(service_ctx.address_url) - 1] = '\0';
+
     return 0;
 }
 
@@ -826,11 +855,38 @@ int process_json_conf_file(char *file)
         if (service_ctx.hardware_id)
             strcpy(service_ctx.hardware_id, DEFAULT_HW_ID);
     }
-    if (service_ctx.ifs == NULL) {
-        service_ctx.ifs = (char*) malloc(strlen(DEFAULT_IFS) + 1);
-        if (service_ctx.ifs)
-            strcpy(service_ctx.ifs, DEFAULT_IFS);
+    /* Address and interface resolution */
+    if (service_ctx.ifs != NULL) {
+        /* Interface explicitly configured: derive address from it */
+        char netmask[16];
+        if (get_ip_address(service_ctx.address, netmask, service_ctx.ifs) < 0) {
+            log_fatal("Cannot get IP address from interface %s.", service_ctx.ifs);
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        /* Auto-detect: derive address from REMOTE_ADDR, then detect interface */
+        const char *remote = getenv("REMOTE_ADDR");
+        if (!remote || detect_local_address(remote, service_ctx.address,
+                                            sizeof(service_ctx.address)) != 0) {
+            log_fatal("Cannot determine local address: REMOTE_ADDR not available.");
+            exit(EXIT_FAILURE);
+        }
+        char auto_ifs[IFNAMSIZ];
+        if (get_ifname_by_addr(service_ctx.address, auto_ifs, sizeof(auto_ifs)) == 0) {
+            service_ctx.ifs = (char*) malloc(strlen(auto_ifs) + 1);
+            if (service_ctx.ifs) strcpy(service_ctx.ifs, auto_ifs);
+        } else {
+            service_ctx.ifs = (char*) malloc(strlen(DEFAULT_IFS) + 1);
+            if (service_ctx.ifs) strcpy(service_ctx.ifs, DEFAULT_IFS);
+        }
     }
+    if (strchr(service_ctx.address, ':'))
+        snprintf(service_ctx.address_url, sizeof(service_ctx.address_url),
+                 "[%s]", service_ctx.address);
+    else
+        strncpy(service_ctx.address_url, service_ctx.address,
+                sizeof(service_ctx.address_url) - 1);
+    service_ctx.address_url[sizeof(service_ctx.address_url) - 1] = '\0';
 
     // Print debug
     log_debug("model: %s", service_ctx.model);

@@ -229,62 +229,7 @@ static void gen_uuid_v5_mac(char *uuid_str, const uint8_t mac[6])
              hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
 }
 
-/*
- * Look up the MAC address for a named network interface.
- * Returns 0 on success, -1 on failure.
- */
-static int get_mac_by_ifname(const char *if_name, uint8_t mac_out[6])
-{
-    struct ifreq ifr;
-    int fd, ret;
-
-    fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (fd < 0)
-        return -1;
-
-    memset(&ifr, 0, sizeof(ifr));
-    strncpy(ifr.ifr_name, if_name, IFNAMSIZ - 1);
-    ret = ioctl(fd, SIOCGIFHWADDR, &ifr);
-    close(fd);
-
-    if (ret < 0)
-        return -1;
-
-    memcpy(mac_out, ifr.ifr_hwaddr.sa_data, 6);
-    return 0;
-}
-
-/*
- * Find which interface owns ip_str (dotted-decimal) and return its MAC.
- * Used in auto-detect mode when no interface name is available.
- * Returns 0 on success, -1 on failure.
- */
-static int get_mac_by_ip(const char *ip_str, uint8_t mac_out[6])
-{
-    struct ifaddrs *ifap, *ifa;
-    char found[IFNAMSIZ] = {0};
-
-    if (getifaddrs(&ifap) < 0)
-        return -1;
-
-    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
-        if (!ifa->ifa_addr || ifa->ifa_addr->sa_family != AF_INET)
-            continue;
-        char buf[16];
-        struct sockaddr_in *sin = (struct sockaddr_in *)ifa->ifa_addr;
-        inet_ntop(AF_INET, &sin->sin_addr, buf, sizeof(buf));
-        if (strcmp(buf, ip_str) == 0) {
-            strncpy(found, ifa->ifa_name, IFNAMSIZ - 1);
-            break;
-        }
-    }
-    freeifaddrs(ifap);
-
-    if (found[0] == '\0')
-        return -1;
-
-    return get_mac_by_ifname(found, mac_out);
-}
+/* get_mac_by_ifname and get_mac_by_ip moved to utils.c */
 
 int daemonize(int flags)
 {

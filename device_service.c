@@ -32,17 +32,6 @@ extern service_context_t service_ctx;
 
 int device_get_services()
 {
-    int ret = 0;
-    char address[16];
-    char netmask[16];
-
-    ret = get_ip_address(address, netmask, service_ctx.ifs);
-    if (ret < 0 ) {
-        log_error("Unable to get ip address from interface %s", service_ctx.ifs);
-        send_action_failed_fault("device_service", -1);
-        return -1;
-    }
-
     char device_service_address[MAX_LEN];
     char media_service_address[MAX_LEN];
     char media2_service_address[MAX_LEN];
@@ -59,12 +48,12 @@ int device_get_services()
     port[0] = '\0';
     if (service_ctx.port != 80)
         sprintf(port, ":%d", service_ctx.port);
-    sprintf(device_service_address, "http://%s%s/onvif/device_service", address, port);
-    sprintf(media_service_address, "http://%s%s/onvif/media_service", address, port);
-    sprintf(media2_service_address, "http://%s%s/onvif/media2_service", address, port);
-    sprintf(ptz_service_address, "http://%s%s/onvif/ptz_service", address, port);
-    sprintf(events_service_address, "http://%s%s/onvif/events_service", address, port);
-    sprintf(deviceio_service_address, "http://%s%s/onvif/deviceio_service", address, port);
+    sprintf(device_service_address, "http://%s%s/onvif/device_service", service_ctx.address_url, port);
+    sprintf(media_service_address, "http://%s%s/onvif/media_service", service_ctx.address_url, port);
+    sprintf(media2_service_address, "http://%s%s/onvif/media2_service", service_ctx.address_url, port);
+    sprintf(ptz_service_address, "http://%s%s/onvif/ptz_service", service_ctx.address_url, port);
+    sprintf(events_service_address, "http://%s%s/onvif/events_service", service_ctx.address_url, port);
+    sprintf(deviceio_service_address, "http://%s%s/onvif/deviceio_service", service_ctx.address_url, port);
 
     if ((service_ctx.events_enable == EVENTS_PULLPOINT) || (service_ctx.events_enable == EVENTS_BOTH)) {
         strcpy(epullpoint, "true");
@@ -417,17 +406,6 @@ int device_get_wsdl_url()
 
 int device_get_capabilities()
 {
-    int ret = 0;
-    char address[16];
-    char netmask[16];
-
-    ret = get_ip_address(address, netmask, service_ctx.ifs);
-    if (ret < 0 ) {
-        log_error("Unable to get ip address from interface %s", service_ctx.ifs);
-        send_action_failed_fault("device_service", -1);
-        return -1;
-    }
-
     char device_service_address[MAX_LEN];
     char media_service_address[MAX_LEN];
     char ptz_service_address[MAX_LEN];
@@ -464,11 +442,11 @@ int device_get_capabilities()
     port[0] = '\0';
     if (service_ctx.port != 80)
         sprintf(port, ":%d", service_ctx.port);
-    sprintf(device_service_address, "http://%s%s/onvif/device_service", address, port);
-    sprintf(media_service_address, "http://%s%s/onvif/media_service", address, port);
-    sprintf(ptz_service_address, "http://%s%s/onvif/ptz_service", address, port);
-    sprintf(events_service_address, "http://%s%s/onvif/events_service", address, port);
-    sprintf(deviceio_service_address, "http://%s%s/onvif/deviceio_service", address, port);
+    sprintf(device_service_address, "http://%s%s/onvif/device_service", service_ctx.address_url, port);
+    sprintf(media_service_address, "http://%s%s/onvif/media_service", service_ctx.address_url, port);
+    sprintf(ptz_service_address, "http://%s%s/onvif/ptz_service", service_ctx.address_url, port);
+    sprintf(events_service_address, "http://%s%s/onvif/events_service", service_ctx.address_url, port);
+    sprintf(deviceio_service_address, "http://%s%s/onvif/deviceio_service", service_ctx.address_url, port);
 
     if ((service_ctx.events_enable == EVENTS_PULLPOINT) || (service_ctx.events_enable == EVENTS_BOTH)) {
         strcpy(epullpoint, "true");

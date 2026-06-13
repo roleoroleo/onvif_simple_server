@@ -71,15 +71,12 @@ int events_create_pull_point_subscription()
     char iso_str_2[21];
     int i, subscription_id, sub_index;
 
-    char my_address[16];
-    char my_netmask[16];
     char my_port[8];
     char events_service_address[MAX_LEN];
     topic_expressions_t *topic_expression;
 
     log_info("CreatePullPointSubscription received");
 
-    get_ip_address(my_address, my_netmask, service_ctx.ifs);
     my_port[0] = '\0';
     if (service_ctx.port != 80)
         sprintf(my_port, ":%d", service_ctx.port);
@@ -158,7 +155,7 @@ int events_create_pull_point_subscription()
     sem_memory_post();
     destroy_shared_memory((void *) subs_evts, 0);
 
-    sprintf(events_service_address, "http://%s%s/onvif/events_service?sub=%d", my_address, my_port, subscription_id);
+    sprintf(events_service_address, "http://%s%s/onvif/events_service?sub=%d", service_ctx.address_url, my_port, subscription_id);
 
     to_iso_date(iso_str, sizeof(iso_str), now);
     to_iso_date(iso_str_2, sizeof(iso_str_2), expire_time);
@@ -412,14 +409,11 @@ int events_subscribe()
     int i, subsel;
     int subscription_id, sub_index;
 
-    char my_address[16];
-    char my_netmask[16];
     char my_port[8];
     char events_service_address[MAX_LEN];
 
     log_info("Subscribe request received");
 
-    get_ip_address(my_address, my_netmask, service_ctx.ifs);
     my_port[0] = '\0';
     if (service_ctx.port != 80)
         sprintf(my_port, ":%d", service_ctx.port);
@@ -498,7 +492,7 @@ int events_subscribe()
     sem_memory_post();
     destroy_shared_memory((void *) subs_evts, 0);
 
-    sprintf(events_service_address, "http://%s%s/onvif/events_service?sub=%d", my_address, my_port, subscription_id);
+    sprintf(events_service_address, "http://%s%s/onvif/events_service?sub=%d", service_ctx.address_url, my_port, subscription_id);
 
     gen_uuid(msg_uuid);
 

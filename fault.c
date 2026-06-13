@@ -47,10 +47,6 @@ int send_empty_response(char *ns, char *method)
 int send_fault(char *service, char *rec_send, char *subcode, char *subcode_ex, char *reason, char *detail)
 {
     char msg_uuid[UUID_LEN + 1];
-    char address[16];
-    char netmask[16];
-
-    get_ip_address(address, netmask, service_ctx.ifs);
     char device_address[MAX_LEN];
     char service_address[MAX_LEN];
     char port[8];
@@ -59,8 +55,8 @@ int send_fault(char *service, char *rec_send, char *subcode, char *subcode_ex, c
     port[0] = '\0';
     if (service_ctx.port != 80)
         sprintf(port, ":%d", service_ctx.port);
-    sprintf(device_address, "http://%s%s/onvif", address, port);
-    sprintf(service_address, "http://%s%s/onvif/%s", address, port, service);
+    sprintf(device_address, "http://%s%s/onvif", service_ctx.address_url, port);
+    sprintf(service_address, "http://%s%s/onvif/%s", service_ctx.address_url, port, service);
 
     gen_uuid(msg_uuid);
 
