@@ -650,6 +650,16 @@ int process_conf_file(char *file)
                 sizeof(service_ctx.address_url) - 1);
     service_ctx.address_url[sizeof(service_ctx.address_url) - 1] = '\0';
 
+    /* Stable device UUID from MAC */
+    {
+        uint8_t mac[6] = {0};
+        if (get_mac_by_ifname(service_ctx.ifs, mac) == 0)
+            gen_uuid_v5_mac(service_ctx.device_uuid, mac);
+        else
+            gen_uuid(service_ctx.device_uuid);
+        log_info("Device UUID: %s", service_ctx.device_uuid);
+    }
+
     return 0;
 }
 
@@ -887,6 +897,16 @@ int process_json_conf_file(char *file)
         strncpy(service_ctx.address_url, service_ctx.address,
                 sizeof(service_ctx.address_url) - 1);
     service_ctx.address_url[sizeof(service_ctx.address_url) - 1] = '\0';
+
+    /* Stable device UUID from MAC */
+    {
+        uint8_t mac[6] = {0};
+        if (get_mac_by_ifname(service_ctx.ifs, mac) == 0)
+            gen_uuid_v5_mac(service_ctx.device_uuid, mac);
+        else
+            gen_uuid(service_ctx.device_uuid);
+        log_info("Device UUID: %s", service_ctx.device_uuid);
+    }
 
     // Print debug
     log_debug("model: %s", service_ctx.model);

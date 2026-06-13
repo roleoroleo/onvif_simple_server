@@ -52,12 +52,23 @@ wsd_simple_server: $(OBJECTS_W)
 	$(CC) $(OBJECTS_W) $(LIBS_W) -fPIC -Os -o $@
 	$(STRIP) $@
 
-.PHONY: clean
+.PHONY: all clean test
+
+# Build and run unit tests using the native host compiler.
+# Uses stub mbedTLS headers from test/ so no crypto library is required.
+test: test/test_utils
+	./test/test_utils
+
+test/test_utils: test/test_utils.c test/stubs.c utils.c log.c
+	cc -I. -Itest -DHAVE_MBEDTLS -std=c99 \
+		test/test_utils.c test/stubs.c utils.c log.c \
+		-lz -lpthread -lrt -o test/test_utils
 
 clean:
 	rm -f onvif_simple_server
 	rm -f onvif_notify_server
 	rm -f wsd_simple_server
+	rm -f test/test_utils
 	rm -f $(OBJECTS_O)
 	rm -f $(OBJECTS_N)
 	rm -f $(OBJECTS_W)

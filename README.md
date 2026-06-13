@@ -32,6 +32,7 @@ But usually is enough to work with an onvif client.
 - Export HAVE_WOLFSSL if you want to use wolfssl or HAVE_MBEDTLS if you want to use mbedtls (default libtomcrypt).
 - Export USE_ZLIB if you want to use compressed template files. In this case, all xml files will be compressed to use less disk space but the server will be slower.
 - Run `make`
+- Run `make test` to build and run the unit tests (requires a native C compiler; no crypto library needed)
 
 ## Httpd
 ### Create a working example with lighttpd
