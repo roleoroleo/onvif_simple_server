@@ -34,6 +34,10 @@ extern service_context_t service_ctx;
 
 shm_t *subs_evts;
 
+/* Maximum subscription lifetime: 24 hours. Prevents slot exhaustion
+ * by clients requesting arbitrarily long termination times. */
+#define MAX_SUBSCRIPTION_SEC 86400
+
 int events_get_service_capabilities()
 {
     char ebasesubscription[8], epullpoint[8], emaxpullpoints[4];
@@ -106,6 +110,8 @@ int events_create_pull_point_subscription()
             expire_time = from_iso_date(itt);
         }
     }
+    if (expire_time > now + MAX_SUBSCRIPTION_SEC)
+        expire_time = now + MAX_SUBSCRIPTION_SEC;
 
     subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
@@ -450,6 +456,8 @@ int events_subscribe()
             expire_time = from_iso_date(itt);
         }
     }
+    if (expire_time > now + MAX_SUBSCRIPTION_SEC)
+        expire_time = now + MAX_SUBSCRIPTION_SEC;
 
     subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
