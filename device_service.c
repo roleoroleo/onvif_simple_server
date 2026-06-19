@@ -296,45 +296,75 @@ int device_get_device_information()
 int device_get_system_date_and_time()
 {
     time_t timestamp = time(NULL);
-    struct tm *tm = gmtime(&timestamp);
+    struct tm *tm;
 
     char isfalse[] = "false";
     char istrue[] = "true";
     char *dst = isfalse;
-    char hour[3];
-    char minute[3];
-    char second[3];
-    char year[5];
-    char month[3];
-    char day[3];
+    char tz_str[32];
+    char hour[3], minute[3], second[3];
+    char year[5], month[3], day[3];
+    char local_hour[3], local_minute[3], local_second[3];
+    char local_year[5], local_month[3], local_day[3];
 
-    if (tm->tm_isdst) dst = istrue;
-    sprintf(hour, "%d", tm->tm_hour);
+    /* UTC date/time for UTCDateTime element */
+    tm = gmtime(&timestamp);
+    sprintf(hour,   "%d", tm->tm_hour);
     sprintf(minute, "%d", tm->tm_min);
     sprintf(second, "%d", tm->tm_sec);
-    sprintf(year, "%d", tm->tm_year + 1900);
-    sprintf(month, "%d", tm->tm_mon + 1);
-    sprintf(day, "%d", tm->tm_mday);
+    sprintf(year,   "%d", tm->tm_year + 1900);
+    sprintf(month,  "%d", tm->tm_mon + 1);
+    sprintf(day,    "%d", tm->tm_mday);
 
-    long size = cat(NULL, "device_service_files/GetSystemDateAndTime.xml", 14,
+    /* Local date/time for DST flag, POSIX TZ string, and LocalDateTime element */
+    tzset();
+    tm = localtime(&timestamp);
+    if (tm->tm_isdst) dst = istrue;
+    sprintf(local_hour,   "%d", tm->tm_hour);
+    sprintf(local_minute, "%d", tm->tm_min);
+    sprintf(local_second, "%d", tm->tm_sec);
+    sprintf(local_year,   "%d", tm->tm_year + 1900);
+    sprintf(local_month,  "%d", tm->tm_mon + 1);
+    sprintf(local_day,    "%d", tm->tm_mday);
+
+    /* POSIX TZ string: "std offset[dst]", e.g. "CET-1CEST" or "EST5EDT".
+     * timezone (seconds west of UTC) divided by 3600 gives the POSIX offset. */
+    sprintf(tz_str, "%s%ld%s", tzname[0], timezone / 3600,
+            daylight ? tzname[1] : "");
+
+    long size = cat(NULL, "device_service_files/GetSystemDateAndTime.xml", 28,
             "%DST%", dst,
+            "%TZ%", tz_str,
             "%HOUR%", hour,
             "%MINUTE%", minute,
             "%SECOND%", second,
             "%YEAR%", year,
             "%MONTH%", month,
-            "%DAY%", day);
+            "%DAY%", day,
+            "%LOCAL_HOUR%", local_hour,
+            "%LOCAL_MINUTE%", local_minute,
+            "%LOCAL_SECOND%", local_second,
+            "%LOCAL_YEAR%", local_year,
+            "%LOCAL_MONTH%", local_month,
+            "%LOCAL_DAY%", local_day);
 
     output_http_headers(size);
 
-    return cat("stdout", "device_service_files/GetSystemDateAndTime.xml", 14,
+    return cat("stdout", "device_service_files/GetSystemDateAndTime.xml", 28,
             "%DST%", dst,
+            "%TZ%", tz_str,
             "%HOUR%", hour,
             "%MINUTE%", minute,
             "%SECOND%", second,
             "%YEAR%", year,
             "%MONTH%", month,
-            "%DAY%", day);
+            "%DAY%", day,
+            "%LOCAL_HOUR%", local_hour,
+            "%LOCAL_MINUTE%", local_minute,
+            "%LOCAL_SECOND%", local_second,
+            "%LOCAL_YEAR%", local_year,
+            "%LOCAL_MONTH%", local_month,
+            "%LOCAL_DAY%", local_day);
 }
 
 int device_system_reboot()

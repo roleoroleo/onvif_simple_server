@@ -8,7 +8,7 @@
                 <tt:DateTimeType>Manual</tt:DateTimeType>
                 <tt:DaylightSavings>%DST%</tt:DaylightSavings>
                 <tt:TimeZone>
-                    <tt:TZ>GMT0</tt:TZ>
+                    <tt:TZ>%TZ%</tt:TZ>
                 </tt:TimeZone>
                 <tt:UTCDateTime>
                     <tt:Time>
@@ -22,6 +22,18 @@
                         <tt:Day>%DAY%</tt:Day>
                     </tt:Date>
                 </tt:UTCDateTime>
+                <tt:LocalDateTime>
+                    <tt:Time>
+                        <tt:Hour>%LOCAL_HOUR%</tt:Hour>
+                        <tt:Minute>%LOCAL_MINUTE%</tt:Minute>
+                        <tt:Second>%LOCAL_SECOND%</tt:Second>
+                    </tt:Time>
+                    <tt:Date>
+                        <tt:Year>%LOCAL_YEAR%</tt:Year>
+                        <tt:Month>%LOCAL_MONTH%</tt:Month>
+                        <tt:Day>%LOCAL_DAY%</tt:Day>
+                    </tt:Date>
+                </tt:LocalDateTime>
             </tds:SystemDateAndTime>
         </tds:GetSystemDateAndTimeResponse>
     </SOAP-ENV:Body>
