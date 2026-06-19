@@ -441,6 +441,22 @@ int events_subscribe()
         return -1;
     }
 
+    /* Reject loopback callback URLs. A subscriber must not point back to the
+     * device itself: there is no legitimate service on 127.x.x.x that should
+     * receive ONVIF Notify messages, and allowing it enables SSRF. */
+    {
+        const char *host_start = strstr(address, "://");
+        host_start = (host_start != NULL) ? host_start + 3 : address;
+        if ((strncmp(host_start, "127.", 4) == 0) ||
+                (strncasecmp(host_start, "localhost", 9) == 0) ||
+                (strncmp(host_start, "[::1]", 5) == 0)) {
+            log_error("Subscribe callback URL targets loopback -- rejected: %s", address);
+            send_fault("events_service", "Sender", "ter:InvalidArgVal", "ter:InvalidArgVal", "Invalid argument", "Callback address must not be a loopback address");
+            return -2;
+        }
+    }
+    log_info("Subscribe callback URL: %s", address);
+
     // TopicExpression filter is supported
     element = get_element("Filter", "Body");
     if (element == NULL) {
