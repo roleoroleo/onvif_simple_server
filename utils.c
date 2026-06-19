@@ -1043,6 +1043,171 @@ int gen_uuid(char *g_uuid)
     return 0;
 }
 
+int get_mac_by_ifname(const char *if_name, uint8_t mac_out[6])
+{
+    struct ifreq ifr;
+    int fd, ret;
+
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0) return -1;
+    memset(&ifr, 0, sizeof(ifr));
+    strncpy(ifr.ifr_name, if_name, IFNAMSIZ - 1);
+    ret = ioctl(fd, SIOCGIFHWADDR, &ifr);
+    close(fd);
+    if (ret < 0) return -1;
+    memcpy(mac_out, ifr.ifr_hwaddr.sa_data, 6);
+    return 0;
+}
+
+int get_mac_by_ip(const char *ip_str, uint8_t mac_out[6])
+{
+    struct ifaddrs *ifap, *ifa;
+    char found[IFNAMSIZ] = {0};
+
+    if (getifaddrs(&ifap) < 0) return -1;
+    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr || ifa->ifa_addr->sa_family != AF_INET) continue;
+        char buf[16];
+        inet_ntop(AF_INET, &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr, buf, sizeof(buf));
+        if (strcmp(buf, ip_str) == 0) { strncpy(found, ifa->ifa_name, IFNAMSIZ - 1); break; }
+    }
+    freeifaddrs(ifap);
+    return (found[0] == '\0') ? -1 : get_mac_by_ifname(found, mac_out);
+}
+
+/* Find interface name owning addr_str (IPv4 or IPv6, scope ID stripped). */
+int get_ifname_by_addr(const char *addr_str, char *ifname, size_t len)
+{
+    char clean[INET6_ADDRSTRLEN];
+    strncpy(clean, addr_str, sizeof(clean) - 1);
+    clean[sizeof(clean) - 1] = '\0';
+    char *pct = strchr(clean, '%');
+    const char *scope_if = pct ? pct + 1 : NULL;
+    if (pct) *pct = '\0';
+
+    if (scope_if && scope_if[0]) {
+        strncpy(ifname, scope_if, len - 1);
+        ifname[len - 1] = '\0';
+        return 0;
+    }
+
+    int is_v6 = (strchr(clean, ':') != NULL);
+    struct ifaddrs *ifap, *ifa;
+    char found[IFNAMSIZ] = {0};
+
+    if (getifaddrs(&ifap) < 0) return -1;
+    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr) continue;
+        char buf[INET6_ADDRSTRLEN];
+        if (!is_v6 && ifa->ifa_addr->sa_family == AF_INET) {
+            inet_ntop(AF_INET, &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr,
+                      buf, sizeof(buf));
+            if (strcmp(buf, clean) == 0) { strncpy(found, ifa->ifa_name, IFNAMSIZ - 1); break; }
+        } else if (is_v6 && ifa->ifa_addr->sa_family == AF_INET6) {
+            inet_ntop(AF_INET6, &((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr,
+                      buf, sizeof(buf));
+            if (strcmp(buf, clean) == 0) { strncpy(found, ifa->ifa_name, IFNAMSIZ - 1); break; }
+        }
+    }
+    freeifaddrs(ifap);
+    if (!found[0]) return -1;
+    strncpy(ifname, found, len - 1);
+    ifname[len - 1] = '\0';
+    return 0;
+}
+
+/* MAC lookup for IPv4 or IPv6 address (scope ID handled). */
+int get_mac_by_addr(const char *addr_str, uint8_t mac_out[6])
+{
+    char ifname[IFNAMSIZ];
+    if (get_ifname_by_addr(addr_str, ifname, sizeof(ifname)) != 0) return -1;
+    return get_mac_by_ifname(ifname, mac_out);
+}
+
+/* -------------------------------------------------------------------------
+ * Auto-detect the local address to use in ONVIF service URLs.
+ *
+ * Priority:
+ *   1. REMOTE_ADDR is loopback (local proxy) -> WSD multicast connect trick
+ *   2. REMOTE_ADDR is a real client         -> connect trick to REMOTE_ADDR
+ *
+ * Sets local_addr to a plain IP string (no scope ID -- safe for URLs).
+ * ---------------------------------------------------------------------- */
+#define WSD_MCAST_V4  "239.255.255.250"
+#define WSD_MCAST_V6  "ff02::c"
+#define WSD_PROBE_PORT 3702
+
+static int connect_trick_v4(const char *dst_ip, char *local, size_t len)
+{
+    struct sockaddr_in dst = {0};
+    dst.sin_family = AF_INET;
+    inet_pton(AF_INET, dst_ip, &dst.sin_addr);
+    dst.sin_port = htons(WSD_PROBE_PORT);
+
+    int fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0) return -1;
+    if (connect(fd, (struct sockaddr *)&dst, sizeof(dst)) < 0) { close(fd); return -1; }
+    struct sockaddr_in src = {0};
+    socklen_t src_len = sizeof(src);
+    getsockname(fd, (struct sockaddr *)&src, &src_len);
+    close(fd);
+    if (src.sin_addr.s_addr == htonl(INADDR_ANY)) return -1;
+    inet_ntop(AF_INET, &src.sin_addr, local, len);
+    return 0;
+}
+
+static int connect_trick_v6(const char *dst_ip, unsigned int scope_id,
+                             char *local, size_t len)
+{
+    struct sockaddr_in6 dst = {0};
+    dst.sin6_family = AF_INET6;
+    inet_pton(AF_INET6, dst_ip, &dst.sin6_addr);
+    dst.sin6_port    = htons(WSD_PROBE_PORT);
+    dst.sin6_scope_id = scope_id;
+
+    int fd = socket(AF_INET6, SOCK_DGRAM, 0);
+    if (fd < 0) return -1;
+    if (connect(fd, (struct sockaddr *)&dst, sizeof(dst)) < 0) { close(fd); return -1; }
+    struct sockaddr_in6 src = {0};
+    socklen_t src_len = sizeof(src);
+    getsockname(fd, (struct sockaddr *)&src, &src_len);
+    close(fd);
+    if (IN6_IS_ADDR_UNSPECIFIED(&src.sin6_addr)) return -1;
+    inet_ntop(AF_INET6, &src.sin6_addr, local, len);
+    return 0;
+}
+
+int detect_local_address(const char *remote_addr, char *local_addr, size_t len)
+{
+    /* Strip IPv6 scope ID; remember interface for scoped connect */
+    char clean[INET6_ADDRSTRLEN];
+    strncpy(clean, remote_addr, sizeof(clean) - 1);
+    clean[sizeof(clean) - 1] = '\0';
+    char *pct = strchr(clean, '%');
+    unsigned int scope_id = 0;
+    if (pct) {
+        scope_id = if_nametoindex(pct + 1);
+        *pct = '\0';
+    }
+
+    int is_v6      = (strchr(clean, ':') != NULL);
+    int is_loopback = is_v6 ? (strcmp(clean, "::1") == 0)
+                             : (strncmp(clean, "127.", 4) == 0);
+
+    if (is_loopback) {
+        /* Local proxy in front: use WSD multicast to find real outbound IF */
+        if (connect_trick_v4(WSD_MCAST_V4, local_addr, len) == 0) return 0;
+        if (connect_trick_v6(WSD_MCAST_V6, 0, local_addr, len) == 0) return 0;
+        return -1;
+    }
+
+    /* Real client: ask kernel which source address it would use */
+    if (is_v6)
+        return connect_trick_v6(clean, scope_id, local_addr, len);
+    else
+        return connect_trick_v4(clean, local_addr, len);
+}
+
 /**
  * Get the value of a parameter in the query string
  * @param par The name of the parameter

@@ -94,7 +94,7 @@ manufacturer=Yi
 firmware_ver=x.y.z
 hardware_id=AFUS
 serial_num=AFUSY12ABCDE3F456789
-ifs=wlan0
+#ifs=wlan0  # optional: override interface (auto-detected from client address if omitted)
 port=80
 scope=onvif://www.onvif.org/Profile/Streaming
 scope=onvif://www.onvif.org/Profile/T
@@ -250,7 +250,7 @@ Brief explanation of some parameters:
 
 | Param | Description |
 | --- | --- |
-| ifs | the network interface used by your http server |
+| ifs | override the network interface (optional; auto-detected from client address if omitted) |
 | port | the TCP port used by your http server |
 | user | the user you want to set for WS-UsernameToken authentication, if blank security is disabled |
 | adv_enable_media2 | enable media2 methods for Profile T |
