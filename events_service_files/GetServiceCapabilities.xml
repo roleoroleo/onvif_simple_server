@@ -46,6 +46,7 @@
                                xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
                                WSSubscriptionPolicySupport="%EVENTS_BASESUBSCRIPTION%"
                                WSPullPointSupport="%EVENTS_PULLPOINT%"
+                               MaxPullPoints="%MAX_PULLPOINTS%"
                                WSPausableSubscriptionManagerInterfaceSupport="false">
             </tev:Capabilities>
         </tev:GetServiceCapabilitiesResponse>
