@@ -1312,9 +1312,19 @@ void gen_uuid_v5_mac(char *uuid_str, const uint8_t mac[6])
 int get_from_query_string(char **ret, int *ret_size, char *par)
 {
     char *query_string = getenv("QUERY_STRING");
-    char *query = strdup(query_string);
-    char *tokens = query;
-    char *p = query;
+    char *query;
+    char *tokens;
+    char *p;
+
+    *ret = NULL;
+    *ret_size = -1;
+
+    if (query_string == NULL)
+        return -1;
+
+    query = strdup(query_string);
+    tokens = query;
+    p = query;
 
     while ((p = strsep (&tokens, "&\n"))) {
         char *var = strtok (p, "=");
