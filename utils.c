@@ -32,6 +32,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#include <time.h>
 
 #ifdef HAVE_WOLFSSL
 #include <wolfssl/options.h>
@@ -189,11 +190,19 @@ void destroy_shared_memory(void *shared_area, int destroy_all)
 
 int sem_memory_wait()
 {
+    struct timespec ts;
+
     if (sem_memory_lock == SEM_FAILED) {
         log_error("Semaphore not initialized");
         return -1;
     }
-    return sem_wait(sem_memory_lock);
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_sec += 5;
+    if (sem_timedwait(sem_memory_lock, &ts) != 0) {
+        log_error("Semaphore wait timed out or failed -- semaphore may be stale");
+        return -1;
+    }
+    return 0;
 }
 
 int sem_memory_post()
