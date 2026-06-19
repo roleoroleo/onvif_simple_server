@@ -116,6 +116,7 @@ typedef struct {
     char *serial_num;
     char *hardware_id;
 
+    char device_uuid[37];   /* stable MAC-based UUID v5 */
     char address[46];       /* resolved local IP (plain, no scope ID) */
     char address_url[48];   /* URL-safe: IPv6 wrapped in [...] */
 

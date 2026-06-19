@@ -28,6 +28,7 @@ int device_get_wsdl_url();
 int device_get_capabilities();
 int device_get_network_interfaces();
 int device_get_discovery_mode();
+int device_get_endpoint_reference();
 
 int device_unsupported(const char *method);
 

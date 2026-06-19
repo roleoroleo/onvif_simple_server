@@ -622,6 +622,17 @@ int device_get_discovery_mode()
     return cat("stdout", "device_service_files/GetDiscoveryMode.xml", 0);
 }
 
+int device_get_endpoint_reference()
+{
+    long size = cat(NULL, "device_service_files/GetEndpointReference.xml", 2,
+            "%DEVICE_UUID%", service_ctx.device_uuid);
+
+    output_http_headers(size);
+
+    return cat("stdout", "device_service_files/GetEndpointReference.xml", 2,
+            "%DEVICE_UUID%", service_ctx.device_uuid);
+}
+
 int device_unsupported(const char *method)
 {
     if (service_ctx.adv_fault_if_unknown == 1)

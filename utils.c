@@ -1043,6 +1043,73 @@ int gen_uuid(char *g_uuid)
     return 0;
 }
 
+/* -------------------------------------------------------------------------
+ * SHA-1 (RFC 3174) helpers used only for UUID v5 generation.
+ * NOT suitable for general-purpose cryptographic use.
+ * ---------------------------------------------------------------------- */
+static void hash_uuid5_store32(uint8_t *b, uint32_t v)
+{
+    b[0] = v >> 24; b[1] = v >> 16; b[2] = v >> 8; b[3] = v;
+}
+
+static void hash_uuid5_compress(uint32_t h[5], const uint8_t blk[64])
+{
+    uint32_t w[80], a, b, c, d, e, f, k, t;
+    int i;
+
+    for (i = 0; i < 16; i++)
+        w[i] = ((uint32_t)blk[i*4] << 24) | ((uint32_t)blk[i*4+1] << 16) |
+               ((uint32_t)blk[i*4+2] << 8) | blk[i*4+3];
+    for (i = 16; i < 80; i++) {
+        t = w[i-3] ^ w[i-8] ^ w[i-14] ^ w[i-16];
+        w[i] = (t << 1) | (t >> 31);
+    }
+
+    a = h[0]; b = h[1]; c = h[2]; d = h[3]; e = h[4];
+    for (i = 0; i < 80; i++) {
+        if      (i < 20) { f = (b & c) | (~b & d); k = 0x5A827999U; }
+        else if (i < 40) { f = b ^ c ^ d;           k = 0x6ED9EBA1U; }
+        else if (i < 60) { f = (b&c)|(b&d)|(c&d);  k = 0x8F1BBCDCU; }
+        else             { f = b ^ c ^ d;            k = 0xCA62C1D6U; }
+        t = ((a << 5) | (a >> 27)) + f + e + k + w[i];
+        e = d; d = c; c = (b << 30) | (b >> 2); b = a; a = t;
+    }
+    h[0] += a; h[1] += b; h[2] += c; h[3] += d; h[4] += e;
+}
+
+static void hash_uuid5(const uint8_t *data, size_t len, uint8_t out[20])
+{
+    uint32_t h[5] = { 0x67452301U, 0xEFCDAB89U, 0x98BADCFEU,
+                      0x10325476U, 0xC3D2E1F0U };
+    uint8_t block[64];
+    size_t i, r = len % 64;
+    uint64_t bits;
+
+    for (i = 0; i + 64 <= len; i += 64)
+        hash_uuid5_compress(h, data + i);
+
+    memset(block, 0, 64);
+    if (r) memcpy(block, data + i, r);
+    block[r] = 0x80;
+    if (r >= 56) {
+        hash_uuid5_compress(h, block);
+        memset(block, 0, 64);
+    }
+    bits = (uint64_t)len * 8;
+    hash_uuid5_store32(block + 56, (uint32_t)(bits >> 32));
+    hash_uuid5_store32(block + 60, (uint32_t)bits);
+    hash_uuid5_compress(h, block);
+
+    for (i = 0; i < 5; i++)
+        hash_uuid5_store32(out + i*4, h[i]);
+}
+
+/* RFC 4122 DNS namespace: 6ba7b810-9dad-11d1-80b4-00c04fd430c8 */
+static const uint8_t UUID_NS_DNS[16] = {
+    0x6b, 0xa7, 0xb8, 0x10,  0x9d, 0xad,  0x11, 0xd1,
+    0x80, 0xb4,  0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8
+};
+
 int get_mac_by_ifname(const char *if_name, uint8_t mac_out[6])
 {
     struct ifreq ifr;
@@ -1206,6 +1273,33 @@ int detect_local_address(const char *remote_addr, char *local_addr, size_t len)
         return connect_trick_v6(clean, scope_id, local_addr, len);
     else
         return connect_trick_v4(clean, local_addr, len);
+}
+
+void gen_uuid_v5_mac(char *uuid_str, const uint8_t mac[6])
+{
+    char name[32];
+    uint8_t input[40];   /* 16-byte NS + up to 23-byte name */
+    uint8_t hash[20];
+    size_t name_len;
+
+    snprintf(name, sizeof(name), "mac:%02x:%02x:%02x:%02x:%02x:%02x",
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    name_len = strlen(name);
+
+    memcpy(input, UUID_NS_DNS, 16);
+    memcpy(input + 16, name, name_len);
+    hash_uuid5(input, 16 + name_len, hash);
+
+    hash[6] = (hash[6] & 0x0F) | 0x50;   /* version = 5 */
+    hash[8] = (hash[8] & 0x3F) | 0x80;   /* variant = RFC 4122 */
+
+    snprintf(uuid_str, UUID_LEN + 1,
+             "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x"
+             "-%02x%02x%02x%02x%02x%02x",
+             hash[0],  hash[1],  hash[2],  hash[3],
+             hash[4],  hash[5],  hash[6],  hash[7],
+             hash[8],  hash[9],
+             hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
 }
 
 /**

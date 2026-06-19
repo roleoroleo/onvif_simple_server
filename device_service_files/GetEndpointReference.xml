@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope"
+                   xmlns:tds="http://www.onvif.org/ver10/device/wsdl"
+                   xmlns:wsa5="http://www.w3.org/2005/08/addressing">
+    <SOAP-ENV:Body>
+        <tds:GetEndpointReferenceResponse>
+            <tds:GUID>urn:uuid:%DEVICE_UUID%</tds:GUID>
+        </tds:GetEndpointReferenceResponse>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
