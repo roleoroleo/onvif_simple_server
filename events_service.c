@@ -38,6 +38,10 @@ shm_t *subs_evts;
  * by clients requesting arbitrarily long termination times. */
 #define MAX_SUBSCRIPTION_SEC 86400
 
+/* Maximum PullMessages poll interval: 60 seconds. Prevents worker-thread
+ * exhaustion by clients supplying an unbounded <Timeout> value. */
+#define MAX_PULLMESSAGES_TIMEOUT_SEC 60
+
 int events_get_service_capabilities()
 {
     char ebasesubscription[8], epullpoint[8], emaxpullpoints[4];
@@ -256,7 +260,10 @@ int events_pull_messages()
         return -5;
     }
 
-    log_debug("Pull message request with timeout %d seconds and message limit %d", interval2sec(timeout), limit);
+    int timeout_sec = interval2sec(timeout);
+    if (timeout_sec > MAX_PULLMESSAGES_TIMEOUT_SEC)
+        timeout_sec = MAX_PULLMESSAGES_TIMEOUT_SEC;
+    log_debug("Pull message request with timeout %d seconds and message limit %d", timeout_sec, limit);
 
     subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
@@ -293,9 +300,9 @@ int events_pull_messages()
     // Set temporary termination time += 10 to avoid termination during this function
     time(&now);
     previous_expire_time = subs_evts->subscriptions[sub_index].expire;
-    subs_evts->subscriptions[sub_index].expire = now + interval2sec(timeout) + 10;
+    subs_evts->subscriptions[sub_index].expire = now + timeout_sec + 10;
     sem_memory_post();
-    now_p_timeout = now + interval2sec(timeout);
+    now_p_timeout = now + timeout_sec;
 
     // Check if at least 1 message was triggered
     // or SetSynchronizationPoint request is received
@@ -320,10 +327,10 @@ int events_pull_messages()
     // Set correct termination time
     time(&now);
     sem_memory_wait();
-    if (previous_expire_time > now + interval2sec(timeout)) {
+    if (previous_expire_time > now + timeout_sec) {
         subs_evts->subscriptions[sub_index].expire = previous_expire_time;
     } else {
-        subs_evts->subscriptions[sub_index].expire = now + interval2sec(timeout);
+        subs_evts->subscriptions[sub_index].expire = now + timeout_sec;
     }
     expire_time = subs_evts->subscriptions[sub_index].expire;
     sem_memory_post();
