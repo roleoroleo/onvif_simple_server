@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <time.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -328,9 +329,23 @@ int device_get_system_date_and_time()
     sprintf(local_day,    "%d", tm->tm_mday);
 
     /* POSIX TZ string: "std offset[dst]", e.g. "CET-1CEST" or "EST5EDT".
-     * timezone (seconds west of UTC) divided by 3600 gives the POSIX offset. */
-    sprintf(tz_str, "%s%ld%s", tzname[0], timezone / 3600,
-            daylight ? tzname[1] : "");
+     * timezone (seconds west of UTC) divided by 3600 gives the POSIX offset.
+     * Abbreviations that start with +/- or a digit must be wrapped in <> per POSIX 1003.1. */
+    {
+        int needs_brackets = (tzname[0][0] == '+' || tzname[0][0] == '-' ||
+                              isdigit((unsigned char)tzname[0][0]));
+        const char *dst_name = daylight ? tzname[1] : "";
+        int dst_needs_brackets = (daylight && (dst_name[0] == '+' || dst_name[0] == '-' ||
+                                               isdigit((unsigned char)dst_name[0])));
+        if (needs_brackets && dst_needs_brackets)
+            sprintf(tz_str, "<%s>%ld<%s>", tzname[0], timezone / 3600, dst_name);
+        else if (needs_brackets)
+            sprintf(tz_str, "<%s>%ld%s", tzname[0], timezone / 3600, dst_name);
+        else if (dst_needs_brackets)
+            sprintf(tz_str, "%s%ld<%s>", tzname[0], timezone / 3600, dst_name);
+        else
+            sprintf(tz_str, "%s%ld%s", tzname[0], timezone / 3600, dst_name);
+    }
 
     long size = cat(NULL, "device_service_files/GetSystemDateAndTime.xml", 28,
             "%DST%", dst,
