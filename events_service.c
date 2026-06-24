@@ -36,7 +36,7 @@ shm_t *subs_evts;
 
 int events_get_service_capabilities()
 {
-    char ebasesubscription[8], epullpoint[8];
+    char ebasesubscription[8], epullpoint[8], emaxpullpoints[4];
 
     if ((service_ctx.events_enable == EVENTS_PULLPOINT) || (service_ctx.events_enable == EVENTS_BOTH)) {
         strcpy(epullpoint, "true");
@@ -48,16 +48,19 @@ int events_get_service_capabilities()
     } else {
         strcpy(ebasesubscription, "false");
     }
+    snprintf(emaxpullpoints, sizeof(emaxpullpoints), "%d", MAX_SUBSCRIPTIONS);
 
-    long size = cat(NULL, "events_service_files/GetServiceCapabilities.xml", 4,
+    long size = cat(NULL, "events_service_files/GetServiceCapabilities.xml", 6,
             "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
-            "%EVENTS_PULLPOINT%", epullpoint);
+            "%EVENTS_PULLPOINT%", epullpoint,
+            "%MAX_PULLPOINTS%", emaxpullpoints);
 
     output_http_headers(size);
 
-    return cat("stdout", "events_service_files/GetServiceCapabilities.xml", 4,
+    return cat("stdout", "events_service_files/GetServiceCapabilities.xml", 6,
             "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
-            "%EVENTS_PULLPOINT%", epullpoint);
+            "%EVENTS_PULLPOINT%", epullpoint,
+            "%MAX_PULLPOINTS%", emaxpullpoints);
 }
 
 int events_create_pull_point_subscription()
