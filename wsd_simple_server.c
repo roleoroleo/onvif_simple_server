@@ -61,17 +61,15 @@
 int debug;
 FILE *fLog;
 char template_file[1024];
+/* Single dual-stack socket (AF_INET6, IPV6_V6ONLY=0) */
+int sock;
 /* IPv4 */
 char address[16], netmask[16];
-int sock;
-struct sockaddr_in addr_mcast4;
-struct sockaddr_in addr_sender4;
-int addr_len;
+struct sockaddr_in6 addr_mcast4; /* ::ffff:239.255.255.250:3702 */
 char xaddr[1024];
-/* IPv6 */
+/* IPv6 (optional, only when -6 is given) */
 char address6[INET6_ADDRSTRLEN];
-int sock6;
-struct sockaddr_in6 addr_mcast6;
+struct sockaddr_in6 addr_mcast6; /* FF02::C:3702 */
 char xaddr6[1024];
 
 char *message;
@@ -412,11 +410,9 @@ void signal_handler(int signal)
     log_info("Sending Bye message(s).");
     if (sock >= 0) {
         send_bye(sock, (struct sockaddr *)&addr_mcast4, sizeof(addr_mcast4), xaddr);
+        if (xaddr6[0])
+            send_bye(sock, (struct sockaddr *)&addr_mcast6, sizeof(addr_mcast6), xaddr6);
         shutdown(sock, SHUT_RDWR); close(sock); sock = -1;
-    }
-    if (sock6 >= 0) {
-        send_bye(sock6, (struct sockaddr *)&addr_mcast6, sizeof(addr_mcast6), xaddr6);
-        shutdown(sock6, SHUT_RDWR); close(sock6); sock6 = -1;
     }
     exit_main = 1;
 }
@@ -504,7 +500,7 @@ int main(int argc, char **argv)
     int c, ret;
     char *if_name, *pid_file, *xaddr_s, *xaddr6_s;
     unsigned int if6_idx = 0;
-    int foreground;
+    int foreground, no = 0;
     char s_tmp[32];
     long size;
     char recv_buffer[RECV_BUFFER_LEN];
@@ -515,7 +511,7 @@ int main(int argc, char **argv)
     strcpy(template_dir, DEFAULT_TEMPLATE_DIR);
     foreground = 0;
     debug = 5;
-    sock = sock6 = -1;
+    sock = -1;
 
     while (1) {
         static struct option long_options[] = {
@@ -653,81 +649,68 @@ int main(int argc, char **argv)
         }
     }
 
-    /* ---- IPv4 socket --------------------------------------------------- */
+    /* ---- Single dual-stack UDP socket ------------------------------------- */
     {
-        struct sockaddr_in bind4;
-        struct ip_mreq mr;
-        int reuse = 1;
-
-        memset(&bind4, 0, sizeof(bind4));
-        bind4.sin_family = AF_INET; bind4.sin_addr.s_addr = htonl(INADDR_ANY);
-        bind4.sin_port = htons(PORT);
-
-        if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
-            log_fatal("Unable to create IPv4 socket."); fclose(fLog); exit(EXIT_FAILURE);
-        }
-        setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
-        if (bind(sock, (struct sockaddr *)&bind4, sizeof(bind4)) == -1) {
-            log_fatal("Unable to bind IPv4 socket."); close(sock); fclose(fLog); exit(EXIT_FAILURE);
-        }
-        mr.imr_multiaddr.s_addr = inet_addr(MULTICAST_ADDRESS);
-        mr.imr_interface.s_addr = inet_addr(address);
-        if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mr, sizeof(mr)) == -1) {
-            log_fatal("Error joining IPv4 multicast group.");
-            close(sock); fclose(fLog); exit(EXIT_FAILURE);
-        }
-        memset(&addr_mcast4, 0, sizeof(addr_mcast4));
-        addr_mcast4.sin_family = AF_INET;
-        addr_mcast4.sin_addr.s_addr = inet_addr(MULTICAST_ADDRESS);
-        addr_mcast4.sin_port = htons(PORT);
-    }
-
-    /* ---- IPv6 socket (optional) ---------------------------------------- */
-    if (xaddr6_s) {
         struct sockaddr_in6 bind6;
-        struct ipv6_mreq mr6;
-        unsigned int if_idx;
+        struct group_req gr4;
         int yes = 1;
 
-        sock6 = socket(AF_INET6, SOCK_DGRAM, 0);
-        if (sock6 < 0) {
-            log_warn("Cannot create IPv6 socket, IPv6 WSD disabled: %s", strerror(errno));
-            xaddr6_s = NULL; goto ipv6_done;
+        if ((sock = socket(AF_INET6, SOCK_DGRAM, 0)) < 0) {
+            log_fatal("Unable to create socket: %s", strerror(errno));
+            fclose(fLog); exit(EXIT_FAILURE);
         }
-        /* IPV6_V6ONLY = 1: sock6 handles IPv6 exclusively; sock handles IPv4.
-         * Override any system net.ipv6.bindv6only default to ensure consistent
-         * behaviour across platforms (e.g. Linux defaults to 0 = dual-stack). */
-        setsockopt(sock6, IPPROTO_IPV6, IPV6_V6ONLY,   &yes, sizeof(yes));
-        setsockopt(sock6, SOL_SOCKET,   SO_REUSEADDR,  &yes, sizeof(yes));
+        /* IPV6_V6ONLY = 0: dual-stack -- :::3702 receives both IPv4 (as ::ffff:x.x.x.x)
+         * and IPv6.  Explicitly set to override net.ipv6.bindv6only on any platform. */
+        setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &no, sizeof(no));
+        setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
 
         memset(&bind6, 0, sizeof(bind6));
         bind6.sin6_family = AF_INET6; bind6.sin6_port = htons(PORT);
         bind6.sin6_addr = in6addr_any;
-        if (bind(sock6, (struct sockaddr *)&bind6, sizeof(bind6)) < 0) {
-            log_warn("Cannot bind IPv6 socket, IPv6 WSD disabled: %s", strerror(errno));
-            close(sock6); sock6 = -1; xaddr6_s = NULL; goto ipv6_done;
+        if (bind(sock, (struct sockaddr *)&bind6, sizeof(bind6)) < 0) {
+            log_fatal("Unable to bind socket: %s", strerror(errno));
+            close(sock); fclose(fLog); exit(EXIT_FAILURE);
         }
+
+        /* Join IPv4 WSD multicast group.
+         * MCAST_JOIN_GROUP (RFC 3678 protocol-independent API) works on AF_INET6
+         * dual-stack sockets for both IPv4 and IPv6 multicast groups. */
+        memset(&gr4, 0, sizeof(gr4));
+        gr4.gr_interface = if_name ? if_nametoindex(if_name) : 0;
+        ((struct sockaddr_in *)&gr4.gr_group)->sin_family      = AF_INET;
+        ((struct sockaddr_in *)&gr4.gr_group)->sin_addr.s_addr = inet_addr(MULTICAST_ADDRESS);
+        if (setsockopt(sock, IPPROTO_IPV6, MCAST_JOIN_GROUP, &gr4, sizeof(gr4)) < 0) {
+            log_fatal("Error joining IPv4 multicast group: %s", strerror(errno));
+            close(sock); fclose(fLog); exit(EXIT_FAILURE);
+        }
+
+        /* IPv4 multicast destination as IPv4-mapped IPv6 address */
+        memset(&addr_mcast4, 0, sizeof(addr_mcast4));
+        addr_mcast4.sin6_family = AF_INET6; addr_mcast4.sin6_port = htons(PORT);
+        inet_pton(AF_INET6, "::ffff:" MULTICAST_ADDRESS, &addr_mcast4.sin6_addr);
+    }
+
+    /* ---- IPv6 multicast (optional) --------------------------------------- */
+    if (xaddr6_s) {
+        struct ipv6_mreq mr6;
+        unsigned int if_idx = if_name ? if_nametoindex(if_name) : if6_idx;
+
+        /* if_idx must be non-zero for link-local multicast (FF02::). */
         memset(&mr6, 0, sizeof(mr6));
         inet_pton(AF_INET6, MULTICAST_ADDRESS_V6, &mr6.ipv6mr_multiaddr);
-        /* if6_idx: set from -i if_nametoindex(), or from detect_outbound_address_v6()
-         * scan.  Must be non-zero for link-local multicast (FF02::) to work. */
-        if_idx = if_name ? if_nametoindex(if_name) : if6_idx;
         mr6.ipv6mr_interface = if_idx;
-        if (setsockopt(sock6, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mr6, sizeof(mr6)) < 0) {
-            log_warn("Cannot join IPv6 multicast group, IPv6 WSD disabled: %s", strerror(errno));
-            close(sock6); sock6 = -1; xaddr6_s = NULL; goto ipv6_done;
+        if (setsockopt(sock, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mr6, sizeof(mr6)) < 0) {
+            log_warn("Cannot join IPv6 multicast group; IPv6 WSD disabled: %s", strerror(errno));
+            xaddr6_s = NULL;
+        } else {
+            if (if_idx) setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &if_idx, sizeof(if_idx));
+            memset(&addr_mcast6, 0, sizeof(addr_mcast6));
+            addr_mcast6.sin6_family = AF_INET6; addr_mcast6.sin6_port = htons(PORT);
+            inet_pton(AF_INET6, MULTICAST_ADDRESS_V6, &addr_mcast6.sin6_addr);
+            addr_mcast6.sin6_scope_id = if_idx;
+            log_info("IPv6 WSD multicast joined (FF02::C, if_idx=%u).", if_idx);
         }
-        /* Explicitly set outgoing interface for multicast sends (belt-and-suspenders
-         * alongside addr_mcast6.sin6_scope_id set below). */
-        if (if_idx)
-            setsockopt(sock6, IPPROTO_IPV6, IPV6_MULTICAST_IF, &if_idx, sizeof(if_idx));
-        memset(&addr_mcast6, 0, sizeof(addr_mcast6));
-        addr_mcast6.sin6_family = AF_INET6; addr_mcast6.sin6_port = htons(PORT);
-        inet_pton(AF_INET6, MULTICAST_ADDRESS_V6, &addr_mcast6.sin6_addr);
-        addr_mcast6.sin6_scope_id = if_idx;
-        log_info("IPv6 WSD socket ready (FF02::C, if_idx=%u).", if_idx);
     }
-ipv6_done:
 
     /* ---- Build xaddr strings ------------------------------------------- */
     sprintf(xaddr, xaddr_s, address);
@@ -744,8 +727,7 @@ ipv6_done:
                "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr);
     message = (char *) malloc((size + 1) * sizeof(char));
     if (!message) {
-        log_fatal("Malloc error."); close(sock); if (sock6 >= 0) close(sock6);
-        fclose(fLog); exit(EXIT_FAILURE);
+        log_fatal("Malloc error."); close(sock); fclose(fLog); exit(EXIT_FAILURE);
     }
     cat(message, template_file, 12,
         "%MSG_UUID%", msg_uuid, "%MSG_NUMBER%", s_tmp, "%UUID%", uuid,
@@ -753,13 +735,12 @@ ipv6_done:
     if (send_wsd_msg(sock, message, strlen(message),
                      (struct sockaddr *)&addr_mcast4, sizeof(addr_mcast4)) < 0) {
         log_fatal("Error sending Hello (IPv4).");
-        free(message); close(sock); if (sock6 >= 0) close(sock6);
-        fclose(fLog); exit(EXIT_FAILURE);
+        free(message); close(sock); fclose(fLog); exit(EXIT_FAILURE);
     }
     free(message);
     log_info("Hello (IPv4) sent.");
 
-    if (sock6 >= 0) {
+    if (xaddr6[0]) {
         msg_number++;
         sprintf(s_tmp, "%d", msg_number);
         gen_uuid(msg_uuid);
@@ -772,7 +753,7 @@ ipv6_done:
             cat(message, template_file, 12,
                 "%MSG_UUID%", msg_uuid, "%MSG_NUMBER%", s_tmp, "%UUID%", uuid,
                 "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr6);
-            if (send_wsd_msg(sock6, message, strlen(message),
+            if (send_wsd_msg(sock, message, strlen(message),
                              (struct sockaddr *)&addr_mcast6, sizeof(addr_mcast6)) < 0)
                 log_warn("Error sending Hello (IPv6).");
             else
@@ -784,38 +765,34 @@ ipv6_done:
     sleep(1);
 
     /* ---- Main loop ----------------------------------------------------- */
-    log_info("Starting main loop (IPv4%s).", sock6 >= 0 ? " + IPv6" : " only");
+    log_info("Starting main loop (IPv4%s).", xaddr6[0] ? " + IPv6" : " only");
     exit_main = 0;
 
     while (!exit_main) {
+        struct sockaddr_in6 sender;
+        socklen_t slen = sizeof(sender);
+        const char *probe_xaddr;
         fd_set rfds;
-        int maxfd = sock;
         FD_ZERO(&rfds);
         FD_SET(sock, &rfds);
-        if (sock6 >= 0) { FD_SET(sock6, &rfds); if (sock6 > maxfd) maxfd = sock6; }
-        if (select(maxfd + 1, &rfds, NULL, NULL, NULL) <= 0) continue;
+        if (select(sock + 1, &rfds, NULL, NULL, NULL) <= 0) continue;
 
-        if (FD_ISSET(sock, &rfds)) {
-            socklen_t slen = sizeof(addr_sender4);
-            memset(recv_buffer, 0, RECV_BUFFER_LEN);
-            if (recvfrom(sock, recv_buffer, RECV_BUFFER_LEN, 0,
-                         (struct sockaddr *)&addr_sender4, &slen) > 0)
-                handle_probe(sock, (struct sockaddr *)&addr_sender4, slen,
-                             recv_buffer, xaddr);
+        memset(recv_buffer, 0, RECV_BUFFER_LEN);
+        if (recvfrom(sock, recv_buffer, RECV_BUFFER_LEN, 0,
+                     (struct sockaddr *)&sender, &slen) <= 0) continue;
+
+        if (IN6_IS_ADDR_V4MAPPED(&sender.sin6_addr)) {
+            probe_xaddr = xaddr;
+        } else if (xaddr6[0]) {
+            probe_xaddr = xaddr6;
+        } else {
+            log_debug("IPv6 probe received but -6 not configured; ignoring.");
+            continue;
         }
-        if (sock6 >= 0 && FD_ISSET(sock6, &rfds)) {
-            struct sockaddr_in6 sender6;
-            socklen_t slen6 = sizeof(sender6);
-            memset(recv_buffer, 0, RECV_BUFFER_LEN);
-            if (recvfrom(sock6, recv_buffer, RECV_BUFFER_LEN, 0,
-                         (struct sockaddr *)&sender6, &slen6) > 0)
-                handle_probe(sock6, (struct sockaddr *)&sender6, slen6,
-                             recv_buffer, xaddr6);
-        }
+        handle_probe(sock, (struct sockaddr *)&sender, slen, recv_buffer, probe_xaddr);
     }
 
-    if (sock  >= 0) { shutdown(sock,  SHUT_RDWR); close(sock);  }
-    if (sock6 >= 0) { shutdown(sock6, SHUT_RDWR); close(sock6); }
+    if (sock >= 0) { shutdown(sock, SHUT_RDWR); close(sock); }
 
     log_info("Terminating program.");
     fclose(fLog);
