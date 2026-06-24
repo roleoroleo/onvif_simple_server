@@ -118,33 +118,39 @@ static int detect_outbound_address(char *addr_str)
 }
 
 /* -------------------------------------------------------------------------
- * IPv6 interface auto-detection: same connect trick using FF02::C.
- * sin6_scope_id = 0 lets the kernel resolve via the multicast routing table.
- * Returns 0 on success, -1 on failure.
+ * IPv6 interface auto-detection: scan interfaces for the first non-loopback
+ * IPv6 address.  Prefers global unicast over link-local.
+ * Returns 0 on success, writing the address into addr_str and the interface
+ * index into *if_idx_out; returns -1 if no usable address is found.
+ *
+ * Note: the connect-to-multicast trick used for IPv4 does not work for
+ * FF02::C (link-local scope) -- Linux requires sin6_scope_id != 0 for
+ * link-local multicast, so we use getifaddrs instead.
  * ---------------------------------------------------------------------- */
-static int detect_outbound_address_v6(char *addr_str, size_t len)
+static int detect_outbound_address_v6(char *addr_str, size_t len,
+                                      unsigned int *if_idx_out)
 {
-    int fd;
-    struct sockaddr_in6 dst, src;
-    socklen_t src_len = sizeof(src);
+    struct ifaddrs *ifap, *ifa;
+    char best[INET6_ADDRSTRLEN] = {0};
+    unsigned int best_idx = 0;
+    int found_global = 0;
 
-    fd = socket(AF_INET6, SOCK_DGRAM, 0);
-    if (fd < 0) return -1;
-
-    memset(&dst, 0, sizeof(dst));
-    dst.sin6_family = AF_INET6;
-    inet_pton(AF_INET6, MULTICAST_ADDRESS_V6, &dst.sin6_addr);
-    dst.sin6_port = htons(PORT);
-
-    if (connect(fd, (struct sockaddr *)&dst, sizeof(dst)) < 0) { close(fd); return -1; }
-
-    memset(&src, 0, sizeof(src));
-    if (getsockname(fd, (struct sockaddr *)&src, &src_len) < 0) { close(fd); return -1; }
-    close(fd);
-
-    if (IN6_IS_ADDR_UNSPECIFIED(&src.sin6_addr)) return -1;
-
-    if (inet_ntop(AF_INET6, &src.sin6_addr, addr_str, len) == NULL) return -1;
+    if (getifaddrs(&ifap) < 0) return -1;
+    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr || ifa->ifa_addr->sa_family != AF_INET6) continue;
+        struct sockaddr_in6 *s6 = (struct sockaddr_in6 *)ifa->ifa_addr;
+        if (IN6_IS_ADDR_LOOPBACK(&s6->sin6_addr)) continue;
+        if (found_global && IN6_IS_ADDR_LINKLOCAL(&s6->sin6_addr)) continue;
+        char buf[INET6_ADDRSTRLEN];
+        if (!inet_ntop(AF_INET6, &s6->sin6_addr, buf, sizeof(buf))) continue;
+        strncpy(best, buf, INET6_ADDRSTRLEN - 1);
+        best_idx = if_nametoindex(ifa->ifa_name);
+        if (!IN6_IS_ADDR_LINKLOCAL(&s6->sin6_addr)) { found_global = 1; break; }
+    }
+    freeifaddrs(ifap);
+    if (!best[0]) return -1;
+    strncpy(addr_str, best, len - 1); addr_str[len - 1] = 0;
+    if (if_idx_out) *if_idx_out = best_idx;
     return 0;
 }
 
@@ -497,6 +503,7 @@ int main(int argc, char **argv)
     char *endptr;
     int c, ret;
     char *if_name, *pid_file, *xaddr_s, *xaddr6_s;
+    unsigned int if6_idx = 0;
     int foreground;
     char s_tmp[32];
     long size;
@@ -623,7 +630,7 @@ int main(int argc, char **argv)
                 xaddr6_s = NULL;
             }
         } else {
-            if (detect_outbound_address_v6(address6, sizeof(address6)) != 0) {
+            if (detect_outbound_address_v6(address6, sizeof(address6), &if6_idx) != 0) {
                 log_warn("Cannot auto-detect outbound IPv6 address; IPv6 WSD disabled.");
                 xaddr6_s = NULL;
             } else {
@@ -687,6 +694,9 @@ int main(int argc, char **argv)
             log_warn("Cannot create IPv6 socket, IPv6 WSD disabled: %s", strerror(errno));
             xaddr6_s = NULL; goto ipv6_done;
         }
+        /* IPV6_V6ONLY = 1: sock6 handles IPv6 exclusively; sock handles IPv4.
+         * Override any system net.ipv6.bindv6only default to ensure consistent
+         * behaviour across platforms (e.g. Linux defaults to 0 = dual-stack). */
         setsockopt(sock6, IPPROTO_IPV6, IPV6_V6ONLY,   &yes, sizeof(yes));
         setsockopt(sock6, SOL_SOCKET,   SO_REUSEADDR,  &yes, sizeof(yes));
 
@@ -699,17 +709,23 @@ int main(int argc, char **argv)
         }
         memset(&mr6, 0, sizeof(mr6));
         inet_pton(AF_INET6, MULTICAST_ADDRESS_V6, &mr6.ipv6mr_multiaddr);
-        if_idx = if_name ? if_nametoindex(if_name) : 0;
+        /* if6_idx: set from -i if_nametoindex(), or from detect_outbound_address_v6()
+         * scan.  Must be non-zero for link-local multicast (FF02::) to work. */
+        if_idx = if_name ? if_nametoindex(if_name) : if6_idx;
         mr6.ipv6mr_interface = if_idx;
         if (setsockopt(sock6, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mr6, sizeof(mr6)) < 0) {
             log_warn("Cannot join IPv6 multicast group, IPv6 WSD disabled: %s", strerror(errno));
             close(sock6); sock6 = -1; xaddr6_s = NULL; goto ipv6_done;
         }
+        /* Explicitly set outgoing interface for multicast sends (belt-and-suspenders
+         * alongside addr_mcast6.sin6_scope_id set below). */
+        if (if_idx)
+            setsockopt(sock6, IPPROTO_IPV6, IPV6_MULTICAST_IF, &if_idx, sizeof(if_idx));
         memset(&addr_mcast6, 0, sizeof(addr_mcast6));
         addr_mcast6.sin6_family = AF_INET6; addr_mcast6.sin6_port = htons(PORT);
         inet_pton(AF_INET6, MULTICAST_ADDRESS_V6, &addr_mcast6.sin6_addr);
         addr_mcast6.sin6_scope_id = if_idx;
-        log_info("IPv6 WSD socket ready (FF02::C).");
+        log_info("IPv6 WSD socket ready (FF02::C, if_idx=%u).", if_idx);
     }
 ipv6_done:
 
