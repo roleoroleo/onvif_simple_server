@@ -441,17 +441,35 @@ int events_subscribe()
         return -1;
     }
 
-    /* Reject loopback callback URLs. A subscriber must not point back to the
-     * device itself: there is no legitimate service on 127.x.x.x that should
-     * receive ONVIF Notify messages, and allowing it enables SSRF. */
+    /* Reject callback URLs targeting loopback, multicast, broadcast, or the
+     * unspecified address.  None of these are valid ONVIF notification
+     * receivers; allowing them enables SSRF or traffic amplification. */
     {
         const char *host_start = strstr(address, "://");
+        const char *at;
         host_start = (host_start != NULL) ? host_start + 3 : address;
-        if ((strncmp(host_start, "127.", 4) == 0) ||
+        /* Skip RFC 3986 userinfo ("user@host") to prevent bypass via
+         * e.g. "http://evil.com@127.0.0.1/" */
+        at = strchr(host_start, '@');
+        if (at != NULL) host_start = at + 1;
+        if (/* IPv4 loopback */
+                (strncmp(host_start, "127.", 4) == 0) ||
+                /* hostname loopback */
                 (strncasecmp(host_start, "localhost", 9) == 0) ||
-                (strncmp(host_start, "[::1]", 5) == 0)) {
-            log_error("Subscribe callback URL targets loopback -- rejected: %s", address);
-            send_fault("events_service", "Sender", "ter:InvalidArgVal", "ter:InvalidArgVal", "Invalid argument", "Callback address must not be a loopback address");
+                /* IPv6 loopback */
+                (strncmp(host_start, "[::1]", 5) == 0) ||
+                /* IPv4 multicast 224.0.0.0/4: first octet 224-239 */
+                (host_start[0]=='2' && host_start[1]=='2' && host_start[2]>='4' && host_start[2]<='9' && host_start[3]=='.') ||
+                (host_start[0]=='2' && host_start[1]=='3' && host_start[2]>='0' && host_start[2]<='9' && host_start[3]=='.') ||
+                /* IPv4 broadcast (255.x.x.x is never a valid unicast destination) */
+                (strncmp(host_start, "255.", 4) == 0) ||
+                /* IPv6 multicast ff00::/8 (RFC 2732: IPv6 in URLs is bracketed) */
+                (strncasecmp(host_start, "[ff", 3) == 0) ||
+                /* Unspecified addresses */
+                (strncmp(host_start, "0.0.0.0", 7) == 0) ||
+                (strncmp(host_start, "[::]", 4) == 0)) {
+            log_error("Subscribe callback URL rejected (loopback/multicast/broadcast): %s", address);
+            send_fault("events_service", "Sender", "ter:InvalidArgVal", "ter:InvalidArgVal", "Invalid argument", "Callback address must be a routable unicast address");
             return -2;
         }
     }
