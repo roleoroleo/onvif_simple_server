@@ -32,6 +32,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#include <time.h>
 
 #ifdef HAVE_WOLFSSL
 #include <wolfssl/options.h>
@@ -189,11 +190,19 @@ void destroy_shared_memory(void *shared_area, int destroy_all)
 
 int sem_memory_wait()
 {
+    struct timespec ts;
+
     if (sem_memory_lock == SEM_FAILED) {
         log_error("Semaphore not initialized");
         return -1;
     }
-    return sem_wait(sem_memory_lock);
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_sec += 5;
+    if (sem_timedwait(sem_memory_lock, &ts) != 0) {
+        log_error("Semaphore wait timed out or failed -- semaphore may be stale");
+        return -1;
+    }
+    return 0;
 }
 
 int sem_memory_post()
@@ -1312,9 +1321,19 @@ void gen_uuid_v5_mac(char *uuid_str, const uint8_t mac[6])
 int get_from_query_string(char **ret, int *ret_size, char *par)
 {
     char *query_string = getenv("QUERY_STRING");
-    char *query = strdup(query_string);
-    char *tokens = query;
-    char *p = query;
+    char *query;
+    char *tokens;
+    char *p;
+
+    *ret = NULL;
+    *ret_size = -1;
+
+    if (query_string == NULL)
+        return -1;
+
+    query = strdup(query_string);
+    tokens = query;
+    p = query;
 
     while ((p = strsep (&tokens, "&\n"))) {
         char *var = strtok (p, "=");

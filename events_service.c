@@ -34,6 +34,14 @@ extern service_context_t service_ctx;
 
 shm_t *subs_evts;
 
+/* Maximum subscription lifetime: 24 hours. Prevents slot exhaustion
+ * by clients requesting arbitrarily long termination times. */
+#define MAX_SUBSCRIPTION_SEC 86400
+
+/* Maximum PullMessages poll interval: 60 seconds. Prevents worker-thread
+ * exhaustion by clients supplying an unbounded <Timeout> value. */
+#define MAX_PULLMESSAGES_TIMEOUT_SEC 60
+
 int events_get_service_capabilities()
 {
     char ebasesubscription[8], epullpoint[8], emaxpullpoints[4];
@@ -106,6 +114,8 @@ int events_create_pull_point_subscription()
             expire_time = from_iso_date(itt);
         }
     }
+    if (expire_time > now + MAX_SUBSCRIPTION_SEC)
+        expire_time = now + MAX_SUBSCRIPTION_SEC;
 
     subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
@@ -250,7 +260,10 @@ int events_pull_messages()
         return -5;
     }
 
-    log_debug("Pull message request with timeout %d seconds and message limit %d", interval2sec(timeout), limit);
+    int timeout_sec = interval2sec(timeout);
+    if (timeout_sec > MAX_PULLMESSAGES_TIMEOUT_SEC)
+        timeout_sec = MAX_PULLMESSAGES_TIMEOUT_SEC;
+    log_debug("Pull message request with timeout %d seconds and message limit %d", timeout_sec, limit);
 
     subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
@@ -287,9 +300,9 @@ int events_pull_messages()
     // Set temporary termination time += 10 to avoid termination during this function
     time(&now);
     previous_expire_time = subs_evts->subscriptions[sub_index].expire;
-    subs_evts->subscriptions[sub_index].expire = now + interval2sec(timeout) + 10;
+    subs_evts->subscriptions[sub_index].expire = now + timeout_sec + 10;
     sem_memory_post();
-    now_p_timeout = now + interval2sec(timeout);
+    now_p_timeout = now + timeout_sec;
 
     // Check if at least 1 message was triggered
     // or SetSynchronizationPoint request is received
@@ -314,10 +327,10 @@ int events_pull_messages()
     // Set correct termination time
     time(&now);
     sem_memory_wait();
-    if (previous_expire_time > now + interval2sec(timeout)) {
+    if (previous_expire_time > now + timeout_sec) {
         subs_evts->subscriptions[sub_index].expire = previous_expire_time;
     } else {
-        subs_evts->subscriptions[sub_index].expire = now + interval2sec(timeout);
+        subs_evts->subscriptions[sub_index].expire = now + timeout_sec;
     }
     expire_time = subs_evts->subscriptions[sub_index].expire;
     sem_memory_post();
@@ -428,6 +441,40 @@ int events_subscribe()
         return -1;
     }
 
+    /* Reject callback URLs targeting loopback, multicast, broadcast, or the
+     * unspecified address.  None of these are valid ONVIF notification
+     * receivers; allowing them enables SSRF or traffic amplification. */
+    {
+        const char *host_start = strstr(address, "://");
+        const char *at;
+        host_start = (host_start != NULL) ? host_start + 3 : address;
+        /* Skip RFC 3986 userinfo ("user@host") to prevent bypass via
+         * e.g. "http://evil.com@127.0.0.1/" */
+        at = strchr(host_start, '@');
+        if (at != NULL) host_start = at + 1;
+        if (/* IPv4 loopback */
+                (strncmp(host_start, "127.", 4) == 0) ||
+                /* hostname loopback */
+                (strncasecmp(host_start, "localhost", 9) == 0) ||
+                /* IPv6 loopback */
+                (strncmp(host_start, "[::1]", 5) == 0) ||
+                /* IPv4 multicast 224.0.0.0/4: first octet 224-239 */
+                (host_start[0]=='2' && host_start[1]=='2' && host_start[2]>='4' && host_start[2]<='9' && host_start[3]=='.') ||
+                (host_start[0]=='2' && host_start[1]=='3' && host_start[2]>='0' && host_start[2]<='9' && host_start[3]=='.') ||
+                /* IPv4 broadcast (255.x.x.x is never a valid unicast destination) */
+                (strncmp(host_start, "255.", 4) == 0) ||
+                /* IPv6 multicast ff00::/8 (RFC 2732: IPv6 in URLs is bracketed) */
+                (strncasecmp(host_start, "[ff", 3) == 0) ||
+                /* Unspecified addresses */
+                (strncmp(host_start, "0.0.0.0", 7) == 0) ||
+                (strncmp(host_start, "[::]", 4) == 0)) {
+            log_error("Subscribe callback URL rejected (loopback/multicast/broadcast): %s", address);
+            send_fault("events_service", "Sender", "ter:InvalidArgVal", "ter:InvalidArgVal", "Invalid argument", "Callback address must be a routable unicast address");
+            return -2;
+        }
+    }
+    log_info("Subscribe callback URL: %s", address);
+
     // TopicExpression filter is supported
     element = get_element("Filter", "Body");
     if (element == NULL) {
@@ -450,6 +497,8 @@ int events_subscribe()
             expire_time = from_iso_date(itt);
         }
     }
+    if (expire_time > now + MAX_SUBSCRIPTION_SEC)
+        expire_time = now + MAX_SUBSCRIPTION_SEC;
 
     subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {

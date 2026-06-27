@@ -246,15 +246,15 @@ int deviceio_set_relay_output_state()
         if ((itoken >= 0) && (itoken < service_ctx.relay_outputs_num)) {
             if (strcasecmp("active", state) == 0) {
                 if (service_ctx.relay_outputs[itoken].idle_state == IDLE_STATE_OPEN) {
-                    sprintf(sys_command, service_ctx.relay_outputs[itoken].close);
+                    snprintf(sys_command, sizeof(sys_command), "%s", service_ctx.relay_outputs[itoken].close);
                 } else {
-                    sprintf(sys_command, service_ctx.relay_outputs[itoken].open);
+                    snprintf(sys_command, sizeof(sys_command), "%s", service_ctx.relay_outputs[itoken].open);
                 }
             } else {
                 if (service_ctx.relay_outputs[itoken].idle_state == IDLE_STATE_OPEN) {
-                    sprintf(sys_command, service_ctx.relay_outputs[itoken].open);
+                    snprintf(sys_command, sizeof(sys_command), "%s", service_ctx.relay_outputs[itoken].open);
                 } else {
-                    sprintf(sys_command, service_ctx.relay_outputs[itoken].close);
+                    snprintf(sys_command, sizeof(sys_command), "%s", service_ctx.relay_outputs[itoken].close);
                 }
             }
         } else {

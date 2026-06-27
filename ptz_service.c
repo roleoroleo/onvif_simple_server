@@ -926,12 +926,36 @@ int ptz_get_status()
     }
 }
 
+/* Maximum length of a preset name (without null terminator). */
+#define MAX_PRESET_NAME_LEN 64
+
+/* Returns 1 if s is a valid preset name: 1-MAX_PRESET_NAME_LEN chars,
+ * alphanumeric plus underscore, hyphen and dot only.  Spaces and shell
+ * metacharacters (;|$`&<>!*?\) are rejected to prevent command injection
+ * when the name is interpolated into a shell command via system(). */
+static int is_safe_preset_name(const char *s)
+{
+    size_t i, len;
+    if (s == NULL)
+        return 0;
+    len = strlen(s);
+    if (len == 0 || len > MAX_PRESET_NAME_LEN)
+        return 0;
+    for (i = 0; i < len; i++) {
+        char c = s[i];
+        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+              (c >= '0' && c <= '9') || c == '_' || c == '.' || c == '-'))
+            return 0;
+    }
+    return 1;
+}
+
 int ptz_set_preset()
 {
     int i;
     char sys_command[MAX_LEN];
     const char *preset_name;
-    char preset_name_out[UUID_LEN + 8];
+    char preset_name_out[MAX_PRESET_NAME_LEN + 1];
     const char *preset_token;
     ezxml_t node;
     char preset_token_out[16];
@@ -962,15 +986,15 @@ int ptz_set_preset()
         if (preset_name == NULL) {
             // No name and no token, how to identify it? Create a random name.
             gen_uuid(name_uuid);
-            sprintf(preset_name_out, "Preset_%s", name_uuid);
+            snprintf(preset_name_out, sizeof(preset_name_out), "Preset_%s", name_uuid);
         } else {
-            strcpy(preset_name_out, preset_name);
-        }
-
-        if ((strchr(preset_name_out, ' ') != NULL) || (strlen(preset_name_out) == 0) || (strlen(preset_name_out) > 64)) {
-            destroy_presets();
-            send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:InvalidPresetName", "Invalid preset name", "The preset name is either too long or contains invalid characters");
-            return -3;
+            if (!is_safe_preset_name(preset_name)) {
+                destroy_presets();
+                send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:InvalidPresetName", "Invalid preset name", "The preset name is either too long or contains invalid characters");
+                return -3;
+            }
+            strncpy(preset_name_out, preset_name, sizeof(preset_name_out) - 1);
+            preset_name_out[sizeof(preset_name_out) - 1] = '\0';
         }
         for (i = 0; i < presets.count; i++) {
             if (strcasecmp(presets.items[i].name, preset_name_out) == 0) {
@@ -994,7 +1018,8 @@ int ptz_set_preset()
         preset_found = 0;
         for (i = 0; i < presets.count; i++) {
             if (presets.items[i].number == preset_number) {
-                strcpy(preset_name_out, presets.items[i].name);
+                strncpy(preset_name_out, presets.items[i].name, sizeof(preset_name_out) - 1);
+                preset_name_out[sizeof(preset_name_out) - 1] = '\0';
                 preset_found = 1;
                 break;
             }
@@ -1007,14 +1032,13 @@ int ptz_set_preset()
 
         if (preset_name != NULL) {
             // Overwrite the name with the new one
+            if (!is_safe_preset_name(preset_name)) {
+                destroy_presets();
+                send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:InvalidPresetName", "Invalid preset name", "The preset name is either too long or contains invalid characters");
+                return -7;
+            }
             memset(preset_name_out, '\0', sizeof(preset_name_out));
-            strncpy(preset_name_out, preset_name, strlen(preset_name));
-        }
-
-        if ((strchr(preset_name_out, ' ') != NULL) || (strlen(preset_name_out) == 0) || (strlen(preset_name_out) > 64)) {
-            destroy_presets();
-            send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:InvalidPresetName", "Invalid preset name", "The preset name is either too long or contains invalid characters");
-            return -7;
+            strncpy(preset_name_out, preset_name, sizeof(preset_name_out) - 1);
         }
 
         for (i = 0; i < presets.count; i++) {

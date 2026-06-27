@@ -391,7 +391,14 @@ int main(int argc, char ** argv)
             security.nonce = get_element("Nonce", "Header");
             if (security.nonce != NULL) {
                 log_debug("Security: nonce = %s", security.nonce);
-                b64_decode((unsigned char *) security.nonce, strlen(security.nonce), nonce, &nonce_size);
+                /* Base64 of 128 bytes is at most ceil(128/3)*4 = 172 chars.
+                 * Reject oversized nonces before decode to guard the 128-byte buffer. */
+                if (strlen(security.nonce) > 172) {
+                    log_error("Nonce too large");
+                    auth_error = 3;
+                } else {
+                    b64_decode((unsigned char *) security.nonce, strlen(security.nonce), nonce, &nonce_size);
+                }
             } else {
                 auth_error = 3;
             }
