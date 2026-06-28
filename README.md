@@ -318,16 +318,14 @@ Usage: wsd_simple_server [-i INTERFACE] -x XADDR [-6 XADDR6] [-m MODEL] [-n MANU
 
 When `-6 XADDR6` is given, `wsd_simple_server` operates in dual-stack mode:
 
-- Joins the IPv4 WSD multicast group `239.255.255.250:3702` (as always)
+- Uses a single `AF_INET6` dual-stack UDP socket (`IPV6_V6ONLY=0`) bound to `:::3702`
+- Joins the IPv4 WSD multicast group `239.255.255.250:3702` via `MCAST_JOIN_GROUP` (RFC 3678)
 - Joins the IPv6 WSD multicast group `FF02::C:3702` (WS-Discovery 1.1)
-- Multiplexes both sockets via `select()`; Hello and Bye on each socket
-- Each Probe is answered on the same socket and protocol it arrived on,
-  advertising only the matching address family (per ONVIF Core Specification)
+- Each incoming Probe is dispatched by address family: IPv4-mapped senders (`::ffff:x.x.x.x`) get the IPv4 xaddr; native IPv6 senders get the IPv6 xaddr6
 
-IPv6 is gracefully degraded: socket setup failure keeps IPv4-only mode running.
+IPv6 is gracefully degraded: if the IPv6 multicast join fails, the server continues in IPv4-only mode.
 
-Auto-detection for IPv6 uses the same routing-table connect trick as IPv4:
-connect a UDP socket to `FF02::C` with no scope ID and call `getsockname()`. On multi-homed systems use `-i`.
+Auto-detection for IPv6 scans interfaces via `getifaddrs`, preferring a global unicast address over link-local. The routing-table connect trick used for IPv4 does not work here: Linux requires `sin6_scope_id != 0` for link-local multicast destinations such as `FF02::C`. On multi-homed systems use `-i`.
 
 Note: `onvif_simple_server` IPv6 advertising is tracked separately.
 
