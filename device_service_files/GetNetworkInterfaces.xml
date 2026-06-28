@@ -18,6 +18,8 @@
                             <tt:Address>%IP_ADDRESS%</tt:Address>
                             <tt:PrefixLength>%NETMASK%</tt:PrefixLength>
                         </tt:Manual>
+                        <!-- TODO: DHCP hardcoded false -- no mechanism currently detects
+                             whether the interface address is DHCP-assigned or static. -->
                         <tt:DHCP>false</tt:DHCP>
                     </tt:Config>
                 </tt:IPv4>
