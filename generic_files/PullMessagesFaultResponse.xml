@@ -3,7 +3,7 @@
               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
               xmlns:xsd="http://www.w3.org/2001/XMLSchema"
               xmlns:rpc="http://www.w3.org/2003/05/soap-rpc"
-              xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">
+              xmlns:wsa="http://www.w3.org/2005/08/addressing">
     <SOAP-ENV:Header>
         <wsa:Action>http://www.onvif.org/ver10/events/wsdl/PullPointSubscription/PullMessages/Fault/PullMessagesFaultResponse</wsa:Action>
         <wsa:To>http://www.w3.org/2005/08/addressing/anonymous</wsa:To>
