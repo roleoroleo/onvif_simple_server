@@ -26,7 +26,6 @@
 #include <net/if.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#include <ifaddrs.h>
 #include <time.h>
 #include <signal.h>
 #include <getopt.h>
@@ -114,74 +113,6 @@ static int detect_outbound_address(char *addr_str)
     addr_str[15] = 0;
     return 0;
 }
-
-/* -------------------------------------------------------------------------
- * IPv6 interface auto-detection: scan interfaces for the first non-loopback
- * IPv6 address.  Prefers global unicast over link-local.
- * Returns 0 on success, writing the address into addr_str and the interface
- * index into *if_idx_out; returns -1 if no usable address is found.
- *
- * Note: the connect-to-multicast trick used for IPv4 does not work for
- * FF02::C (link-local scope) -- Linux requires sin6_scope_id != 0 for
- * link-local multicast, so we use getifaddrs instead.
- * ---------------------------------------------------------------------- */
-static int detect_outbound_address_v6(char *addr_str, size_t len,
-                                      unsigned int *if_idx_out)
-{
-    struct ifaddrs *ifap, *ifa;
-    char best[INET6_ADDRSTRLEN] = {0};
-    unsigned int best_idx = 0;
-    int found_global = 0;
-
-    if (getifaddrs(&ifap) < 0) return -1;
-    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
-        if (!ifa->ifa_addr || ifa->ifa_addr->sa_family != AF_INET6) continue;
-        struct sockaddr_in6 *s6 = (struct sockaddr_in6 *)ifa->ifa_addr;
-        if (IN6_IS_ADDR_LOOPBACK(&s6->sin6_addr)) continue;
-        if (found_global && IN6_IS_ADDR_LINKLOCAL(&s6->sin6_addr)) continue;
-        char buf[INET6_ADDRSTRLEN];
-        if (!inet_ntop(AF_INET6, &s6->sin6_addr, buf, sizeof(buf))) continue;
-        strncpy(best, buf, INET6_ADDRSTRLEN - 1);
-        best_idx = if_nametoindex(ifa->ifa_name);
-        if (!IN6_IS_ADDR_LINKLOCAL(&s6->sin6_addr)) { found_global = 1; break; }
-    }
-    freeifaddrs(ifap);
-    if (!best[0]) return -1;
-    strncpy(addr_str, best, len - 1); addr_str[len - 1] = 0;
-    if (if_idx_out) *if_idx_out = best_idx;
-    return 0;
-}
-
-/* -------------------------------------------------------------------------
- * Get the first non-loopback IPv6 address for a named interface.
- * Prefers global unicast over link-local.
- * ---------------------------------------------------------------------- */
-static int get_ip6_address(char *addr_str, size_t len, const char *if_name)
-{
-    struct ifaddrs *ifap, *ifa;
-    char candidate[INET6_ADDRSTRLEN];
-    int found_global = 0, found_any = 0;
-
-    if (getifaddrs(&ifap) < 0) return -1;
-
-    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
-        if (!ifa->ifa_addr || ifa->ifa_addr->sa_family != AF_INET6) continue;
-        if (strcmp(ifa->ifa_name, if_name) != 0) continue;
-        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)ifa->ifa_addr;
-        if (IN6_IS_ADDR_LOOPBACK(&sin6->sin6_addr)) continue;
-        if (inet_ntop(AF_INET6, &sin6->sin6_addr, candidate, sizeof(candidate)) == NULL) continue;
-        if (!IN6_IS_ADDR_LINKLOCAL(&sin6->sin6_addr)) {
-            strncpy(addr_str, candidate, len - 1); addr_str[len-1] = 0;
-            found_global = 1; break;
-        } else if (!found_any) {
-            strncpy(addr_str, candidate, len - 1); addr_str[len-1] = 0;
-            found_any = 1;
-        }
-    }
-    freeifaddrs(ifap);
-    return (found_global || found_any) ? 0 : -1;
-}
-
 
 /* -------------------------------------------------------------------------
  * Daemon / PID helpers
@@ -365,6 +296,7 @@ int main(int argc, char **argv)
     int c, ret;
     char *if_name, *pid_file, *xaddr_s, *xaddr6_s;
     unsigned int if6_idx = 0;
+    int have_v4 = 0;
     int foreground, no = 0;
     char s_tmp[32];
     long size;
@@ -473,14 +405,16 @@ int main(int argc, char **argv)
     /* ---- IPv4 address detection ---------------------------------------- */
     if (if_name) {
         get_ip_address(address, netmask, if_name);
+        have_v4 = (address[0] != '\0');
     } else {
-        if (detect_outbound_address(address) != 0) {
-            log_fatal("Cannot auto-detect network interface. Use -i <interface>.");
-            fclose(fLog); exit(EXIT_FAILURE);
+        if (detect_outbound_address(address) == 0) {
+            have_v4 = 1;
+            log_info("Auto-detected outbound IPv4 address: %s", address);
+        } else {
+            log_warn("Cannot auto-detect outbound IPv4 address; will try IPv6.");
         }
-        log_info("Auto-detected outbound IPv4 address: %s", address);
     }
-    log_debug("IPv4 address = %s", address);
+    if (have_v4) log_debug("IPv4 address = %s", address);
 
     /* ---- IPv6 address detection (only when -6 is given) ---------------- */
     memset(address6, 0, sizeof(address6));
@@ -500,11 +434,25 @@ int main(int argc, char **argv)
         }
     }
 
+    if (!have_v4 && !xaddr6_s) {
+        log_fatal("No usable IPv4 or IPv6 address found. Use -i <interface> or check network.");
+        fclose(fLog); exit(EXIT_FAILURE);
+    }
+
     /* ---- Stable UUID from MAC (WS-Discovery 1.1 EPR stability req.) ---- */
     {
         uint8_t mac[6] = {0};
-        int mac_ok = (if_name ? get_mac_by_ifname(if_name, mac)
-                              : get_mac_by_ip(address, mac)) == 0;
+        int mac_ok;
+        if (if_name) {
+            mac_ok = (get_mac_by_ifname(if_name, mac) == 0);
+        } else if (have_v4) {
+            mac_ok = (get_mac_by_ip(address, mac) == 0);
+        } else {
+            /* IPv6-only: derive interface name from if6_idx */
+            char if6_name[IF_NAMESIZE] = {0};
+            mac_ok = (if6_idx && if_indextoname(if6_idx, if6_name) &&
+                      get_mac_by_ifname(if6_name, mac) == 0);
+        }
         if (mac_ok) {
             gen_uuid_v5_mac(uuid, mac);
             log_info("Device UUID (stable, MAC-based): %s", uuid);
@@ -541,7 +489,7 @@ int main(int argc, char **argv)
          * path, so IP_ADD_MEMBERSHIP works on AF_INET6 dual-stack sockets.
          * MCAST_JOIN_GROUP with IPPROTO_IPV6 does not work here because the
          * kernel's IPv6 mc path rejects AF_INET addresses in gr_group. */
-        {
+        if (have_v4) {
             struct ip_mreq mreq4;
             memset(&mreq4, 0, sizeof(mreq4));
             mreq4.imr_multiaddr.s_addr = inet_addr(MULTICAST_ADDRESS);
@@ -581,7 +529,7 @@ int main(int argc, char **argv)
     }
 
     /* ---- Build xaddr strings ------------------------------------------- */
-    sprintf(xaddr, xaddr_s, address);
+    if (have_v4) sprintf(xaddr, xaddr_s, address);
     if (xaddr6_s) sprintf(xaddr6, xaddr6_s, address6);
 
     /* ---- Send Hello ---------------------------------------------------- */
@@ -589,24 +537,26 @@ int main(int argc, char **argv)
     sprintf(s_tmp, "%d", msg_number);
     gen_uuid(msg_uuid);
 
-    sprintf(template_file, "%s/Hello.xml", template_dir);
-    size = cat(NULL, template_file, 12,
-               "%MSG_UUID%", msg_uuid, "%MSG_NUMBER%", s_tmp, "%UUID%", uuid,
-               "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr);
-    message = (char *) malloc((size + 1) * sizeof(char));
-    if (!message) {
-        log_fatal("Malloc error."); close(sock); fclose(fLog); exit(EXIT_FAILURE);
+    if (have_v4) {
+        sprintf(template_file, "%s/Hello.xml", template_dir);
+        size = cat(NULL, template_file, 12,
+                   "%MSG_UUID%", msg_uuid, "%MSG_NUMBER%", s_tmp, "%UUID%", uuid,
+                   "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr);
+        message = (char *) malloc((size + 1) * sizeof(char));
+        if (!message) {
+            log_fatal("Malloc error."); close(sock); fclose(fLog); exit(EXIT_FAILURE);
+        }
+        cat(message, template_file, 12,
+            "%MSG_UUID%", msg_uuid, "%MSG_NUMBER%", s_tmp, "%UUID%", uuid,
+            "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr);
+        if (send_wsd_msg(sock, message, strlen(message),
+                         (struct sockaddr *)&addr_mcast4, sizeof(addr_mcast4)) < 0) {
+            log_fatal("Error sending Hello (IPv4).");
+            free(message); close(sock); fclose(fLog); exit(EXIT_FAILURE);
+        }
+        free(message);
+        log_info("Hello (IPv4) sent.");
     }
-    cat(message, template_file, 12,
-        "%MSG_UUID%", msg_uuid, "%MSG_NUMBER%", s_tmp, "%UUID%", uuid,
-        "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr);
-    if (send_wsd_msg(sock, message, strlen(message),
-                     (struct sockaddr *)&addr_mcast4, sizeof(addr_mcast4)) < 0) {
-        log_fatal("Error sending Hello (IPv4).");
-        free(message); close(sock); fclose(fLog); exit(EXIT_FAILURE);
-    }
-    free(message);
-    log_info("Hello (IPv4) sent.");
 
     if (xaddr6[0]) {
         msg_number++;
@@ -633,7 +583,12 @@ int main(int argc, char **argv)
     sleep(1);
 
     /* ---- Main loop ----------------------------------------------------- */
-    log_info("Starting main loop (IPv4%s).", xaddr6[0] ? " + IPv6" : " only");
+    if (have_v4 && xaddr6[0])
+        log_info("Starting main loop (IPv4 + IPv6).");
+    else if (have_v4)
+        log_info("Starting main loop (IPv4 only).");
+    else
+        log_info("Starting main loop (IPv6 only).");
     exit_main = 0;
 
     while (!exit_main) {
@@ -650,11 +605,12 @@ int main(int argc, char **argv)
                      (struct sockaddr *)&sender, &slen) <= 0) continue;
 
         if (IN6_IS_ADDR_V4MAPPED(&sender.sin6_addr)) {
+            if (!have_v4) { log_debug("IPv4 probe received but IPv4 WSD not active; ignoring."); continue; }
             probe_xaddr = xaddr;
         } else if (xaddr6[0]) {
             probe_xaddr = xaddr6;
         } else {
-            log_debug("IPv6 probe received but -6 not configured; ignoring.");
+            log_debug("IPv6 probe received but IPv6 WSD not configured; ignoring.");
             continue;
         }
         handle_probe(sock, (struct sockaddr *)&sender, slen, recv_buffer, probe_xaddr);

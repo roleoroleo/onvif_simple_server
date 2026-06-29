@@ -103,6 +103,8 @@ int get_mac_by_ifname(const char *if_name, uint8_t mac_out[6]);
 int get_mac_by_ip(const char *ip_str, uint8_t mac_out[6]);
 int get_ifname_by_addr(const char *addr_str, char *ifname, size_t len);
 int get_mac_by_addr(const char *addr_str, uint8_t mac_out[6]);
+int detect_outbound_address_v6(char *addr_str, size_t len, unsigned int *if_idx_out);
+int get_ip6_address(char *addr_str, size_t len, const char *if_name);
 int detect_local_address(const char *remote_addr, char *local_addr, size_t len);
 void gen_uuid_v5_mac(char *uuid_str, const uint8_t mac[6]);
 int get_from_query_string(char **ret, int *ret_size, char *par);
