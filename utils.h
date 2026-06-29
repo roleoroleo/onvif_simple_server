@@ -85,6 +85,7 @@ void output_http_headers(long content_length);
 // Global flag to indicate if the last cat() call returned a SOAP fault
 extern int g_last_response_was_soap_fault;
 int get_ip_address(char *address, char *netmask, char *name);
+int get_ipv6_address(const char *ifname, char *ll_addr, int *ll_prefix, char *gl_addr, int *gl_prefix);
 int get_mac_address(char *address, char *name);
 int netmask2prefixlen(char *netmask);
 int get_mtu(char *if_name);

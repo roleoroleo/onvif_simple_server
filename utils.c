@@ -495,6 +495,59 @@ int get_ip_address(char *address, char *netmask, char *name)
     return 0;
 }
 
+/* Get IPv6 addresses for a named interface.
+ * Returns bitmask: bit 0 = link-local found, bit 1 = global/ULA found, -1 on error.
+ * ll_addr/gl_addr must be INET6_ADDRSTRLEN bytes; prefix outputs receive 0-128. */
+int get_ipv6_address(const char *ifname,
+                     char *ll_addr, int *ll_prefix,
+                     char *gl_addr, int *gl_prefix)
+{
+    struct ifaddrs *ifaddr, *ifa;
+    int found = 0;
+
+    if (getifaddrs(&ifaddr) < 0) return -1;
+
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr) continue;
+        if (ifa->ifa_addr->sa_family != AF_INET6) continue;
+        if (strcmp(ifa->ifa_name, ifname) != 0) continue;
+
+        struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *)ifa->ifa_addr;
+        char buf[INET6_ADDRSTRLEN];
+        inet_ntop(AF_INET6, &sa6->sin6_addr, buf, sizeof(buf));
+
+        int prefix = 0;
+        if (ifa->ifa_netmask) {
+            const uint8_t *m = ((struct sockaddr_in6 *)ifa->ifa_netmask)->sin6_addr.s6_addr;
+            for (int i = 0; i < 16; i++) {
+                uint8_t byte = m[i];
+                while (byte & 0x80) { prefix++; byte = (uint8_t)(byte << 1); }
+                if (byte) break;
+            }
+        }
+
+        if (sa6->sin6_addr.s6_addr[0] == 0xfe &&
+                (sa6->sin6_addr.s6_addr[1] & 0xc0) == 0x80) {
+            if (!(found & 1)) {
+                strncpy(ll_addr, buf, INET6_ADDRSTRLEN - 1);
+                ll_addr[INET6_ADDRSTRLEN - 1] = '\0';
+                *ll_prefix = prefix ? prefix : 64;
+                found |= 1;
+            }
+        } else {
+            if (!(found & 2)) {
+                strncpy(gl_addr, buf, INET6_ADDRSTRLEN - 1);
+                gl_addr[INET6_ADDRSTRLEN - 1] = '\0';
+                *gl_prefix = prefix ? prefix : 64;
+                found |= 2;
+            }
+        }
+    }
+
+    freeifaddrs(ifaddr);
+    return found;
+}
+
 /**
  * Get the MAC address of an interface "name"
  * @param name The name of the interface
