@@ -65,11 +65,11 @@ char template_file[1024];
 int sock;
 /* IPv4 */
 char address[16], netmask[16];
-struct sockaddr_in6 addr_mcast4; /* ::ffff:239.255.255.250:3702 */
+struct sockaddr_in6 addr_mcast4; /* [::ffff:239.255.255.250]:3702 */
 char xaddr[1024];
 /* IPv6 (optional, only when -6 is given) */
 char address6[INET6_ADDRSTRLEN];
-struct sockaddr_in6 addr_mcast6; /* FF02::C:3702 */
+struct sockaddr_in6 addr_mcast6; /* [FF02::C]:3702 */
 char xaddr6[1024];
 
 char *message;
