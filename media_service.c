@@ -175,7 +175,7 @@ int media_get_profiles()
 {
     char profiles_num[2];
     char stmp_vsc_w[16], stmp_vsc_h[16];
-    char stmp_w[16], stmp_h[16];
+    char stmp_w[16], stmp_h[16], stmp_br[16];
     char audio_enc_h[16], audio_enc_l[16];
     long size;
     int c;
@@ -221,11 +221,15 @@ int media_get_profiles()
 
             sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
             sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
-            size += cat(dest, "media_service_files/GetProfile_VEC.xml", 8,
+            sprintf(stmp_br, "%d", service_ctx.profiles[0].bitrate > 0 ? service_ctx.profiles[0].bitrate : 5000);
+            size += cat(dest, (service_ctx.profiles[0].type == H265)
+                    ? "media_service_files/GetProfile_VEC_h265.xml"
+                    : "media_service_files/GetProfile_VEC.xml", 10,
                     "%PROFILE%", "Profile_0",
                     "%WIDTH%", stmp_w,
                     "%HEIGHT%", stmp_h,
-                    "%H264PROFILE%", "High");
+                    "%H264PROFILE%", "High",
+                    "%BITRATE%", stmp_br);
 
             if (service_ctx.profiles[0].audio_encoder != AUDIO_NONE) {
                 set_audio_codec(audio_enc_h, 16, service_ctx.profiles[0].audio_encoder, 1);
@@ -275,11 +279,15 @@ int media_get_profiles()
 
             sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
             sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
-            size += cat(dest, "media_service_files/GetProfile_VEC.xml", 8,
+            sprintf(stmp_br, "%d", service_ctx.profiles[0].bitrate > 0 ? service_ctx.profiles[0].bitrate : 5000);
+            size += cat(dest, (service_ctx.profiles[0].type == H265)
+                    ? "media_service_files/GetProfile_VEC_h265.xml"
+                    : "media_service_files/GetProfile_VEC.xml", 10,
                     "%PROFILE%", "Profile_0",
                     "%WIDTH%", stmp_w,
                     "%HEIGHT%", stmp_h,
-                    "%H264PROFILE%", "High");
+                    "%H264PROFILE%", "High",
+                    "%BITRATE%", stmp_br);
 
             if (service_ctx.profiles[0].audio_encoder != AUDIO_NONE) {
 
@@ -317,11 +325,15 @@ int media_get_profiles()
 
             sprintf(stmp_w, "%d", service_ctx.profiles[1].width);
             sprintf(stmp_h, "%d", service_ctx.profiles[1].height);
-            size += cat(dest, "media_service_files/GetProfile_VEC.xml", 8,
+            sprintf(stmp_br, "%d", service_ctx.profiles[1].bitrate > 0 ? service_ctx.profiles[1].bitrate : 5000);
+            size += cat(dest, (service_ctx.profiles[1].type == H265)
+                    ? "media_service_files/GetProfile_VEC_h265.xml"
+                    : "media_service_files/GetProfile_VEC.xml", 10,
                     "%PROFILE%", "Profile_1",
                     "%WIDTH%", stmp_w,
                     "%HEIGHT%", stmp_h,
-                    "%H264PROFILE%", "Main");
+                    "%H264PROFILE%", "Main",
+                    "%BITRATE%", stmp_br);
 
             if (service_ctx.profiles[1].audio_encoder != AUDIO_NONE) {
 
@@ -357,7 +369,7 @@ int media_get_profile()
 {
     char profiles_num[2];
     char stmp_vsc_w[16], stmp_vsc_h[16];
-    char stmp_w[16], stmp_h[16];
+    char stmp_w[16], stmp_h[16], stmp_br[16];
     const char *profile_token = get_element("ProfileToken", "Body");
     char audio_enc_h[16], audio_enc_l[16];
     long size;
@@ -409,11 +421,15 @@ int media_get_profile()
 
             sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
             sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
-            size += cat(dest, "media_service_files/GetProfile_VEC.xml", 8,
+            sprintf(stmp_br, "%d", service_ctx.profiles[0].bitrate > 0 ? service_ctx.profiles[0].bitrate : 5000);
+            size += cat(dest, (service_ctx.profiles[0].type == H265)
+                    ? "media_service_files/GetProfile_VEC_h265.xml"
+                    : "media_service_files/GetProfile_VEC.xml", 10,
                     "%PROFILE%", profile_token,
                     "%WIDTH%", stmp_w,
                     "%HEIGHT%", stmp_h,
-                    "%H264PROFILE%", "High");
+                    "%H264PROFILE%", "High",
+                    "%BITRATE%", stmp_br);
 
             if (service_ctx.profiles[0].audio_encoder != AUDIO_NONE) {
 
@@ -466,11 +482,15 @@ int media_get_profile()
 
             sprintf(stmp_w, "%d", service_ctx.profiles[1].width);
             sprintf(stmp_h, "%d", service_ctx.profiles[1].height);
-            size += cat(dest, "media_service_files/GetProfile_VEC.xml", 8,
+            sprintf(stmp_br, "%d", service_ctx.profiles[1].bitrate > 0 ? service_ctx.profiles[1].bitrate : 5000);
+            size += cat(dest, (service_ctx.profiles[1].type == H265)
+                    ? "media_service_files/GetProfile_VEC_h265.xml"
+                    : "media_service_files/GetProfile_VEC.xml", 10,
                     "%PROFILE%", profile_token,
                     "%WIDTH%", stmp_w,
                     "%HEIGHT%", stmp_h,
-                    "%H264PROFILE%", "Main");
+                    "%H264PROFILE%", "Main",
+                    "%BITRATE%", stmp_br);
 
             if (service_ctx.profiles[1].audio_encoder != AUDIO_NONE) {
 
@@ -514,38 +534,54 @@ int media_get_video_encoder_configurations()
 {
     char stmp_w_l[16], stmp_h_l[16];
     char stmp_w_h[16], stmp_h_h[16];
+    char stmp_br_h[16], stmp_br_l[16];
 
     if (service_ctx.profiles_num == 1) {
         sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
-        long size = cat(NULL, "media_service_files/GetVideoEncoderConfigurations_high.xml", 4,
+        sprintf(stmp_br_h, "%d", service_ctx.profiles[0].bitrate > 0 ? service_ctx.profiles[0].bitrate : 5000);
+        char *tmpl = (service_ctx.profiles[0].type == H265)
+            ? "media_service_files/GetVideoEncoderConfigurations_high_h265.xml"
+            : "media_service_files/GetVideoEncoderConfigurations_high.xml";
+        long size = cat(NULL, tmpl, 6,
                 "%WIDTH_HIGH%", stmp_w_h,
-                "%HEIGHT_HIGH%", stmp_h_h);
+                "%HEIGHT_HIGH%", stmp_h_h,
+                "%BITRATE%", stmp_br_h);
 
         output_http_headers(size);
 
-        return cat("stdout", "media_service_files/GetVideoEncoderConfigurations_high.xml", 4,
+        return cat("stdout", tmpl, 6,
                 "%WIDTH_HIGH%", stmp_w_h,
-                "%HEIGHT_HIGH%", stmp_h_h);
+                "%HEIGHT_HIGH%", stmp_h_h,
+                "%BITRATE%", stmp_br_h);
 
     } else if (service_ctx.profiles_num == 2) {
         sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
         sprintf(stmp_w_l, "%d", service_ctx.profiles[1].width);
         sprintf(stmp_h_l, "%d", service_ctx.profiles[1].height);
-        long size = cat(NULL, "media_service_files/GetVideoEncoderConfigurations_both.xml", 8,
+        sprintf(stmp_br_h, "%d", service_ctx.profiles[0].bitrate > 0 ? service_ctx.profiles[0].bitrate : 5000);
+        sprintf(stmp_br_l, "%d", service_ctx.profiles[1].bitrate > 0 ? service_ctx.profiles[1].bitrate : 5000);
+        char *tmpl = (service_ctx.profiles[0].type == H265)
+            ? "media_service_files/GetVideoEncoderConfigurations_both_h265.xml"
+            : "media_service_files/GetVideoEncoderConfigurations_both.xml";
+        long size = cat(NULL, tmpl, 12,
                     "%WIDTH_HIGH%", stmp_w_h,
                     "%HEIGHT_HIGH%", stmp_h_h,
                     "%WIDTH_LOW%", stmp_w_l,
-                    "%HEIGHT_LOW%", stmp_h_l);
+                    "%HEIGHT_LOW%", stmp_h_l,
+                    "%BITRATE_HIGH%", stmp_br_h,
+                    "%BITRATE_LOW%", stmp_br_l);
 
         output_http_headers(size);
 
-        return cat("stdout", "media_service_files/GetVideoEncoderConfigurations_both.xml", 8,
+        return cat("stdout", tmpl, 12,
                     "%WIDTH_HIGH%", stmp_w_h,
                     "%HEIGHT_HIGH%", stmp_h_h,
                     "%WIDTH_LOW%", stmp_w_l,
-                    "%HEIGHT_LOW%", stmp_h_l);
+                    "%HEIGHT_LOW%", stmp_h_l,
+                    "%BITRATE_HIGH%", stmp_br_h,
+                    "%BITRATE_LOW%", stmp_br_l);
     }
 }
 
@@ -553,6 +589,7 @@ int media_get_video_encoder_configuration()
 {
     char stmp_w_l[16], stmp_h_l[16];
     char stmp_w_h[16], stmp_h_h[16];
+    char stmp_br[16];
     const char *configuration_token = get_element("ConfigurationToken", "Body");
     char token[10];
 
@@ -568,38 +605,50 @@ int media_get_video_encoder_configuration()
 
         sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
-        long size = cat(NULL, "media_service_files/GetVideoEncoderConfiguration.xml", 8,
+        sprintf(stmp_br, "%d", service_ctx.profiles[0].bitrate > 0 ? service_ctx.profiles[0].bitrate : 5000);
+        char *tmpl = (service_ctx.profiles[0].type == H265)
+            ? "media_service_files/GetVideoEncoderConfiguration_h265.xml"
+            : "media_service_files/GetVideoEncoderConfiguration.xml";
+        long size = cat(NULL, tmpl, 10,
                 "%PROFILE%", token,
                 "%WIDTH%", stmp_w_h,
                 "%HEIGHT%", stmp_h_h,
-                "%PROFILE_TYPE%", "High");
+                "%PROFILE_TYPE%", "High",
+                "%BITRATE%", stmp_br);
 
         output_http_headers(size);
 
-        return cat("stdout", "media_service_files/GetVideoEncoderConfiguration.xml", 8,
+        return cat("stdout", tmpl, 10,
                 "%PROFILE%", token,
                 "%WIDTH%", stmp_w_h,
                 "%HEIGHT%", stmp_h_h,
-                "%PROFILE_TYPE%", "High");
+                "%PROFILE_TYPE%", "High",
+                "%BITRATE%", stmp_br);
 
     } else if ((service_ctx.profiles_num == 2) &&
             (strcasecmp(service_ctx.profiles[1].name, token) == 0)) {
 
         sprintf(stmp_w_l, "%d", service_ctx.profiles[1].width);
         sprintf(stmp_h_l, "%d", service_ctx.profiles[1].height);
-        long size = cat(NULL, "media_service_files/GetVideoEncoderConfiguration.xml", 8,
+        sprintf(stmp_br, "%d", service_ctx.profiles[1].bitrate > 0 ? service_ctx.profiles[1].bitrate : 5000);
+        char *tmpl = (service_ctx.profiles[1].type == H265)
+            ? "media_service_files/GetVideoEncoderConfiguration_h265.xml"
+            : "media_service_files/GetVideoEncoderConfiguration.xml";
+        long size = cat(NULL, tmpl, 10,
                 "%PROFILE%", token,
                 "%WIDTH%", stmp_w_l,
                 "%HEIGHT%", stmp_h_l,
-                "%PROFILE_TYPE%", "Main");
+                "%PROFILE_TYPE%", "Main",
+                "%BITRATE%", stmp_br);
 
         output_http_headers(size);
 
-        return cat("stdout", "media_service_files/GetVideoEncoderConfiguration.xml", 8,
+        return cat("stdout", tmpl, 10,
                 "%PROFILE%", token,
                 "%WIDTH%", stmp_w_l,
                 "%HEIGHT%", stmp_h_l,
-                "%PROFILE_TYPE%", "Main");
+                "%PROFILE_TYPE%", "Main",
+                "%BITRATE%", stmp_br);
     } else {
         send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
         return -2;
@@ -621,7 +670,10 @@ int media_get_compatible_video_encoder_configurations()
 
         sprintf(stmp_w_h, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
-        long size = cat(NULL, "media_service_files/GetCompatibleVideoEncoderConfigurations.xml", 8,
+        char *tmpl = (service_ctx.profiles[0].type == H265)
+            ? "media_service_files/GetCompatibleVideoEncoderConfigurations_h265.xml"
+            : "media_service_files/GetCompatibleVideoEncoderConfigurations.xml";
+        long size = cat(NULL, tmpl, 8,
                 "%PROFILE%", profile_token,
                 "%WIDTH%", stmp_w_h,
                 "%HEIGHT%", stmp_h_h,
@@ -629,7 +681,7 @@ int media_get_compatible_video_encoder_configurations()
 
         output_http_headers(size);
 
-        return cat("stdout", "media_service_files/GetCompatibleVideoEncoderConfigurations.xml", 8,
+        return cat("stdout", tmpl, 8,
                 "%PROFILE%", profile_token,
                 "%WIDTH%", stmp_w_h,
                 "%HEIGHT%", stmp_h_h,
@@ -640,7 +692,10 @@ int media_get_compatible_video_encoder_configurations()
 
         sprintf(stmp_w_l, "%d", service_ctx.profiles[1].width);
         sprintf(stmp_h_l, "%d", service_ctx.profiles[1].height);
-        long size = cat(NULL, "media_service_files/GetCompatibleVideoEncoderConfigurations.xml", 8,
+        char *tmpl = (service_ctx.profiles[1].type == H265)
+            ? "media_service_files/GetCompatibleVideoEncoderConfigurations_h265.xml"
+            : "media_service_files/GetCompatibleVideoEncoderConfigurations.xml";
+        long size = cat(NULL, tmpl, 8,
                 "%PROFILE%", profile_token,
                 "%WIDTH%", stmp_w_l,
                 "%HEIGHT%", stmp_h_l,
@@ -648,7 +703,7 @@ int media_get_compatible_video_encoder_configurations()
 
         output_http_headers(size);
 
-        return cat("stdout", "media_service_files/GetCompatibleVideoEncoderConfigurations.xml", 8,
+        return cat("stdout", tmpl, 8,
                 "%PROFILE%", profile_token,
                 "%WIDTH%", stmp_w_l,
                 "%HEIGHT%", stmp_h_l,

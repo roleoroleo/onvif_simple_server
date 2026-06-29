@@ -204,6 +204,7 @@ int process_conf_file(char *file)
             service_ctx.profiles[service_ctx.profiles_num - 1].url = NULL;
             service_ctx.profiles[service_ctx.profiles_num - 1].snapurl = NULL;
             service_ctx.profiles[service_ctx.profiles_num - 1].type = H264;
+            service_ctx.profiles[service_ctx.profiles_num - 1].bitrate = 0;
             service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
             service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
         } else if (strcasecmp(param, "width") == 0) {
@@ -247,6 +248,8 @@ int process_conf_file(char *file)
                 service_ctx.profiles[service_ctx.profiles_num - 1].type = H264;
             else if (strcasecmp(value, "H265") == 0)
                 service_ctx.profiles[service_ctx.profiles_num - 1].type = H265;
+        } else if (strcasecmp(param, "bitrate") == 0) {
+            service_ctx.profiles[service_ctx.profiles_num - 1].bitrate = atoi(value);
         } else if (strcasecmp(param, "audio_encoder") == 0) {
             if (strcasecmp(value, "NONE") == 0)
                 service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AUDIO_NONE;

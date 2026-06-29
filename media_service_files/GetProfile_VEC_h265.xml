@@ -1,7 +1,7 @@
                 <tt:VideoEncoderConfiguration token="%PROFILE%_VideoEncoderToken">
                     <tt:Name>%PROFILE%_VideoEncoder</tt:Name>
                     <tt:UseCount>1</tt:UseCount>
-                    <tt:Encoding>H264</tt:Encoding>
+                    <tt:Encoding>H265</tt:Encoding>
                     <tt:Resolution>
                         <tt:Width>%WIDTH%</tt:Width>
                         <tt:Height>%HEIGHT%</tt:Height>
@@ -12,10 +12,6 @@
                         <tt:EncodingInterval>1</tt:EncodingInterval>
                         <tt:BitrateLimit>%BITRATE%</tt:BitrateLimit>
                     </tt:RateControl>
-                    <tt:H264>
-                        <tt:GovLength>40</tt:GovLength>
-                        <tt:H264Profile>%H264PROFILE%</tt:H264Profile>
-                    </tt:H264>
                     <tt:Multicast>
                         <tt:Address>
                             <tt:Type>IPv4</tt:Type>

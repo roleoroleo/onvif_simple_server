@@ -7,7 +7,7 @@
             <trt:Configurations token="Profile_0_VideoEncoderToken">
                 <tt:Name>Profile_0_VideoEncoder</tt:Name>
                 <tt:UseCount>1</tt:UseCount>
-                <tt:Encoding>H264</tt:Encoding>
+                <tt:Encoding>H265</tt:Encoding>
                 <tt:Resolution>
                     <tt:Width>%WIDTH_HIGH%</tt:Width>
                     <tt:Height>%HEIGHT_HIGH%</tt:Height>
@@ -18,10 +18,6 @@
                     <tt:EncodingInterval>1</tt:EncodingInterval>
                     <tt:BitrateLimit>%BITRATE_HIGH%</tt:BitrateLimit>
                 </tt:RateControl>
-                <tt:H264>
-                    <tt:GovLength>40</tt:GovLength>
-                    <tt:H264Profile>High</tt:H264Profile>
-                </tt:H264>
                 <tt:Multicast>
                     <tt:Address>
                     <tt:Type>IPv4</tt:Type>
@@ -35,7 +31,7 @@
             <trt:Configurations token="Profile_1_VideoEncoderToken">
                 <tt:Name>Profile_1_VideoEncoder</tt:Name>
                 <tt:UseCount>1</tt:UseCount>
-                <tt:Encoding>H264</tt:Encoding>
+                <tt:Encoding>H265</tt:Encoding>
                 <tt:Resolution>
                     <tt:Width>%WIDTH_LOW%</tt:Width>
                     <tt:Height>%HEIGHT_LOW%</tt:Height>
@@ -46,10 +42,6 @@
                     <tt:EncodingInterval>1</tt:EncodingInterval>
                     <tt:BitrateLimit>%BITRATE_LOW%</tt:BitrateLimit>
                 </tt:RateControl>
-                <tt:H264>
-                    <tt:GovLength>40</tt:GovLength>
-                    <tt:H264Profile>Main</tt:H264Profile>
-                </tt:H264>
                 <tt:Multicast>
                     <tt:Address>
                     <tt:Type>IPv4</tt:Type>
