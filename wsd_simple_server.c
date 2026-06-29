@@ -517,7 +517,6 @@ int main(int argc, char **argv)
     /* ---- Single dual-stack UDP socket ------------------------------------- */
     {
         struct sockaddr_in6 bind6;
-        struct group_req gr4;
         int yes = 1;
 
         if ((sock = socket(AF_INET6, SOCK_DGRAM, 0)) < 0) {
@@ -537,16 +536,20 @@ int main(int argc, char **argv)
             close(sock); fclose(fLog); exit(EXIT_FAILURE);
         }
 
-        /* Join IPv4 WSD multicast group.
-         * MCAST_JOIN_GROUP (RFC 3678 protocol-independent API) works on AF_INET6
-         * dual-stack sockets for both IPv4 and IPv6 multicast groups. */
-        memset(&gr4, 0, sizeof(gr4));
-        gr4.gr_interface = if_name ? if_nametoindex(if_name) : 0;
-        ((struct sockaddr_in *)&gr4.gr_group)->sin_family      = AF_INET;
-        ((struct sockaddr_in *)&gr4.gr_group)->sin_addr.s_addr = inet_addr(MULTICAST_ADDRESS);
-        if (setsockopt(sock, IPPROTO_IPV6, MCAST_JOIN_GROUP, &gr4, sizeof(gr4)) < 0) {
-            log_fatal("Error joining IPv4 multicast group: %s", strerror(errno));
-            close(sock); fclose(fLog); exit(EXIT_FAILURE);
+        /* Join IPv4 WSD multicast group via IPPROTO_IP on the dual-stack socket.
+         * IPV6_V6ONLY=0 causes Linux to route IPPROTO_IP options to the IPv4
+         * path, so IP_ADD_MEMBERSHIP works on AF_INET6 dual-stack sockets.
+         * MCAST_JOIN_GROUP with IPPROTO_IPV6 does not work here because the
+         * kernel's IPv6 mc path rejects AF_INET addresses in gr_group. */
+        {
+            struct ip_mreq mreq4;
+            memset(&mreq4, 0, sizeof(mreq4));
+            mreq4.imr_multiaddr.s_addr = inet_addr(MULTICAST_ADDRESS);
+            mreq4.imr_interface.s_addr = INADDR_ANY;
+            if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq4, sizeof(mreq4)) < 0) {
+                log_fatal("Error joining IPv4 multicast group: %s", strerror(errno));
+                close(sock); fclose(fLog); exit(EXIT_FAILURE);
+            }
         }
 
         /* IPv4 multicast destination as IPv4-mapped IPv6 address */
