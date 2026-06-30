@@ -198,7 +198,9 @@ int process_conf_file(char *file)
             service_ctx.profiles_num++;
             service_ctx.profiles = (stream_profile_t *) realloc(service_ctx.profiles, service_ctx.profiles_num * sizeof(stream_profile_t));
 
-            if (strlen(value) > 64) {
+            size_t vlen = strlen(value);
+            while (vlen > 0 && value[vlen - 1] == '_') value[--vlen] = '\0';
+            if (vlen > 64) {
                 log_warn("Profile name '%s' exceeds 64 chars; truncating", value);
                 value[64] = '\0';
             }
@@ -970,7 +972,9 @@ int process_json_conf_file(char *file)
                 get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].name), item, "name");
                 char *n = service_ctx.profiles[service_ctx.profiles_num - 1].name;
                 if (n != NULL) {
-                    if (strlen(n) > 64) {
+                    size_t nlen = strlen(n);
+                    while (nlen > 0 && n[nlen - 1] == '_') n[--nlen] = '\0';
+                    if (nlen > 64) {
                         log_warn("Profile name '%s' exceeds 64 chars; truncating", n);
                         n[64] = '\0';
                     }
