@@ -611,33 +611,33 @@ int media_get_video_encoder_configuration()
                 "%BITRATE%", stmp_br);
 
     }
-    snprintf(vec_token, sizeof(vec_token), "%s_VideoEncoderToken", service_ctx.profiles[1].name);
-    if ((service_ctx.profiles_num == 2) &&
-            (strcasecmp(configuration_token, vec_token) == 0)) {
+    if (service_ctx.profiles_num == 2) {
+        snprintf(vec_token, sizeof(vec_token), "%s_VideoEncoderToken", service_ctx.profiles[1].name);
+        if (strcasecmp(configuration_token, vec_token) == 0) {
 
-        sprintf(stmp_w_l, "%d", service_ctx.profiles[1].width);
-        sprintf(stmp_h_l, "%d", service_ctx.profiles[1].height);
-        sprintf(stmp_br, "%d", service_ctx.profiles[1].bitrate > 0 ? service_ctx.profiles[1].bitrate : 5000);
-        char *tmpl = "media_service_files/GetVideoEncoderConfiguration.xml";
-        long size = cat(NULL, tmpl, 10,
-                "%PROFILE%", service_ctx.profiles[1].name,
-                "%WIDTH%", stmp_w_l,
-                "%HEIGHT%", stmp_h_l,
-                "%PROFILE_TYPE%", "Main",
-                "%BITRATE%", stmp_br);
+            sprintf(stmp_w_l, "%d", service_ctx.profiles[1].width);
+            sprintf(stmp_h_l, "%d", service_ctx.profiles[1].height);
+            sprintf(stmp_br, "%d", service_ctx.profiles[1].bitrate > 0 ? service_ctx.profiles[1].bitrate : 5000);
+            char *tmpl = "media_service_files/GetVideoEncoderConfiguration.xml";
+            long size = cat(NULL, tmpl, 10,
+                    "%PROFILE%", service_ctx.profiles[1].name,
+                    "%WIDTH%", stmp_w_l,
+                    "%HEIGHT%", stmp_h_l,
+                    "%PROFILE_TYPE%", "Main",
+                    "%BITRATE%", stmp_br);
 
-        output_http_headers(size);
+            output_http_headers(size);
 
-        return cat("stdout", tmpl, 10,
-                "%PROFILE%", service_ctx.profiles[1].name,
-                "%WIDTH%", stmp_w_l,
-                "%HEIGHT%", stmp_h_l,
-                "%PROFILE_TYPE%", "Main",
-                "%BITRATE%", stmp_br);
-    } else {
-        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
-        return -2;
+            return cat("stdout", tmpl, 10,
+                    "%PROFILE%", service_ctx.profiles[1].name,
+                    "%WIDTH%", stmp_w_l,
+                    "%HEIGHT%", stmp_h_l,
+                    "%PROFILE_TYPE%", "Main",
+                    "%BITRATE%", stmp_br);
+        }
     }
+    send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
+    return -2;
 }
 
 int media_get_compatible_video_encoder_configurations()
@@ -1074,10 +1074,9 @@ int media_get_audio_encoder_configuration()
             send_fault("media_service", "Receiver", "ter:ActionNotSupported", "ter:AudioNotSupported", "AudioNotSupported", "The device does not support audio");
             return -2;
         }
-    } else {
+    } else if (service_ctx.profiles_num == 2) {
         snprintf(aec_token, sizeof(aec_token), "%s_AudioEncoderToken", service_ctx.profiles[1].name);
-        if ((service_ctx.profiles_num == 2) &&
-                (strcasecmp(configuration_token, aec_token) == 0)) {
+        if (strcasecmp(configuration_token, aec_token) == 0) {
             if (service_ctx.profiles[1].audio_encoder != AUDIO_NONE) {
                 set_audio_codec(audio_encoder, 16, service_ctx.profiles[1].audio_encoder, 1);
                 matched_name = service_ctx.profiles[1].name;
@@ -1089,6 +1088,9 @@ int media_get_audio_encoder_configuration()
             send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
             return -4;
         }
+    } else {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
+        return -4;
     }
 
     long size = cat(NULL, "media_service_files/GetAudioEncoderConfiguration.xml", 4,
@@ -1217,9 +1219,11 @@ int media_get_audio_encoder_configuration_options()
         if ((service_ctx.profiles[0].audio_encoder != AUDIO_NONE) && (service_ctx.profiles[0].audio_encoder != G726)) {
             set_audio_codec(audio_encoder, 16, service_ctx.profiles[0].audio_encoder, 1);
             if (service_ctx.profiles[0].audio_encoder == G711) {
-                sprintf(bitrate, "%d", 64); sprintf(samplerate, "%d", 8);
+                sprintf(bitrate, "%d", 64);
+                sprintf(samplerate, "%d", 8);
             } else if (service_ctx.profiles[0].audio_encoder == AAC) {
-                sprintf(bitrate, "%d", 50); sprintf(samplerate, "%d", 16);
+                sprintf(bitrate, "%d", 50);
+                sprintf(samplerate, "%d", 16);
             }
         } else {
             send_fault("media_service", "Receiver", "ter:ActionNotSupported", "ter:AudioNotSupported", "AudioNotSupported", "The device does not support audio");
@@ -1229,9 +1233,11 @@ int media_get_audio_encoder_configuration_options()
         if ((service_ctx.profiles[1].audio_encoder != AUDIO_NONE) && (service_ctx.profiles[1].audio_encoder != G726)) {
             set_audio_codec(audio_encoder, 16, service_ctx.profiles[1].audio_encoder, 1);
             if (service_ctx.profiles[1].audio_encoder == G711) {
-                sprintf(bitrate, "%d", 64); sprintf(samplerate, "%d", 8);
+                sprintf(bitrate, "%d", 64);
+                sprintf(samplerate, "%d", 8);
             } else if (service_ctx.profiles[1].audio_encoder == AAC) {
-                sprintf(bitrate, "%d", 50); sprintf(samplerate, "%d", 16);
+                sprintf(bitrate, "%d", 50);
+                sprintf(samplerate, "%d", 16);
             }
         } else {
             send_fault("media_service", "Receiver", "ter:ActionNotSupported", "ter:AudioNotSupported", "AudioNotSupported", "The device does not support audio");
@@ -1258,7 +1264,6 @@ int media_get_audio_encoder_configuration_options()
 int media_get_audio_decoder_configuration()
 {
     const char *configuration_token = get_element("ConfigurationToken", "Body");
-    char token[10];
 
     if (configuration_token == NULL) {
         send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
@@ -1276,9 +1281,9 @@ int media_get_audio_decoder_configuration()
             send_fault("media_service", "Receiver", "ter:ActionNotSupported", "ter:AudioDecodingNotSupported", "AudioDecodingNotSupported", "Audio or Audio decoding is not supported by the device");
             return -2;
         }
-    } else {
+    } else if (service_ctx.profiles_num == 2) {
         snprintf(adc_token, sizeof(adc_token), "%s_AudioDecoderToken", service_ctx.profiles[1].name);
-        if ((service_ctx.profiles_num == 2) && (strcasecmp(configuration_token, adc_token) == 0)) {
+        if (strcasecmp(configuration_token, adc_token) == 0) {
             if (service_ctx.profiles[1].audio_decoder != AUDIO_NONE)
                 matched_name = service_ctx.profiles[1].name;
             else {
@@ -1289,6 +1294,9 @@ int media_get_audio_decoder_configuration()
             send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
             return -4;
         }
+    } else {
+        send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
+        return -4;
     }
 
     long size = cat(NULL, "media_service_files/GetAudioDecoderConfiguration.xml", 2,

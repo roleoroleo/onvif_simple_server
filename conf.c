@@ -968,18 +968,16 @@ int process_json_conf_file(char *file)
                 service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
 
                 get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].name), item, "name");
-                {
-                    char *n = service_ctx.profiles[service_ctx.profiles_num - 1].name;
-                    if (n != NULL) {
-                        if (strlen(n) > 64) {
-                            log_warn("Profile name '%s' exceeds 64 chars; truncating", n);
-                            n[64] = '\0';
-                        }
-                        for (char *p = n; *p; p++) {
-                            if (!isalnum((unsigned char)*p) && *p != '_' && *p != '-' && *p != '.') {
-                                log_warn("Profile name '%s' contains invalid char '%c'; replacing with '_'", n, *p);
-                                *p = '_';
-                            }
+                char *n = service_ctx.profiles[service_ctx.profiles_num - 1].name;
+                if (n != NULL) {
+                    if (strlen(n) > 64) {
+                        log_warn("Profile name '%s' exceeds 64 chars; truncating", n);
+                        n[64] = '\0';
+                    }
+                    for (char *p = n; *p; p++) {
+                        if (!isalnum((unsigned char)*p) && *p != '_' && *p != '-' && *p != '.') {
+                            log_warn("Profile name '%s' contains invalid char '%c'; replacing with '_'", n, *p);
+                            *p = '_';
                         }
                     }
                 }
