@@ -42,7 +42,7 @@
                             HttpSystemLogging="false"
                             HttpSupportInformation="false"
                             StorageConfiguration="false"
-                            NetworkConfigNotSupported="false"
+                            NetworkConfigNotSupported="true"
                             UserConfigNotSupported="true"/>
             </tds:Capabilities>
         </tds:GetServiceCapabilitiesResponse>
