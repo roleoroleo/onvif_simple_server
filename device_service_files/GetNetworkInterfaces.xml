@@ -23,7 +23,10 @@
                         <tt:DHCP>false</tt:DHCP>
                     </tt:Config>
                 </tt:IPv4>
-                %IPV6_BLOCK%
+                <tt:IPv6>
+                    <tt:Enabled>%IPV6_ENABLED%</tt:Enabled>
+                    %IPV6_CONFIG%
+                </tt:IPv6>
             </tds:NetworkInterfaces>
         </tds:GetNetworkInterfacesResponse>
     </SOAP-ENV:Body>

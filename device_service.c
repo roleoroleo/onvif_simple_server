@@ -622,7 +622,8 @@ int device_get_network_interfaces()
     char ll_addr[INET6_ADDRSTRLEN] = "";
     char gl_addr[INET6_ADDRSTRLEN] = "";
     int ll_prefix = 64, gl_prefix = 64;
-    char ipv6_block[640];
+    char ipv6_enabled[8];
+    char ipv6_config[512];
     int ipv6_found;
     int ret;
 
@@ -654,33 +655,35 @@ int device_get_network_interfaces()
                 "<tt:Manual><tt:Address>%s</tt:Address>"
                 "<tt:PrefixLength>%d</tt:PrefixLength></tt:Manual>",
                 gl_addr, gl_prefix);
-        snprintf(ipv6_block, sizeof(ipv6_block),
-            "<tt:IPv6><tt:Enabled>true</tt:Enabled><tt:Config>"
-            "<tt:AcceptRouterAdvert>false</tt:AcceptRouterAdvert>"
-            "<tt:DHCP>Off</tt:DHCP>%s%s</tt:Config></tt:IPv6>",
+        strncpy(ipv6_enabled, "true", sizeof(ipv6_enabled));
+        snprintf(ipv6_config, sizeof(ipv6_config),
+            "<tt:Config><tt:AcceptRouterAdvert>false</tt:AcceptRouterAdvert>"
+            "<tt:DHCP>Off</tt:DHCP>%s%s</tt:Config>",
             gl_elem, ll_elem);
     } else {
-        snprintf(ipv6_block, sizeof(ipv6_block),
-            "<tt:IPv6><tt:Enabled>false</tt:Enabled></tt:IPv6>");
+        strncpy(ipv6_enabled, "false", sizeof(ipv6_enabled));
+        ipv6_config[0] = '\0';
     }
 
-    long size = cat(NULL, "device_service_files/GetNetworkInterfaces.xml", 12,
+    long size = cat(NULL, "device_service_files/GetNetworkInterfaces.xml", 14,
             "%INTERFACE%", service_ctx.ifs,
             "%MAC_ADDRESS%", mac_address,
             "%MTU%", mtu,
             "%IP_ADDRESS%", address,
             "%NETMASK%", sprefix_len,
-            "%IPV6_BLOCK%", ipv6_block);
+            "%IPV6_ENABLED%", ipv6_enabled,
+            "%IPV6_CONFIG%", ipv6_config);
 
     output_http_headers(size);
 
-    return cat("stdout", "device_service_files/GetNetworkInterfaces.xml", 12,
+    return cat("stdout", "device_service_files/GetNetworkInterfaces.xml", 14,
             "%INTERFACE%", service_ctx.ifs,
             "%MAC_ADDRESS%", mac_address,
             "%MTU%", mtu,
             "%IP_ADDRESS%", address,
             "%NETMASK%", sprefix_len,
-            "%IPV6_BLOCK%", ipv6_block);
+            "%IPV6_ENABLED%", ipv6_enabled,
+            "%IPV6_CONFIG%", ipv6_config);
 }
 
 int device_get_discovery_mode()
