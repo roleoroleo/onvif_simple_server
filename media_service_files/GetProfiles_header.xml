@@ -4,6 +4,6 @@
                    xmlns:tt="http://www.onvif.org/ver10/schema">
     <SOAP-ENV:Body>
         <trt:GetProfilesResponse>
-            <trt:Profiles token="Profile_0"
+            <trt:Profiles token="%PROFILE0%"
                           fixed="true">
-                <tt:Name>Profile_0</tt:Name>
+                <tt:Name>%PROFILE0%</tt:Name>
