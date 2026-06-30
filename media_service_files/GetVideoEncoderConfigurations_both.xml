@@ -7,7 +7,7 @@
             <trt:Configurations token="%PROFILE0%_VideoEncoderToken">
                 <tt:Name>%PROFILE0%_VideoEncoder</tt:Name>
                 <tt:UseCount>1</tt:UseCount>
-                <tt:Encoding>H264</tt:Encoding>
+                <tt:Encoding>%ENCODING_HIGH%</tt:Encoding>
                 <tt:Resolution>
                     <tt:Width>%WIDTH_HIGH%</tt:Width>
                     <tt:Height>%HEIGHT_HIGH%</tt:Height>
@@ -35,7 +35,7 @@
             <trt:Configurations token="%PROFILE1%_VideoEncoderToken">
                 <tt:Name>%PROFILE1%_VideoEncoder</tt:Name>
                 <tt:UseCount>1</tt:UseCount>
-                <tt:Encoding>H264</tt:Encoding>
+                <tt:Encoding>%ENCODING_LOW%</tt:Encoding>
                 <tt:Resolution>
                     <tt:Width>%WIDTH_LOW%</tt:Width>
                     <tt:Height>%HEIGHT_LOW%</tt:Height>

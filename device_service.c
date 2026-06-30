@@ -703,6 +703,17 @@ int device_get_endpoint_reference()
             "%DEVICE_UUID%", service_ctx.device_uuid);
 }
 
+int device_get_network_default_gateway()
+{
+    char gw[INET_ADDRSTRLEN] = "";
+    get_default_gateway(gw, sizeof(gw));
+    long size = cat(NULL, "device_service_files/GetNetworkDefaultGateway.xml", 2,
+            "%GATEWAY%", gw);
+    output_http_headers(size);
+    return cat("stdout", "device_service_files/GetNetworkDefaultGateway.xml", 2,
+            "%GATEWAY%", gw);
+}
+
 int device_get_network_protocols()
 {
     long size = cat(NULL, "device_service_files/GetNetworkProtocols.xml", 0);

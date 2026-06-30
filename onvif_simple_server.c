@@ -484,6 +484,8 @@ int main(int argc, char ** argv)
                 device_get_capabilities();
             } else if (strcasecmp(method, "GetNetworkInterfaces") == 0) {
                 device_get_network_interfaces();
+            } else if (strcasecmp(method, "GetNetworkDefaultGateway") == 0) {
+                device_get_network_default_gateway();
             } else if (strcasecmp(method, "GetNetworkProtocols") == 0) {
                 device_get_network_protocols();
             } else if (strcasecmp(method, "GetHostname") == 0) {

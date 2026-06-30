@@ -89,6 +89,7 @@ int get_ipv6_address(const char *ifname, char *ll_addr, int *ll_prefix, char *gl
 int get_mac_address(char *address, char *name);
 int netmask2prefixlen(char *netmask);
 int get_mtu(char *if_name);
+int get_default_gateway(char *gw, size_t len);
 char *trim(char *s);
 char *trim_mf(char *s);
 int html_escape(char *url, int max_len);

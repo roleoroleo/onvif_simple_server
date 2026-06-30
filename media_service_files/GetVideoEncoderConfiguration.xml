@@ -7,7 +7,7 @@
             <trt:Configuration token="%PROFILE%_VideoEncoderToken">
                 <tt:Name>%PROFILE%_VideoEncoder</tt:Name>
                 <tt:UseCount>1</tt:UseCount>
-                <tt:Encoding>H264</tt:Encoding>
+                <tt:Encoding>%ENCODING%</tt:Encoding>
                 <tt:Resolution>
                     <tt:Width>%WIDTH%</tt:Width>
                     <tt:Height>%HEIGHT%</tt:Height>

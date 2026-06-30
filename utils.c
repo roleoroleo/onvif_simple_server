@@ -649,6 +649,36 @@ int get_mtu(char *if_name)
     return ret;
 }
 
+/* Read the default IPv4 gateway from /proc/net/route.
+ * Returns 0 and fills gw on success, -1 if no default route exists. */
+int get_default_gateway(char *gw, size_t len)
+{
+    FILE *fp;
+    char line[256];
+    unsigned long dest, gwaddr;
+    unsigned int flags;
+
+    fp = fopen("/proc/net/route", "r");
+    if (!fp) return -1;
+
+    fgets(line, sizeof(line), fp); /* skip header */
+
+    while (fgets(line, sizeof(line), fp)) {
+        char iface[16];
+        if (sscanf(line, "%15s %lX %lX %X", iface, &dest, &gwaddr, &flags) == 4) {
+            if (dest == 0 && (flags & 0x2) && gwaddr != 0) {
+                struct in_addr addr;
+                addr.s_addr = (uint32_t)gwaddr;
+                inet_ntop(AF_INET, &addr, gw, len);
+                fclose(fp);
+                return 0;
+            }
+        }
+    }
+    fclose(fp);
+    return -1;
+}
+
 /**
  * Remove spaces from the left of the string
  * @param s The input string
