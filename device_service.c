@@ -658,7 +658,7 @@ int device_get_network_interfaces()
             "<tt:IPv6><tt:Enabled>true</tt:Enabled><tt:Config>"
             "<tt:AcceptRouterAdvert>false</tt:AcceptRouterAdvert>"
             "<tt:DHCP>Off</tt:DHCP>%s%s</tt:Config></tt:IPv6>",
-            ll_elem, gl_elem);
+            gl_elem, ll_elem);
     } else {
         snprintf(ipv6_block, sizeof(ipv6_block),
             "<tt:IPv6><tt:Enabled>false</tt:Enabled></tt:IPv6>");
