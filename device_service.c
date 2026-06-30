@@ -652,14 +652,14 @@ int device_get_network_interfaces()
                 ll_addr, ll_prefix);
         if (ipv6_found & 2)
             snprintf(gl_elem, sizeof(gl_elem),
-                "<tt:Manual><tt:Address>%s</tt:Address>"
-                "<tt:PrefixLength>%d</tt:PrefixLength></tt:Manual>",
+                "<tt:FromRA><tt:Address>%s</tt:Address>"
+                "<tt:PrefixLength>%d</tt:PrefixLength></tt:FromRA>",
                 gl_addr, gl_prefix);
         strncpy(ipv6_enabled, "true", sizeof(ipv6_enabled));
         snprintf(ipv6_config, sizeof(ipv6_config),
-            "<tt:Config><tt:AcceptRouterAdvert>false</tt:AcceptRouterAdvert>"
+            "<tt:Config><tt:AcceptRouterAdvert>true</tt:AcceptRouterAdvert>"
             "<tt:DHCP>Off</tt:DHCP>%s%s</tt:Config>",
-            gl_elem, ll_elem);
+            ll_elem, gl_elem);
     } else {
         strncpy(ipv6_enabled, "false", sizeof(ipv6_enabled));
         ipv6_config[0] = '\0';
