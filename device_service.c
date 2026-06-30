@@ -703,6 +703,34 @@ int device_get_endpoint_reference()
             "%DEVICE_UUID%", service_ctx.device_uuid);
 }
 
+int device_get_network_protocols()
+{
+    long size = cat(NULL, "device_service_files/GetNetworkProtocols.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "device_service_files/GetNetworkProtocols.xml", 0);
+}
+
+int device_get_hostname()
+{
+    long size = cat(NULL, "device_service_files/GetHostname.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "device_service_files/GetHostname.xml", 0);
+}
+
+int device_get_dns()
+{
+    long size = cat(NULL, "device_service_files/GetDNS.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "device_service_files/GetDNS.xml", 0);
+}
+
+int device_get_ntp()
+{
+    long size = cat(NULL, "device_service_files/GetNTP.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "device_service_files/GetNTP.xml", 0);
+}
+
 int device_unsupported(const char *method)
 {
     if (service_ctx.adv_fault_if_unknown == 1)

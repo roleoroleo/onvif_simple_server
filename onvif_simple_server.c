@@ -484,6 +484,14 @@ int main(int argc, char ** argv)
                 device_get_capabilities();
             } else if (strcasecmp(method, "GetNetworkInterfaces") == 0) {
                 device_get_network_interfaces();
+            } else if (strcasecmp(method, "GetNetworkProtocols") == 0) {
+                device_get_network_protocols();
+            } else if (strcasecmp(method, "GetHostname") == 0) {
+                device_get_hostname();
+            } else if (strcasecmp(method, "GetDNS") == 0) {
+                device_get_dns();
+            } else if (strcasecmp(method, "GetNTP") == 0) {
+                device_get_ntp();
             } else if (strcasecmp(method, "GetDiscoveryMode") == 0) {
                 device_get_discovery_mode();
             } else if (strcasecmp(method, "GetEndpointReference") == 0) {
