@@ -4,8 +4,8 @@
                    xmlns:tt="http://www.onvif.org/ver10/schema">
     <SOAP-ENV:Body>
         <trt:GetVideoEncoderConfigurationsResponse>
-            <trt:Configurations token="Profile_0_VideoEncoderToken">
-                <tt:Name>Profile_0_VideoEncoder</tt:Name>
+            <trt:Configurations token="%PROFILE0%_VideoEncoderToken">
+                <tt:Name>%PROFILE0%_VideoEncoder</tt:Name>
                 <tt:UseCount>1</tt:UseCount>
                 <tt:Encoding>H264</tt:Encoding>
                 <tt:Resolution>

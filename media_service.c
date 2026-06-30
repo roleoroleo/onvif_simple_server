@@ -534,14 +534,16 @@ int media_get_video_encoder_configurations()
         sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
         sprintf(stmp_br_h, "%d", service_ctx.profiles[0].bitrate > 0 ? service_ctx.profiles[0].bitrate : 5000);
         char *tmpl = "media_service_files/GetVideoEncoderConfigurations_high.xml";
-        long size = cat(NULL, tmpl, 6,
+        long size = cat(NULL, tmpl, 8,
+                "%PROFILE0%", service_ctx.profiles[0].name,
                 "%WIDTH_HIGH%", stmp_w_h,
                 "%HEIGHT_HIGH%", stmp_h_h,
                 "%BITRATE%", stmp_br_h);
 
         output_http_headers(size);
 
-        return cat("stdout", tmpl, 6,
+        return cat("stdout", tmpl, 8,
+                "%PROFILE0%", service_ctx.profiles[0].name,
                 "%WIDTH_HIGH%", stmp_w_h,
                 "%HEIGHT_HIGH%", stmp_h_h,
                 "%BITRATE%", stmp_br_h);
@@ -554,7 +556,9 @@ int media_get_video_encoder_configurations()
         sprintf(stmp_br_h, "%d", service_ctx.profiles[0].bitrate > 0 ? service_ctx.profiles[0].bitrate : 5000);
         sprintf(stmp_br_l, "%d", service_ctx.profiles[1].bitrate > 0 ? service_ctx.profiles[1].bitrate : 5000);
         char *tmpl = "media_service_files/GetVideoEncoderConfigurations_both.xml";
-        long size = cat(NULL, tmpl, 12,
+        long size = cat(NULL, tmpl, 16,
+                    "%PROFILE0%", service_ctx.profiles[0].name,
+                    "%PROFILE1%", service_ctx.profiles[1].name,
                     "%WIDTH_HIGH%", stmp_w_h,
                     "%HEIGHT_HIGH%", stmp_h_h,
                     "%WIDTH_LOW%", stmp_w_l,
@@ -564,7 +568,9 @@ int media_get_video_encoder_configurations()
 
         output_http_headers(size);
 
-        return cat("stdout", tmpl, 12,
+        return cat("stdout", tmpl, 16,
+                    "%PROFILE0%", service_ctx.profiles[0].name,
+                    "%PROFILE1%", service_ctx.profiles[1].name,
                     "%WIDTH_HIGH%", stmp_w_h,
                     "%HEIGHT_HIGH%", stmp_h_h,
                     "%WIDTH_LOW%", stmp_w_l,
@@ -1138,13 +1144,17 @@ int media_get_audio_encoder_configurations()
             set_audio_codec(audio_encoder_high, 16, service_ctx.profiles[0].audio_encoder, 1);
             set_audio_codec(audio_encoder_low, 16, service_ctx.profiles[1].audio_encoder, 1);
 
-            long size = cat(NULL, "media_service_files/GetAudioEncoderConfigurations_both.xml", 4,
+            long size = cat(NULL, "media_service_files/GetAudioEncoderConfigurations_both.xml", 8,
+                    "%PROFILE0%", service_ctx.profiles[0].name,
+                    "%PROFILE1%", service_ctx.profiles[1].name,
                     "%AUDIO_ENCODING_HIGH%", audio_encoder_high,
                     "%AUDIO_ENCODING_LOW%", audio_encoder_low);
 
             output_http_headers(size);
 
-            return cat("stdout", "media_service_files/GetAudioEncoderConfigurations_both.xml", 4,
+            return cat("stdout", "media_service_files/GetAudioEncoderConfigurations_both.xml", 8,
+                    "%PROFILE0%", service_ctx.profiles[0].name,
+                    "%PROFILE1%", service_ctx.profiles[1].name,
                     "%AUDIO_ENCODING_HIGH%", audio_encoder_high,
                     "%AUDIO_ENCODING_LOW%", audio_encoder_low);
 
@@ -1325,11 +1335,15 @@ int media_get_audio_decoder_configurations()
         }
     } else if (service_ctx.profiles_num == 2) {
         if ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE)) {
-            long size = cat(NULL, "media_service_files/GetAudioDecoderConfigurations_both.xml", 0);
+            long size = cat(NULL, "media_service_files/GetAudioDecoderConfigurations_both.xml", 4,
+                    "%PROFILE0%", service_ctx.profiles[0].name,
+                    "%PROFILE1%", service_ctx.profiles[1].name);
 
             output_http_headers(size);
 
-            return cat("stdout", "media_service_files/GetAudioDecoderConfigurations_both.xml", 0);
+            return cat("stdout", "media_service_files/GetAudioDecoderConfigurations_both.xml", 4,
+                    "%PROFILE0%", service_ctx.profiles[0].name,
+                    "%PROFILE1%", service_ctx.profiles[1].name);
 
         } else if (service_ctx.profiles[0].audio_decoder != AUDIO_NONE) {
             long size = cat(NULL, "media_service_files/GetAudioDecoderConfigurations.xml", 2,

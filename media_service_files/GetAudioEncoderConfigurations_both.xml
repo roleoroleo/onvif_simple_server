@@ -4,8 +4,8 @@
                    xmlns:tt="http://www.onvif.org/ver10/schema">
     <SOAP-ENV:Body>
         <trt:GetAudioEncoderConfigurationsResponse>
-            <trt:Configurations token="Profile_0_AudioEncoderToken">
-                <tt:Name>Profile_0_AudioEncoder</tt:Name>
+            <trt:Configurations token="%PROFILE0%_AudioEncoderToken">
+                <tt:Name>%PROFILE0%_AudioEncoder</tt:Name>
                 <tt:UseCount>1</tt:UseCount>
                 <tt:Encoding>%AUDIO_ENCODING_HIGH%</tt:Encoding>
                 <tt:Bitrate>50</tt:Bitrate>
@@ -20,8 +20,8 @@
                 </tt:Multicast>
                 <tt:SessionTimeout>PT0S</tt:SessionTimeout>
             </trt:Configurations>
-            <trt:Configurations token="Profile_1_AudioEncoderToken">
-                <tt:Name>Profile_1_AudioEncoder</tt:Name>
+            <trt:Configurations token="%PROFILE1%_AudioEncoderToken">
+                <tt:Name>%PROFILE1%_AudioEncoder</tt:Name>
                 <tt:UseCount>1</tt:UseCount>
                 <tt:Encoding>%AUDIO_ENCODING_LOW%</tt:Encoding>
                 <tt:Bitrate>50</tt:Bitrate>
