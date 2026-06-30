@@ -7,7 +7,7 @@
             <tds:Capabilities>
                 <tds:Network IPFilter="false"
                              ZeroConfiguration="false"
-                             IPVersion6="false"
+                             IPVersion6="true"
                              DynDNS="false"
                              Dot11Configuration="false"
                              Dot1XConfigurations="0"
