@@ -21,9 +21,7 @@
                         <tt:DHCP>false</tt:DHCP>
                     </tt:Config>
                 </tt:IPv4>
-                <tt:IPv6>
-                    <tt:Enabled>false</tt:Enabled>
-                </tt:IPv6>
+                %IPV6_BLOCK%
             </tds:NetworkInterfaces>
         </tds:GetNetworkInterfacesResponse>
     </SOAP-ENV:Body>

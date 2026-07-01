@@ -14,6 +14,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -618,6 +619,11 @@ int device_get_network_interfaces()
     char mtu[16];
     int prefix_len;
     char sprefix_len[3];
+    char ll_addr[INET6_ADDRSTRLEN] = "";
+    char gl_addr[INET6_ADDRSTRLEN] = "";
+    int ll_prefix = 64, gl_prefix = 64;
+    char ipv6_block[640];
+    int ipv6_found;
     int ret;
 
     ret = get_ip_address(address, netmask, service_ctx.ifs);
@@ -634,21 +640,47 @@ int device_get_network_interfaces()
     }
     sprintf(mtu, "%d", get_mtu(service_ctx.ifs));
 
-    long size = cat(NULL, "device_service_files/GetNetworkInterfaces.xml", 10,
+    ipv6_found = get_ipv6_address(service_ctx.ifs, ll_addr, &ll_prefix, gl_addr, &gl_prefix);
+    if (ipv6_found > 0) {
+        char ll_elem[160] = "";
+        char gl_elem[160] = "";
+        if (ipv6_found & 1)
+            snprintf(ll_elem, sizeof(ll_elem),
+                "<tt:LinkLocal><tt:Address>%s</tt:Address>"
+                "<tt:PrefixLength>%d</tt:PrefixLength></tt:LinkLocal>",
+                ll_addr, ll_prefix);
+        if (ipv6_found & 2)
+            snprintf(gl_elem, sizeof(gl_elem),
+                "<tt:Manual><tt:Address>%s</tt:Address>"
+                "<tt:PrefixLength>%d</tt:PrefixLength></tt:Manual>",
+                gl_addr, gl_prefix);
+        snprintf(ipv6_block, sizeof(ipv6_block),
+            "<tt:IPv6><tt:Enabled>true</tt:Enabled><tt:Config>"
+            "<tt:AcceptRouterAdvert>false</tt:AcceptRouterAdvert>"
+            "<tt:DHCP>Off</tt:DHCP>%s%s</tt:Config></tt:IPv6>",
+            ll_elem, gl_elem);
+    } else {
+        snprintf(ipv6_block, sizeof(ipv6_block),
+            "<tt:IPv6><tt:Enabled>false</tt:Enabled></tt:IPv6>");
+    }
+
+    long size = cat(NULL, "device_service_files/GetNetworkInterfaces.xml", 12,
             "%INTERFACE%", service_ctx.ifs,
             "%MAC_ADDRESS%", mac_address,
             "%MTU%", mtu,
             "%IP_ADDRESS%", address,
-            "%NETMASK%", sprefix_len);
+            "%NETMASK%", sprefix_len,
+            "%IPV6_BLOCK%", ipv6_block);
 
     output_http_headers(size);
 
-    return cat("stdout", "device_service_files/GetNetworkInterfaces.xml", 10,
+    return cat("stdout", "device_service_files/GetNetworkInterfaces.xml", 12,
             "%INTERFACE%", service_ctx.ifs,
             "%MAC_ADDRESS%", mac_address,
             "%MTU%", mtu,
             "%IP_ADDRESS%", address,
-            "%NETMASK%", sprefix_len);
+            "%NETMASK%", sprefix_len,
+            "%IPV6_BLOCK%", ipv6_block);
 }
 
 int device_get_discovery_mode()

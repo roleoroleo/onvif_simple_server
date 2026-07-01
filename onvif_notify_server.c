@@ -23,6 +23,7 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <time.h>
 #include <signal.h>
 #include <poll.h>
@@ -214,54 +215,105 @@ void signal_handler(int signal)
 
 int send_notify(char *reference, int alarm_index, time_t e_time, char *property, char *value)
 {
-    char host[1024];
-    int port = 80;
+    char host[256];     /* bare host for getaddrinfo (no brackets) */
+    char host_hdr[264]; /* Host header value: [addr] for IPv6, addr for IPv4 */
     char page[1024];
+    char port_str[8];
+    int port = 80;
     char header_fmt[] = "POST %s HTTP/1.1\r\nHost: %s\r\nContent-Type: application/soap+xml\r\nContent-Length: %s\r\nConnection: close\r\n\r\n";
     char *header;
     char *message;
     int size;
     char size_string[8];
-    char template_file[	1024];
+    char template_file[1024];
     int sockfd;
-    struct sockaddr_in remote;
     char utctime[32];
+    struct addrinfo hints, *res;
+    const char *p;
+    size_t hlen;
 
-    // Prepare time string
     to_iso_date(utctime, sizeof(utctime), e_time);
 
-    // Prepare IP address
     if (strncmp("https", reference, 5) == 0)
         port = 443;
-    if (strchr(&reference[6], ':') == NULL) {
-        sscanf(reference, "%*[^:]%*[:/]%[^/]%s", host, page);
+
+    /* Parse URL: skip scheme:// then handle IPv6 bracket notation */
+    p = strstr(reference, "://");
+    if (p == NULL) return -1;
+    p += 3;
+
+    if (*p == '[') {
+        /* IPv6: http://[addr]:port/path */
+        const char *close_bracket = strchr(p + 1, ']');
+        if (close_bracket == NULL) return -1;
+        hlen = (size_t)(close_bracket - p - 1);
+        if (hlen >= sizeof(host)) hlen = sizeof(host) - 1;
+        strncpy(host, p + 1, hlen);
+        host[hlen] = '\0';
+        p = close_bracket + 1;
+        if (*p == ':') {
+            port = (int)strtol(p + 1, NULL, 10);
+            p = strchr(p + 1, '/');
+        } else {
+            p = strchr(p, '/');
+        }
+        snprintf(host_hdr, sizeof(host_hdr), "[%s]", host);
     } else {
-        sscanf(reference, "%*[^:]%*[:/]%[^:]:%d%s", host, &port, page);
+        /* IPv4 or hostname: http://host:port/path */
+        const char *colon = strchr(p, ':');
+        const char *slash = strchr(p, '/');
+        if (colon != NULL && (slash == NULL || colon < slash)) {
+            hlen = (size_t)(colon - p);
+            if (hlen >= sizeof(host)) hlen = sizeof(host) - 1;
+            strncpy(host, p, hlen);
+            host[hlen] = '\0';
+            port = (int)strtol(colon + 1, NULL, 10);
+            p = slash;
+        } else {
+            hlen = slash ? (size_t)(slash - p) : strlen(p);
+            if (hlen >= sizeof(host)) hlen = sizeof(host) - 1;
+            strncpy(host, p, hlen);
+            host[hlen] = '\0';
+            p = slash;
+        }
+        strncpy(host_hdr, host, sizeof(host_hdr) - 1);
+        host_hdr[sizeof(host_hdr) - 1] = '\0';
     }
+    strncpy(page, p ? p : "/", sizeof(page) - 1);
+    page[sizeof(page) - 1] = '\0';
+    if (page[0] == '\0') strcpy(page, "/");
 
-    // Configure socket
-    memset(&remote, '\0', sizeof(remote));
-    remote.sin_addr.s_addr = inet_addr(host);
-    remote.sin_family = AF_INET;
-    remote.sin_port = htons(port);
+    snprintf(port_str, sizeof(port_str), "%d", port);
 
-    log_debug("Sending notify message to %s - host %s - port %d - page %s", reference, host, port, page);
-    log_debug("topic %s - UTC time %s - value %s", service_ctx.events[alarm_index].topic, utctime, value);
+    log_debug("Sending notify message to %s - host %s - port %d - page %s",
+              reference, host, port, page);
+    log_debug("topic %s - UTC time %s - value %s",
+              service_ctx.events[alarm_index].topic, utctime, value);
 
-    /* create the socket */
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) {
-        log_error("Error opening socket");
+    /* Resolve host and connect -- AF_UNSPEC handles both IPv4 and IPv6 */
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family   = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    if (getaddrinfo(host, port_str, &hints, &res) != 0) {
+        log_error("Cannot resolve callback host: %s", host);
         return -1;
     }
 
-    if (connect(sockfd, (struct sockaddr *) &remote, sizeof(remote)) != 0) {
-        log_error("Connection failed");
-        close(sockfd);
+    sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    if (sockfd < 0) {
+        log_error("Error opening socket");
+        freeaddrinfo(res);
         return -2;
     }
 
-    // Get size of message content
+    if (connect(sockfd, res->ai_addr, res->ai_addrlen) != 0) {
+        log_error("Connection failed to %s:%d", host, port);
+        close(sockfd);
+        freeaddrinfo(res);
+        return -2;
+    }
+    freeaddrinfo(res);
+
     log_info("Sending Notify message.");
     sprintf(template_file, "%s/Notify.xml", template_dir);
     size = cat(NULL, template_file, 12,
@@ -273,17 +325,17 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
             "%VALUE%", value);
     sprintf(size_string, "%d", size);
 
-    header = (char *) malloc((strlen(header_fmt) + strlen(page) + strlen(host) + strlen(size_string) + 4) * sizeof(char));
+    header = (char *) malloc((strlen(header_fmt) + strlen(page) + strlen(host_hdr) + strlen(size_string) + 4) * sizeof(char));
     if (header == NULL) {
-        log_error("Malloc error.\n");
+        log_error("Malloc error.");
         close(sockfd);
         return -3;
     }
-    sprintf(header, header_fmt, page, host, size_string);
+    sprintf(header, header_fmt, page, host_hdr, size_string);
 
     message = (char *) malloc((size + strlen(header) + 1) * sizeof(char));
     if (message == NULL) {
-        log_error("Malloc error.\n");
+        log_error("Malloc error.");
         free(header);
         close(sockfd);
         return -3;
@@ -298,8 +350,8 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
             "%SOURCE_VALUE%", service_ctx.events[alarm_index].source_value,
             "%VALUE%", value);
 
-    if (sendto(sockfd, message, strlen(message), 0, (struct sockaddr *) &remote, sizeof(remote)) < 0) {
-        log_error("Error sending Notify message.\n");
+    if (send(sockfd, message, strlen(message), 0) < 0) {
+        log_error("Error sending Notify message.");
         free(header);
         free(message);
         close(sockfd);
@@ -310,7 +362,6 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
     free(message);
     log_info("Sent.");
 
-    // Close socket properly
     shutdown(sockfd, SHUT_RDWR);
     close(sockfd);
 
