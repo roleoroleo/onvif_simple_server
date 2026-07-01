@@ -296,7 +296,7 @@ int main(int argc, char **argv)
     int c, ret;
     char *if_name, *pid_file, *xaddr_s, *xaddr6_s;
     unsigned int if6_idx = 0;
-    int have_v4 = 0;
+    int have_v4 = 0, xaddr6_auto = 0;
     int foreground, no = 0;
     char s_tmp[32];
     long size;
@@ -416,21 +416,20 @@ int main(int argc, char **argv)
     }
     if (have_v4) log_debug("IPv4 address = %s", address);
 
-    /* ---- IPv6 address detection (only when -6 is given) ---------------- */
+    /* ---- IPv6 address detection (always attempted) --------------------- */
     memset(address6, 0, sizeof(address6));
-    if (xaddr6_s) {
-        if (if_name) {
-            if (get_ip6_address(address6, sizeof(address6), if_name) != 0) {
-                log_warn("No IPv6 address on interface %s; IPv6 WSD disabled.", if_name);
-                xaddr6_s = NULL;
-            }
+    {
+        int v6_ok;
+        if (if_name)
+            v6_ok = (get_ip6_address(address6, sizeof(address6), if_name) == 0);
+        else
+            v6_ok = (detect_outbound_address_v6(address6, sizeof(address6), &if6_idx) == 0);
+        if (v6_ok) {
+            log_info("IPv6 address: %s", address6);
+            if (!xaddr6_s) { xaddr6_s = xaddr_s; xaddr6_auto = 1; }
         } else {
-            if (detect_outbound_address_v6(address6, sizeof(address6), &if6_idx) != 0) {
-                log_warn("Cannot auto-detect outbound IPv6 address; IPv6 WSD disabled.");
-                xaddr6_s = NULL;
-            } else {
-                log_info("Auto-detected outbound IPv6 address: %s", address6);
-            }
+            if (xaddr6_s) log_warn("IPv6 address detection failed; IPv6 WSD disabled.");
+            xaddr6_s = NULL;
         }
     }
 
@@ -530,7 +529,16 @@ int main(int argc, char **argv)
 
     /* ---- Build xaddr strings ------------------------------------------- */
     if (have_v4) sprintf(xaddr, xaddr_s, address);
-    if (xaddr6_s) sprintf(xaddr6, xaddr6_s, address6);
+    if (xaddr6_s) {
+        if (xaddr6_auto) {
+            /* auto: bracket the IPv6 address for a valid RFC 2732 URL */
+            char tmp6[INET6_ADDRSTRLEN + 4];
+            snprintf(tmp6, sizeof(tmp6), "[%s]", address6);
+            snprintf(xaddr6, sizeof(xaddr6), xaddr6_s, tmp6);
+        } else {
+            snprintf(xaddr6, sizeof(xaddr6), xaddr6_s, address6);
+        }
+    }
 
     /* ---- Send Hello ---------------------------------------------------- */
     msg_number = 1;
