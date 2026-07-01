@@ -27,6 +27,11 @@ int device_get_users();
 int device_get_wsdl_url();
 int device_get_capabilities();
 int device_get_network_interfaces();
+int device_get_network_default_gateway();
+int device_get_network_protocols();
+int device_get_hostname();
+int device_get_dns();
+int device_get_ntp();
 int device_get_discovery_mode();
 int device_get_endpoint_reference();
 

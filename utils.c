@@ -495,6 +495,59 @@ int get_ip_address(char *address, char *netmask, char *name)
     return 0;
 }
 
+/* Get IPv6 addresses for a named interface.
+ * Returns bitmask: bit 0 = link-local found, bit 1 = global/ULA found, -1 on error.
+ * ll_addr/gl_addr must be INET6_ADDRSTRLEN bytes; prefix outputs receive 0-128. */
+int get_ipv6_address(const char *ifname,
+                     char *ll_addr, int *ll_prefix,
+                     char *gl_addr, int *gl_prefix)
+{
+    struct ifaddrs *ifaddr, *ifa;
+    int found = 0;
+
+    if (getifaddrs(&ifaddr) < 0) return -1;
+
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr) continue;
+        if (ifa->ifa_addr->sa_family != AF_INET6) continue;
+        if (strcmp(ifa->ifa_name, ifname) != 0) continue;
+
+        struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *)ifa->ifa_addr;
+        char buf[INET6_ADDRSTRLEN];
+        inet_ntop(AF_INET6, &sa6->sin6_addr, buf, sizeof(buf));
+
+        int prefix = 0;
+        if (ifa->ifa_netmask) {
+            const uint8_t *m = ((struct sockaddr_in6 *)ifa->ifa_netmask)->sin6_addr.s6_addr;
+            for (int i = 0; i < 16; i++) {
+                uint8_t byte = m[i];
+                while (byte & 0x80) { prefix++; byte = (uint8_t)(byte << 1); }
+                if (byte) break;
+            }
+        }
+
+        if (sa6->sin6_addr.s6_addr[0] == 0xfe &&
+                (sa6->sin6_addr.s6_addr[1] & 0xc0) == 0x80) {
+            if (!(found & 1)) {
+                strncpy(ll_addr, buf, INET6_ADDRSTRLEN - 1);
+                ll_addr[INET6_ADDRSTRLEN - 1] = '\0';
+                *ll_prefix = prefix ? prefix : 64;
+                found |= 1;
+            }
+        } else {
+            if (!(found & 2)) {
+                strncpy(gl_addr, buf, INET6_ADDRSTRLEN - 1);
+                gl_addr[INET6_ADDRSTRLEN - 1] = '\0';
+                *gl_prefix = prefix ? prefix : 64;
+                found |= 2;
+            }
+        }
+    }
+
+    freeifaddrs(ifaddr);
+    return found;
+}
+
 /**
  * Get the MAC address of an interface "name"
  * @param name The name of the interface
@@ -594,6 +647,36 @@ int get_mtu(char *if_name)
         ret = ifr.ifr_mtu;
     }
     return ret;
+}
+
+/* Read the default IPv4 gateway from /proc/net/route.
+ * Returns 0 and fills gw on success, -1 if no default route exists. */
+int get_default_gateway(char *gw, size_t len)
+{
+    FILE *fp;
+    char line[256];
+    unsigned long dest, gwaddr;
+    unsigned int flags;
+
+    fp = fopen("/proc/net/route", "r");
+    if (!fp) return -1;
+
+    fgets(line, sizeof(line), fp); /* skip header */
+
+    while (fgets(line, sizeof(line), fp)) {
+        char iface[16];
+        if (sscanf(line, "%15s %lX %lX %X", iface, &dest, &gwaddr, &flags) == 4) {
+            if (dest == 0 && (flags & 0x2) && gwaddr != 0) {
+                struct in_addr addr;
+                addr.s_addr = (uint32_t)gwaddr;
+                inet_ntop(AF_INET, &addr, gw, len);
+                fclose(fp);
+                return 0;
+            }
+        }
+    }
+    fclose(fp);
+    return -1;
 }
 
 /**
@@ -1201,16 +1284,75 @@ int get_mac_by_addr(const char *addr_str, uint8_t mac_out[6])
 }
 
 /* -------------------------------------------------------------------------
+ * IPv6 interface auto-detection: scan interfaces for the first non-loopback
+ * IPv6 address.  Prefers global unicast over link-local.
+ * Returns 0 on success, -1 if no usable address is found.
+ * ---------------------------------------------------------------------- */
+int detect_outbound_address_v6(char *addr_str, size_t len, unsigned int *if_idx_out)
+{
+    struct ifaddrs *ifap, *ifa;
+    char best[INET6_ADDRSTRLEN] = {0};
+    unsigned int best_idx = 0;
+    int found_global = 0;
+
+    if (getifaddrs(&ifap) < 0) return -1;
+    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr || ifa->ifa_addr->sa_family != AF_INET6) continue;
+        struct sockaddr_in6 *s6 = (struct sockaddr_in6 *)ifa->ifa_addr;
+        if (IN6_IS_ADDR_LOOPBACK(&s6->sin6_addr)) continue;
+        if (found_global && IN6_IS_ADDR_LINKLOCAL(&s6->sin6_addr)) continue;
+        char buf[INET6_ADDRSTRLEN];
+        if (!inet_ntop(AF_INET6, &s6->sin6_addr, buf, sizeof(buf))) continue;
+        strncpy(best, buf, INET6_ADDRSTRLEN - 1);
+        best_idx = if_nametoindex(ifa->ifa_name);
+        if (!IN6_IS_ADDR_LINKLOCAL(&s6->sin6_addr)) { found_global = 1; break; }
+    }
+    freeifaddrs(ifap);
+    if (!best[0]) return -1;
+    strncpy(addr_str, best, len - 1); addr_str[len - 1] = 0;
+    if (if_idx_out) *if_idx_out = best_idx;
+    return 0;
+}
+
+/* -------------------------------------------------------------------------
+ * Get the first non-loopback IPv6 address for a named interface.
+ * Prefers global unicast over link-local.
+ * ---------------------------------------------------------------------- */
+int get_ip6_address(char *addr_str, size_t len, const char *if_name)
+{
+    struct ifaddrs *ifap, *ifa;
+    char candidate[INET6_ADDRSTRLEN];
+    int found_global = 0, found_any = 0;
+
+    if (getifaddrs(&ifap) < 0) return -1;
+    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr || ifa->ifa_addr->sa_family != AF_INET6) continue;
+        if (strcmp(ifa->ifa_name, if_name) != 0) continue;
+        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)ifa->ifa_addr;
+        if (IN6_IS_ADDR_LOOPBACK(&sin6->sin6_addr)) continue;
+        if (!inet_ntop(AF_INET6, &sin6->sin6_addr, candidate, sizeof(candidate))) continue;
+        if (!IN6_IS_ADDR_LINKLOCAL(&sin6->sin6_addr)) {
+            strncpy(addr_str, candidate, len - 1); addr_str[len - 1] = 0;
+            found_global = 1; break;
+        } else if (!found_any) {
+            strncpy(addr_str, candidate, len - 1); addr_str[len - 1] = 0;
+            found_any = 1;
+        }
+    }
+    freeifaddrs(ifap);
+    return (found_global || found_any) ? 0 : -1;
+}
+
+/* -------------------------------------------------------------------------
  * Auto-detect the local address to use in ONVIF service URLs.
  *
  * Priority:
- *   1. REMOTE_ADDR is loopback (local proxy) -> WSD multicast connect trick
+ *   1. REMOTE_ADDR is loopback (local proxy) -> getifaddrs scan
  *   2. REMOTE_ADDR is a real client         -> connect trick to REMOTE_ADDR
  *
  * Sets local_addr to a plain IP string (no scope ID -- safe for URLs).
  * ---------------------------------------------------------------------- */
 #define WSD_MCAST_V4  "239.255.255.250"
-#define WSD_MCAST_V6  "ff02::c"
 #define WSD_PROBE_PORT 3702
 
 static int connect_trick_v4(const char *dst_ip, char *local, size_t len)
@@ -1236,21 +1378,60 @@ static int connect_trick_v6(const char *dst_ip, unsigned int scope_id,
                              char *local, size_t len)
 {
     struct sockaddr_in6 dst = {0};
-    dst.sin6_family = AF_INET6;
+    dst.sin6_family   = AF_INET6;
     inet_pton(AF_INET6, dst_ip, &dst.sin6_addr);
-    dst.sin6_port    = htons(WSD_PROBE_PORT);
+    dst.sin6_port     = htons(WSD_PROBE_PORT);
     dst.sin6_scope_id = scope_id;
 
     int fd = socket(AF_INET6, SOCK_DGRAM, 0);
     if (fd < 0) return -1;
-    if (connect(fd, (struct sockaddr *)&dst, sizeof(dst)) < 0) { close(fd); return -1; }
-    struct sockaddr_in6 src = {0};
-    socklen_t src_len = sizeof(src);
-    getsockname(fd, (struct sockaddr *)&src, &src_len);
+    if (connect(fd, (struct sockaddr *)&dst, sizeof(dst)) == 0) {
+        struct sockaddr_in6 src = {0};
+        socklen_t n = sizeof(src);
+        getsockname(fd, (struct sockaddr *)&src, &n);
+        close(fd);
+        if (IN6_IS_ADDR_UNSPECIFIED(&src.sin6_addr)) return -1;
+        inet_ntop(AF_INET6, &src.sin6_addr, local, len);
+        return 0;
+    }
     close(fd);
-    if (IN6_IS_ADDR_UNSPECIFIED(&src.sin6_addr)) return -1;
-    inet_ntop(AF_INET6, &src.sin6_addr, local, len);
-    return 0;
+
+    /* connect() failed. The only case this happens for a real client that
+       reached us: link-local source address with scope_id stripped by the
+       HTTP server (lighttpd omits %iface from REMOTE_ADDR). Linux requires
+       sin6_scope_id != 0 for connect() to link-local addresses.
+       If scope_id was already set, or this is not a link-local destination,
+       it is a genuine error. */
+    if (scope_id != 0) return -1;
+    if (!IN6_IS_ADDR_LINKLOCAL(&dst.sin6_addr) &&
+        !IN6_IS_ADDR_MC_LINKLOCAL(&dst.sin6_addr)) return -1;
+
+    struct ifaddrs *ifap, *ifa;
+    if (getifaddrs(&ifap) != 0) return -1;
+    int rc = -1;
+    unsigned int last_idx = 0;
+    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
+        unsigned int idx = if_nametoindex(ifa->ifa_name);
+        if (!idx || idx == last_idx) continue;
+        last_idx = idx;
+        dst.sin6_scope_id = idx;
+        fd = socket(AF_INET6, SOCK_DGRAM, 0);
+        if (fd < 0) continue;
+        if (connect(fd, (struct sockaddr *)&dst, sizeof(dst)) == 0) {
+            struct sockaddr_in6 src = {0};
+            socklen_t n = sizeof(src);
+            getsockname(fd, (struct sockaddr *)&src, &n);
+            close(fd);
+            if (!IN6_IS_ADDR_UNSPECIFIED(&src.sin6_addr)) {
+                inet_ntop(AF_INET6, &src.sin6_addr, local, len);
+                rc = 0; break;
+            }
+        } else {
+            close(fd);
+        }
+    }
+    freeifaddrs(ifap);
+    return rc;
 }
 
 int detect_local_address(const char *remote_addr, char *local_addr, size_t len)
@@ -1271,9 +1452,11 @@ int detect_local_address(const char *remote_addr, char *local_addr, size_t len)
                              : (strncmp(clean, "127.", 4) == 0);
 
     if (is_loopback) {
-        /* Local proxy in front: use WSD multicast to find real outbound IF */
+        /* Local proxy in front: probe outbound interface directly.
+         * connect_trick to FF02::C (link-local multicast) requires scope_id != 0
+         * and is therefore not usable here -- use getifaddrs scan instead. */
         if (connect_trick_v4(WSD_MCAST_V4, local_addr, len) == 0) return 0;
-        if (connect_trick_v6(WSD_MCAST_V6, 0, local_addr, len) == 0) return 0;
+        if (detect_outbound_address_v6(local_addr, len, NULL) == 0) return 0;
         return -1;
     }
 

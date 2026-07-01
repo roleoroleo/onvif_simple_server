@@ -18,11 +18,14 @@
                             <tt:Address>%IP_ADDRESS%</tt:Address>
                             <tt:PrefixLength>%NETMASK%</tt:PrefixLength>
                         </tt:Manual>
+                        <!-- TODO: DHCP hardcoded false; no mechanism currently detects
+                             whether the interface address is DHCP-assigned or static. -->
                         <tt:DHCP>false</tt:DHCP>
                     </tt:Config>
                 </tt:IPv4>
                 <tt:IPv6>
-                    <tt:Enabled>false</tt:Enabled>
+                    <tt:Enabled>%IPV6_ENABLED%</tt:Enabled>
+                    %IPV6_CONFIG%
                 </tt:IPv6>
             </tds:NetworkInterfaces>
         </tds:GetNetworkInterfacesResponse>

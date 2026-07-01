@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- TODO: 8 variant templates exist for GetServices (ptz/no_ptz x media2/no_media2 x
+     with_capabilities/without). When updating ONVIF spec service version numbers,
+     ALL 8 files must be changed consistently. A past omission in this file set
+     (GetServices_ptz_media2.xml left at 2017 versions) demonstrates the risk. -->
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope"
                    xmlns:tds="http://www.onvif.org/ver10/device/wsdl"
                    xmlns:tt="http://www.onvif.org/ver10/schema">
@@ -8,31 +12,31 @@
                 <tds:Namespace>http://www.onvif.org/ver10/device/wsdl</tds:Namespace>
                 <tds:XAddr>%DEVICE_SERVICE_ADDRESS%</tds:XAddr>
                 <tds:Version>
-                    <tt:Major>17</tt:Major>
-                    <tt:Minor>6</tt:Minor>
+                    <tt:Major>19</tt:Major>
+                    <tt:Minor>12</tt:Minor>
                 </tds:Version>
             </tds:Service>
             <tds:Service>
                 <tds:Namespace>http://www.onvif.org/ver10/events/wsdl</tds:Namespace>
                 <tds:XAddr>%EVENTS_SERVICE_ADDRESS%</tds:XAddr>
                 <tds:Version>
-                    <tt:Major>17</tt:Major>
-                    <tt:Minor>12</tt:Minor>
+                    <tt:Major>18</tt:Major>
+                    <tt:Minor>6</tt:Minor>
                 </tds:Version>
             </tds:Service>
             <tds:Service>
                 <tds:Namespace>http://www.onvif.org/ver20/ptz/wsdl</tds:Namespace>
                 <tds:XAddr>%PTZ_SERVICE_ADDRESS%</tds:XAddr>
                 <tds:Version>
-                    <tt:Major>17</tt:Major>
-                    <tt:Minor>6</tt:Minor>
+                    <tt:Major>20</tt:Major>
+                    <tt:Minor>12</tt:Minor>
                 </tds:Version>
             </tds:Service>
             <tds:Service>
                 <tds:Namespace>http://www.onvif.org/ver10/media/wsdl</tds:Namespace>
                 <tds:XAddr>%MEDIA_SERVICE_ADDRESS%</tds:XAddr>
                 <tds:Version>
-                    <tt:Major>17</tt:Major>
+                    <tt:Major>19</tt:Major>
                     <tt:Minor>6</tt:Minor>
                 </tds:Version>
             </tds:Service>

@@ -7,7 +7,12 @@
             <tds:Capabilities>
                 <tt:Device>
                     <tt:XAddr>%DEVICE_SERVICE_ADDRESS%</tt:XAddr>
-                    <tt:Network/>
+                    <tt:Network>
+                        <tt:IPFilter>false</tt:IPFilter>
+                        <tt:ZeroConfiguration>false</tt:ZeroConfiguration>
+                        <tt:IPVersion6>true</tt:IPVersion6>
+                        <tt:DynDNS>false</tt:DynDNS>
+                    </tt:Network>
                     <tt:System>
                         <tt:DiscoveryResolve>true</tt:DiscoveryResolve>
                         <tt:DiscoveryBye>true</tt:DiscoveryBye>

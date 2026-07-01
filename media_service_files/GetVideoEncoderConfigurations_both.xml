@@ -4,10 +4,10 @@
                    xmlns:tt="http://www.onvif.org/ver10/schema">
     <SOAP-ENV:Body>
         <trt:GetVideoEncoderConfigurationsResponse>
-            <trt:Configurations token="Profile_0_VideoEncoderToken">
-                <tt:Name>Profile_0_VideoEncoder</tt:Name>
+            <trt:Configurations token="%PROFILE0%_VideoEncoderToken">
+                <tt:Name>%PROFILE0%_VideoEncoder</tt:Name>
                 <tt:UseCount>1</tt:UseCount>
-                <tt:Encoding>H264</tt:Encoding>
+                <tt:Encoding>%ENCODING_HIGH%</tt:Encoding>
                 <tt:Resolution>
                     <tt:Width>%WIDTH_HIGH%</tt:Width>
                     <tt:Height>%HEIGHT_HIGH%</tt:Height>
@@ -16,7 +16,7 @@
                 <tt:RateControl>
                     <tt:FrameRateLimit>30</tt:FrameRateLimit>
                     <tt:EncodingInterval>1</tt:EncodingInterval>
-                    <tt:BitrateLimit>5000</tt:BitrateLimit>
+                    <tt:BitrateLimit>%BITRATE_HIGH%</tt:BitrateLimit>
                 </tt:RateControl>
                 <tt:H264>
                     <tt:GovLength>40</tt:GovLength>
@@ -32,10 +32,10 @@
                 </tt:Multicast>
                 <tt:SessionTimeout>PT0S</tt:SessionTimeout>
             </trt:Configurations>
-            <trt:Configurations token="Profile_1_VideoEncoderToken">
-                <tt:Name>Profile_1_VideoEncoder</tt:Name>
+            <trt:Configurations token="%PROFILE1%_VideoEncoderToken">
+                <tt:Name>%PROFILE1%_VideoEncoder</tt:Name>
                 <tt:UseCount>1</tt:UseCount>
-                <tt:Encoding>H264</tt:Encoding>
+                <tt:Encoding>%ENCODING_LOW%</tt:Encoding>
                 <tt:Resolution>
                     <tt:Width>%WIDTH_LOW%</tt:Width>
                     <tt:Height>%HEIGHT_LOW%</tt:Height>
@@ -44,7 +44,7 @@
                 <tt:RateControl>
                     <tt:FrameRateLimit>30</tt:FrameRateLimit>
                     <tt:EncodingInterval>1</tt:EncodingInterval>
-                    <tt:BitrateLimit>5000</tt:BitrateLimit>
+                    <tt:BitrateLimit>%BITRATE_LOW%</tt:BitrateLimit>
                 </tt:RateControl>
                 <tt:H264>
                     <tt:GovLength>40</tt:GovLength>

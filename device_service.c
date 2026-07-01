@@ -14,6 +14,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -618,6 +619,12 @@ int device_get_network_interfaces()
     char mtu[16];
     int prefix_len;
     char sprefix_len[3];
+    char ll_addr[INET6_ADDRSTRLEN] = "";
+    char gl_addr[INET6_ADDRSTRLEN] = "";
+    int ll_prefix = 64, gl_prefix = 64;
+    char ipv6_enabled[8];
+    char ipv6_config[512];
+    int ipv6_found;
     int ret;
 
     ret = get_ip_address(address, netmask, service_ctx.ifs);
@@ -634,21 +641,49 @@ int device_get_network_interfaces()
     }
     sprintf(mtu, "%d", get_mtu(service_ctx.ifs));
 
-    long size = cat(NULL, "device_service_files/GetNetworkInterfaces.xml", 10,
+    ipv6_found = get_ipv6_address(service_ctx.ifs, ll_addr, &ll_prefix, gl_addr, &gl_prefix);
+    if (ipv6_found > 0) {
+        char ll_elem[160] = "";
+        char gl_elem[160] = "";
+        if (ipv6_found & 1)
+            snprintf(ll_elem, sizeof(ll_elem),
+                "<tt:LinkLocal><tt:Address>%s</tt:Address>"
+                "<tt:PrefixLength>%d</tt:PrefixLength></tt:LinkLocal>",
+                ll_addr, ll_prefix);
+        if (ipv6_found & 2)
+            snprintf(gl_elem, sizeof(gl_elem),
+                "<tt:FromRA><tt:Address>%s</tt:Address>"
+                "<tt:PrefixLength>%d</tt:PrefixLength></tt:FromRA>",
+                gl_addr, gl_prefix);
+        strncpy(ipv6_enabled, "true", sizeof(ipv6_enabled));
+        snprintf(ipv6_config, sizeof(ipv6_config),
+            "<tt:Config><tt:AcceptRouterAdvert>true</tt:AcceptRouterAdvert>"
+            "<tt:DHCP>Off</tt:DHCP>%s%s</tt:Config>",
+            ll_elem, gl_elem);
+    } else {
+        strncpy(ipv6_enabled, "false", sizeof(ipv6_enabled));
+        ipv6_config[0] = '\0';
+    }
+
+    long size = cat(NULL, "device_service_files/GetNetworkInterfaces.xml", 14,
             "%INTERFACE%", service_ctx.ifs,
             "%MAC_ADDRESS%", mac_address,
             "%MTU%", mtu,
             "%IP_ADDRESS%", address,
-            "%NETMASK%", sprefix_len);
+            "%NETMASK%", sprefix_len,
+            "%IPV6_ENABLED%", ipv6_enabled,
+            "%IPV6_CONFIG%", ipv6_config);
 
     output_http_headers(size);
 
-    return cat("stdout", "device_service_files/GetNetworkInterfaces.xml", 10,
+    return cat("stdout", "device_service_files/GetNetworkInterfaces.xml", 14,
             "%INTERFACE%", service_ctx.ifs,
             "%MAC_ADDRESS%", mac_address,
             "%MTU%", mtu,
             "%IP_ADDRESS%", address,
-            "%NETMASK%", sprefix_len);
+            "%NETMASK%", sprefix_len,
+            "%IPV6_ENABLED%", ipv6_enabled,
+            "%IPV6_CONFIG%", ipv6_config);
 }
 
 int device_get_discovery_mode()
@@ -669,6 +704,45 @@ int device_get_endpoint_reference()
 
     return cat("stdout", "device_service_files/GetEndpointReference.xml", 2,
             "%DEVICE_UUID%", service_ctx.device_uuid);
+}
+
+int device_get_network_default_gateway()
+{
+    char gw[INET_ADDRSTRLEN] = "";
+    get_default_gateway(gw, sizeof(gw));
+    long size = cat(NULL, "device_service_files/GetNetworkDefaultGateway.xml", 2,
+            "%GATEWAY%", gw);
+    output_http_headers(size);
+    return cat("stdout", "device_service_files/GetNetworkDefaultGateway.xml", 2,
+            "%GATEWAY%", gw);
+}
+
+int device_get_network_protocols()
+{
+    long size = cat(NULL, "device_service_files/GetNetworkProtocols.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "device_service_files/GetNetworkProtocols.xml", 0);
+}
+
+int device_get_hostname()
+{
+    long size = cat(NULL, "device_service_files/GetHostname.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "device_service_files/GetHostname.xml", 0);
+}
+
+int device_get_dns()
+{
+    long size = cat(NULL, "device_service_files/GetDNS.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "device_service_files/GetDNS.xml", 0);
+}
+
+int device_get_ntp()
+{
+    long size = cat(NULL, "device_service_files/GetNTP.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "device_service_files/GetNTP.xml", 0);
 }
 
 int device_unsupported(const char *method)

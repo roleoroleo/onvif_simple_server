@@ -4,12 +4,12 @@
                    xmlns:tt="http://www.onvif.org/ver10/schema">
     <SOAP-ENV:Body>
         <trt:GetAudioDecoderConfigurationsResponse>
-            <trt:Configurations token="Profile_0_AudioDecoderToken">
-                <tt:Name>Profile_0_AudioDecoder</tt:Name>
+            <trt:Configurations token="%PROFILE0%_AudioDecoderToken">
+                <tt:Name>%PROFILE0%_AudioDecoder</tt:Name>
                 <tt:UseCount>1</tt:UseCount>
             </trt:Configurations>
-            <trt:Configurations token="Profile_1_AudioDecoderToken">
-                <tt:Name>Profile_1_AudioDecoder</tt:Name>
+            <trt:Configurations token="%PROFILE1%_AudioDecoderToken">
+                <tt:Name>%PROFILE1%_AudioDecoder</tt:Name>
                 <tt:UseCount>1</tt:UseCount>
             </trt:Configurations>
         </trt:GetAudioDecoderConfigurationsResponse>

@@ -261,8 +261,17 @@ int events_pull_messages()
     }
 
     int timeout_sec = interval2sec(timeout);
-    if (timeout_sec > MAX_PULLMESSAGES_TIMEOUT_SEC)
-        timeout_sec = MAX_PULLMESSAGES_TIMEOUT_SEC;
+    if (timeout_sec > MAX_PULLMESSAGES_TIMEOUT_SEC) {
+        char max_timeout_s[16], max_limit_s[8];
+        snprintf(max_timeout_s, sizeof(max_timeout_s), "PT%dS", MAX_PULLMESSAGES_TIMEOUT_SEC);
+        snprintf(max_limit_s, sizeof(max_limit_s), "%d", MAX_EVENTS);
+        log_error("PullMessages Timeout %d sec exceeds device maximum %d sec",
+                  timeout_sec, MAX_PULLMESSAGES_TIMEOUT_SEC);
+        send_pull_messages_fault(max_timeout_s, max_limit_s);
+        return -9;
+    }
+    if (limit > MAX_EVENTS)
+        limit = MAX_EVENTS;
     log_debug("Pull message request with timeout %d seconds and message limit %d", timeout_sec, limit);
 
     subs_evts = (shm_t *) create_shared_memory(0);

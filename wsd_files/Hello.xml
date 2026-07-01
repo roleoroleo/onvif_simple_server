@@ -19,6 +19,14 @@
                 <wsa:Address>urn:uuid:%UUID%</wsa:Address>
             </wsa:EndpointReference>
             <wsdd:Types>tdn:NetworkVideoTransmitter</wsdd:Types>
+            <!-- TODO: video_encoder, audio_encoder and ptz scopes are hardcoded
+                 unconditionally. Per ONVIF WS-Discovery spec these SHOULD only be
+                 advertised when the device actually supports those capabilities.
+                 Fix requires wsd_simple_server flags (e.g. -no-ptz, -no-audio)
+                 and either variant templates or runtime scope string construction.
+                 Also: these scopes are NOT derived from the ONVIF config scopes= setting.
+                 Clients comparing WSD discovery scopes against GetScopes will see
+                 different values. Consider passing scopes via a wsd_simple_server flag. -->
             <wsdd:Scopes>onvif://www.onvif.org/type/video_encoder onvif://www.onvif.org/type/audio_encoder onvif://www.onvif.org/type/ptz onvif://www.onvif.org/hardware/%HARDWARE% onvif://www.onvif.org/name/%NAME% onvif://www.onvif.org/location/anywhere</wsdd:Scopes>
             <wsdd:XAddrs>%ADDRESS%</wsdd:XAddrs>
             <wsdd:MetadataVersion>0</wsdd:MetadataVersion>
