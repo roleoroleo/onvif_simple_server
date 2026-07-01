@@ -66,7 +66,7 @@ int sock;
 char address[16], netmask[16];
 struct sockaddr_in6 addr_mcast4; /* [::ffff:239.255.255.250]:3702 */
 char xaddr[1024];
-/* IPv6 (optional, only when -6 is given) */
+/* IPv6 (auto-detected at startup) */
 char address6[INET6_ADDRSTRLEN];
 struct sockaddr_in6 addr_mcast6; /* [FF02::C]:3702 */
 char xaddr6[1024];
@@ -215,15 +215,12 @@ void signal_handler(int signal)
 
 void print_usage(char *progname)
 {
-    fprintf(stderr, "\nUsage: %s [-i INTERFACE] -x XADDR [-6 XADDR6] [-m MODEL] [-n MANUFACTURER] -p PID_FILE [-t TEMPLATE_DIR] [-f] [-d LEVEL]\n\n", progname);
+    fprintf(stderr, "\nUsage: %s [-i INTERFACE] -x XADDR [-m MODEL] [-n MANUFACTURER] -p PID_FILE [-t TEMPLATE_DIR] [-f] [-d LEVEL]\n\n", progname);
     fprintf(stderr, "\t-i, --if_name\n");
     fprintf(stderr, "\t\tnetwork interface (auto-detected; use -i to force a specific interface)\n");
     fprintf(stderr, "\t-x, --xaddr\n");
-    fprintf(stderr, "\t\tIPv4 resource address (use %%s as placeholder for the detected IP)\n");
-    fprintf(stderr, "\t-6, --xaddr6\n");
-    fprintf(stderr, "\t\tIPv6 resource address template (use %%s as placeholder for the detected\n");
-    fprintf(stderr, "\t\tIPv6 address; include brackets, e.g. http://[%%s]:PORT/path)\n");
-    fprintf(stderr, "\t\tIPv6 WS-Discovery is enabled only when this option is provided\n");
+    fprintf(stderr, "\t\tresource address template (use %%s as placeholder for the detected IP;\n");
+    fprintf(stderr, "\t\tIPv6 is auto-detected and the address is bracketed automatically)\n");
     fprintf(stderr, "\t-m, --model\n");
     fprintf(stderr, "\t\tmodel name\n");
     fprintf(stderr, "\t-n, --hardware\n");
@@ -294,15 +291,15 @@ int main(int argc, char **argv)
     int errno;
     char *endptr;
     int c, ret;
-    char *if_name, *pid_file, *xaddr_s, *xaddr6_s;
+    char *if_name, *pid_file, *xaddr_s;
     unsigned int if6_idx = 0;
-    int have_v4 = 0, xaddr6_auto = 0;
+    int have_v4 = 0;
     int foreground, no = 0;
     char s_tmp[32];
     long size;
     char recv_buffer[RECV_BUFFER_LEN];
 
-    if_name = pid_file = xaddr_s = xaddr6_s = NULL;
+    if_name = pid_file = xaddr_s = NULL;
     strcpy(model, "MODEL_NAME");
     strcpy(hardware, "HARDWARE_MANUFACTURER");
     strcpy(template_dir, DEFAULT_TEMPLATE_DIR);
@@ -315,7 +312,7 @@ int main(int argc, char **argv)
             {"if_name",      required_argument, 0, 'i'},
             {"pid_file",     required_argument, 0, 'p'},
             {"xaddr",        required_argument, 0, 'x'},
-            {"xaddr6",       required_argument, 0, '6'},
+
             {"model",        required_argument, 0, 'm'},
             {"hardware",     required_argument, 0, 'n'},
             {"template_dir", required_argument, 0, 't'},
@@ -325,13 +322,13 @@ int main(int argc, char **argv)
             {0, 0, 0, 0}
         };
         int option_index = 0;
-        c = getopt_long(argc, argv, "i:p:x:6:m:n:t:fd:h", long_options, &option_index);
+        c = getopt_long(argc, argv, "i:p:x:m:n:t:fd:h", long_options, &option_index);
         if (c == -1) break;
 
         switch (c) {
         case 'i': if_name  = optarg; break;
         case 'x': xaddr_s  = optarg; break;
-        case '6': xaddr6_s = optarg; break;
+
         case 'm':
             if (strlen(optarg) < sizeof(model)) strcpy(model, optarg);
             else { print_usage(argv[0]); exit(EXIT_FAILURE); }
@@ -380,7 +377,7 @@ int main(int argc, char **argv)
     log_debug("Argument if_name = %s", if_name ? if_name : "(auto-detect)");
     log_debug("Argument pid_file = %s", pid_file);
     log_debug("Argument xaddr = %s", xaddr_s);
-    if (xaddr6_s) log_debug("Argument xaddr6 = %s", xaddr6_s);
+
 
     if (check_pid(pid_file) == 1) {
         log_fatal("Program is already running."); fclose(fLog); exit(EXIT_FAILURE);
@@ -418,6 +415,7 @@ int main(int argc, char **argv)
 
     /* ---- IPv6 address detection (always attempted) --------------------- */
     memset(address6, 0, sizeof(address6));
+    xaddr6[0] = '\0';
     {
         int v6_ok;
         if (if_name)
@@ -425,15 +423,16 @@ int main(int argc, char **argv)
         else
             v6_ok = (detect_outbound_address_v6(address6, sizeof(address6), &if6_idx) == 0);
         if (v6_ok) {
+            char tmp6[INET6_ADDRSTRLEN + 4];
             log_info("IPv6 address: %s", address6);
-            if (!xaddr6_s) { xaddr6_s = xaddr_s; xaddr6_auto = 1; }
+            snprintf(tmp6, sizeof(tmp6), "[%s]", address6);
+            snprintf(xaddr6, sizeof(xaddr6), xaddr_s, tmp6);
         } else {
-            if (xaddr6_s) log_warn("IPv6 address detection failed; IPv6 WSD disabled.");
-            xaddr6_s = NULL;
+            log_debug("No global IPv6 address found; IPv6 WSD disabled.");
         }
     }
 
-    if (!have_v4 && !xaddr6_s) {
+    if (!have_v4 && !xaddr6[0]) {
         log_fatal("No usable IPv4 or IPv6 address found. Use -i <interface> or check network.");
         fclose(fLog); exit(EXIT_FAILURE);
     }
@@ -505,8 +504,8 @@ int main(int argc, char **argv)
         inet_pton(AF_INET6, "::ffff:" MULTICAST_ADDRESS, &addr_mcast4.sin6_addr);
     }
 
-    /* ---- IPv6 multicast (optional) --------------------------------------- */
-    if (xaddr6_s) {
+    /* ---- IPv6 multicast (when IPv6 address was detected) ----------------- */
+    if (xaddr6[0]) {
         struct ipv6_mreq mr6;
         unsigned int if_idx = if_name ? if_nametoindex(if_name) : if6_idx;
 
@@ -516,7 +515,7 @@ int main(int argc, char **argv)
         mr6.ipv6mr_interface = if_idx;
         if (setsockopt(sock, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mr6, sizeof(mr6)) < 0) {
             log_warn("Cannot join IPv6 multicast group; IPv6 WSD disabled: %s", strerror(errno));
-            xaddr6_s = NULL;
+            xaddr6[0] = '\0';
         } else {
             if (if_idx) setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &if_idx, sizeof(if_idx));
             memset(&addr_mcast6, 0, sizeof(addr_mcast6));
@@ -529,16 +528,6 @@ int main(int argc, char **argv)
 
     /* ---- Build xaddr strings ------------------------------------------- */
     if (have_v4) sprintf(xaddr, xaddr_s, address);
-    if (xaddr6_s) {
-        if (xaddr6_auto) {
-            /* auto: bracket the IPv6 address for a valid RFC 2732 URL */
-            char tmp6[INET6_ADDRSTRLEN + 4];
-            snprintf(tmp6, sizeof(tmp6), "[%s]", address6);
-            snprintf(xaddr6, sizeof(xaddr6), xaddr6_s, tmp6);
-        } else {
-            snprintf(xaddr6, sizeof(xaddr6), xaddr6_s, address6);
-        }
-    }
 
     /* ---- Send Hello ---------------------------------------------------- */
     msg_number = 1;
