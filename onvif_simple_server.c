@@ -501,7 +501,11 @@ int main(int argc, char ** argv)
             } else if (strcasecmp(method, "GetEndpointReference") == 0) {
                 device_get_endpoint_reference();
             } else {
-                device_unsupported(method);
+                if (service_ctx.adv_empty_if_unknown == 1) {
+                    send_empty_response("tds", method);
+                } else {
+                    device_unsupported(method);
+                }
             }
         } else if (strcasecmp("media_service", prog_name) == 0) {
             if (strcasecmp(method, "GetServiceCapabilities") == 0) {
@@ -583,7 +587,11 @@ int main(int argc, char ** argv)
             } else if ((service_ctx.adv_fault_if_set == 1) && (strcasecmp(method, "SetAudioOutputConfiguration") == 0)) {
                 media_set_audio_output_configuration();
             } else {
-                media_unsupported(method);
+                if (service_ctx.adv_empty_if_unknown == 1) {
+                    send_empty_response("trt", method);
+                } else {
+                    media_unsupported(method);
+                }
             }
         } else if ((service_ctx.adv_enable_media2 == 1) && (strcasecmp("media2_service", prog_name) == 0)) {
             if (strcasecmp(method, "GetServiceCapabilities") == 0) {
@@ -621,7 +629,11 @@ int main(int argc, char ** argv)
             } else if (strcasecmp(method, "GetStreamUri") == 0) {
                 media2_get_stream_uri();
             } else {
-                media2_unsupported(method);
+                if (service_ctx.adv_empty_if_unknown == 1) {
+                    send_empty_response("tr2", method);
+                } else {
+                    media2_unsupported(method);
+                }
             }
         } else if (strcasecmp("ptz_service", prog_name) == 0) {
             if (strcasecmp(method, "GetServiceCapabilities") == 0) {
@@ -659,7 +671,11 @@ int main(int argc, char ** argv)
             } else if (strcasecmp(method, "RemovePreset") == 0) {
                 ptz_remove_preset();
             } else {
-                ptz_unsupported(method);
+                if (service_ctx.adv_empty_if_unknown == 1) {
+                    send_empty_response("tptz", method);
+                } else {
+                    ptz_unsupported(method);
+                }
             }
         } else if (strcasecmp("events_service", prog_name) == 0) {
             if (strcasecmp(method, "GetServiceCapabilities") == 0) {
@@ -679,7 +695,11 @@ int main(int argc, char ** argv)
             } else if (strcasecmp(method, "SetSynchronizationPoint") == 0) {
                 events_set_synchronization_point();
             } else {
-                events_unsupported(method);
+                if (service_ctx.adv_empty_if_unknown == 1) {
+                    send_empty_response("ted", method);
+                } else {
+                    events_unsupported(method);
+                }
             }
         } else if (strcasecmp("deviceio_service", prog_name) == 0) {
             if (strcasecmp(method, "GetVideoSources") == 0) {
@@ -699,12 +719,16 @@ int main(int argc, char ** argv)
             } else if (strcasecmp(method, "SetRelayOutputState") == 0) {
                 deviceio_set_relay_output_state();
             } else {
-                deviceio_unsupported(method);
+                if (service_ctx.adv_empty_if_unknown == 1) {
+                    send_empty_response("tmd", method);
+                } else {
+                    deviceio_unsupported(method);
+                }
             }
         }
     } else {
         // hack to handle a bug with Synology
-        if ((service_ctx.adv_synology_nvr == 1) && 
+        if ((service_ctx.adv_synology_nvr == 1) &&
                 (strcasecmp("media_service", prog_name) == 0) &&
                 (strcasecmp("CreateProfile", method) == 0)) {
 

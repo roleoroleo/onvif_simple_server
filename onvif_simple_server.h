@@ -126,6 +126,7 @@ typedef struct {
     char *ifs;
 
     int adv_enable_media2;
+    int adv_empty_if_unknown;
     int adv_fault_if_unknown;
     int adv_fault_if_set;
     int adv_synology_nvr;

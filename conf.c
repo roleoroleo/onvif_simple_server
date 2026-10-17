@@ -59,6 +59,7 @@ int process_conf_file(char *file)
     service_ctx.ifs = NULL;
     service_ctx.factory_default_command = NULL;
     service_ctx.adv_enable_media2 = 0;
+    service_ctx.adv_empty_if_unknown = 0;
     service_ctx.adv_fault_if_unknown = 0;
     service_ctx.adv_fault_if_set = 0;
     service_ctx.adv_synology_nvr = 0;
@@ -185,6 +186,9 @@ int process_conf_file(char *file)
         } else if (strcasecmp(param, "adv_enable_media2") == 0) {
             if (strcasecmp(value, "1") == 0)
                 service_ctx.adv_enable_media2 = 1;
+        } else if (strcasecmp(param, "adv_empty_if_unknown") == 0) {
+            if (strcasecmp(value, "1") == 0)
+                service_ctx.adv_empty_if_unknown = 1;
         } else if (strcasecmp(param, "adv_fault_if_unknown") == 0) {
             if (strcasecmp(value, "1") == 0)
                 service_ctx.adv_fault_if_unknown = 1;
@@ -808,6 +812,7 @@ int process_json_conf_file(char *file)
     service_ctx.ifs = NULL;
     service_ctx.factory_default_command = NULL;
     service_ctx.adv_enable_media2 = 0;
+    service_ctx.adv_empty_if_unknown = 0;
     service_ctx.adv_fault_if_unknown = 0;
     service_ctx.adv_fault_if_set = 0;
     service_ctx.adv_synology_nvr = 0;
@@ -873,6 +878,7 @@ int process_json_conf_file(char *file)
     get_string_from_json(&(service_ctx.user), json_file, "user");
     get_string_from_json(&(service_ctx.password), json_file, "password");
     get_bool_from_json(&(service_ctx.adv_enable_media2), json_file, "adv_enable_media2");
+    get_bool_from_json(&(service_ctx.adv_empty_if_unknown), json_file, "adv_empty_if_unknown");
     get_bool_from_json(&(service_ctx.adv_fault_if_unknown), json_file, "adv_fault_if_unknown");
     get_bool_from_json(&(service_ctx.adv_fault_if_set), json_file, "adv_fault_if_set");
     get_bool_from_json(&(service_ctx.adv_synology_nvr), json_file, "adv_synology_nvr");
@@ -964,6 +970,7 @@ int process_json_conf_file(char *file)
         log_debug("password: ********");
     }
     log_debug("adv_enable_media2: %d", service_ctx.adv_enable_media2);
+    log_debug("adv_empty_if_unknown: %d", service_ctx.adv_empty_if_unknown);
     log_debug("adv_fault_if_unknown: %d", service_ctx.adv_fault_if_unknown);
     log_debug("adv_fault_if_set: %d", service_ctx.adv_fault_if_set);
     log_debug("adv_synology_nvr: %d", service_ctx.adv_synology_nvr);
@@ -1349,6 +1356,7 @@ void print_conf_help()
     fprintf(stderr, "\tpassword=\n");
     fprintf(stderr, "\t#Advanced options\n");
     fprintf(stderr, "\tadv_enable_media2=0\n");
+    fprintf(stderr, "\tadv_empty_if_unknown=0\n");
     fprintf(stderr, "\tadv_fault_if_unknown=0\n");
     fprintf(stderr, "\tadv_fault_if_set=0\n");
     fprintf(stderr, "\tadv_synology_nvr=0\n");
