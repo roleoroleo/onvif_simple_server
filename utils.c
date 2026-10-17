@@ -36,6 +36,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <time.h>
+#include <pthread.h>
 
 #ifdef HAVE_WOLFSSL
 #include <wolfssl/options.h>
@@ -58,6 +59,8 @@
 
 #define SHMOBJ_PATH "/onvif_subscription"
 #define MEM_LOCK_FILE "/sub_mem_lock"
+
+#define REBOOT_SYNC_TIMEOUT 180
 
 sem_t *sem_memory_lock = SEM_FAILED;
 
@@ -1879,18 +1882,60 @@ int get_ntp_server(char *buf, size_t len)
     return filter_servers(tmp, buf, len, is_valid_hostname_or_ip);
 }
 
+static pthread_mutex_t reboot_sync_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t reboot_sync_cond;
+static int reboot_sync_done = 0;
+
+static void *reboot_sync_thread(void *arg)
+{
+    sync();
+    sleep(3);
+    sync();
+
+    pthread_mutex_lock(&reboot_sync_mutex);
+    reboot_sync_done = 1;
+    pthread_cond_signal(&reboot_sync_cond);
+    pthread_mutex_unlock(&reboot_sync_mutex);
+
+    return NULL;
+}
+
 /**
  * Thread function to run a reboot
+ * sync() can hang forever on a wedged system, so it runs in a helper thread
+ * and the reboot follows after at most REBOOT_SYNC_TIMEOUT seconds.
  * @param arg Not used
  * @return NULL
  */
 void *reboot_thread(void *arg)
 {
-    sync();
+    pthread_t sync_pthread;
+    pthread_condattr_t attr;
+    struct timespec deadline;
+    int ret = 0;
+
+    /* setuid() waits for every thread to apply it, so it must run before
+     * the helper thread exists and can block in sync(). */
     setuid(0);
-    sync();
-    sleep(3);
-    sync();
+
+    pthread_condattr_init(&attr);
+    pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+    pthread_cond_init(&reboot_sync_cond, &attr);
+    pthread_condattr_destroy(&attr);
+
+    clock_gettime(CLOCK_MONOTONIC, &deadline);
+    deadline.tv_sec += REBOOT_SYNC_TIMEOUT;
+
+    if (pthread_create(&sync_pthread, NULL, reboot_sync_thread, NULL) == 0)
+        pthread_detach(sync_pthread);
+    else
+        reboot_sync_thread(NULL);
+
+    pthread_mutex_lock(&reboot_sync_mutex);
+    while (!reboot_sync_done && ret == 0)
+        ret = pthread_cond_timedwait(&reboot_sync_cond, &reboot_sync_mutex, &deadline);
+    pthread_mutex_unlock(&reboot_sync_mutex);
+
     reboot(RB_AUTOBOOT);
 
     return NULL;
