@@ -1,30 +1,25 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope"
-                   xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing"
-                   xmlns:wsdd="http://schemas.xmlsoap.org/ws/2005/04/discovery"
-                   xmlns:tdn="http://www.onvif.org/ver10/network/wsdl">
-    <SOAP-ENV:Header>
-        <wsa:MessageID>uuid:%MSG_UUID%</wsa:MessageID>
-        <wsa:RelatesTo>%REL_TO_UUID%</wsa:RelatesTo>
-        <wsa:ReplyTo SOAP-ENV:mustUnderstand="true">
-            <wsa:Address>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</wsa:Address>
-        </wsa:ReplyTo>
-        <wsa:To SOAP-ENV:mustUnderstand="true">http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</wsa:To>
-        <wsa:Action SOAP-ENV:mustUnderstand="true">http://schemas.xmlsoap.org/ws/2005/04/discovery/ProbeMatches</wsa:Action>
-        <wsdd:AppSequence InstanceId="0"
-                          MessageNumber="%MSG_NUMBER%"/>
-    </SOAP-ENV:Header>
-    <SOAP-ENV:Body>
-        <wsdd:ProbeMatches>
-            <wsdd:ProbeMatch>
-                <wsa:EndpointReference>
-                    <wsa:Address>urn:uuid:%UUID%</wsa:Address>
-                </wsa:EndpointReference>
-                <wsdd:Types>tdn:NetworkVideoTransmitter</wsdd:Types>
-                <wsdd:Scopes>onvif://www.onvif.org/type/video_encoder onvif://www.onvif.org/type/audio_encoder onvif://www.onvif.org/type/ptz onvif://www.onvif.org/hardware/%HARDWARE% onvif://www.onvif.org/name/%NAME% onvif://www.onvif.org/location/anywhere onvif://www.onvif.org/Profile/Streaming</wsdd:Scopes>
-                <wsdd:XAddrs>%ADDRESS%</wsdd:XAddrs>
-                <wsdd:MetadataVersion>0</wsdd:MetadataVersion>
-            </wsdd:ProbeMatch>
-        </wsdd:ProbeMatches>
-    </SOAP-ENV:Body>
-</SOAP-ENV:Envelope>
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"
+            xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing"
+            xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery"
+            xmlns:tdn="http://www.onvif.org/ver10/network/wsdl">
+    <s:Header>
+        <a:MessageID>uuid:%MSG_UUID%</a:MessageID>
+        <a:RelatesTo>%REL_TO_UUID%</a:RelatesTo>
+        <a:To>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</a:To>
+        <a:Action>http://schemas.xmlsoap.org/ws/2005/04/discovery/ProbeMatches</a:Action>
+        <d:AppSequence InstanceId="0" MessageNumber="%MSG_NUMBER%"/>
+    </s:Header>
+    <s:Body>
+        <d:ProbeMatches>
+            <d:ProbeMatch>
+                <a:EndpointReference>
+                    <a:Address>urn:uuid:%UUID%</a:Address>
+                </a:EndpointReference>
+                <d:Types>tdn:NetworkVideoTransmitter</d:Types>
+                <d:Scopes>%SCOPES%</d:Scopes>
+                <d:XAddrs>%ADDRESS%</d:XAddrs>
+                <d:MetadataVersion>0</d:MetadataVersion>
+            </d:ProbeMatch>
+        </d:ProbeMatches>
+    </s:Body>
+</s:Envelope>

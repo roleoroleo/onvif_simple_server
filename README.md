@@ -284,7 +284,7 @@ Check the code for information.
 wsd_simple server supports the following options
 
 ```
-Usage: /tmp/sd/yi-hack/bin/wsd_simple_server [-i INTERFACE] -x XADDR [-m MODEL] [-n MANUFACTURER] -p PID_FILE [-t TEMPLATE_DIR] [-f] [-d LEVEL]
+Usage: /tmp/sd/yi-hack/bin/wsd_simple_server [-i INTERFACE] -x XADDR [-m MODEL] [-n MANUFACTURER] [-s SCOPES] -p PID_FILE [-t TEMPLATE_DIR] [-f] [-d LEVEL]
 
         -i, --if_name
                 network interface (auto-detected; use -i to force a specific interface)
@@ -295,6 +295,8 @@ Usage: /tmp/sd/yi-hack/bin/wsd_simple_server [-i INTERFACE] -x XADDR [-m MODEL] 
                 model name
         -n, --hardware
                 hardware manufacturer
+        -s, --scopes
+                space-separated scope list (default: built-in list)
         -p, --pid_file
                 pid file
         -t, --template_dir
@@ -310,12 +312,21 @@ Usage: /tmp/sd/yi-hack/bin/wsd_simple_server [-i INTERFACE] -x XADDR [-m MODEL] 
 | --- | --- | --- |
 | if_name | network interface (optional; auto-detected if omitted) | eth0 |
 | xaddr | resource address for the ONVIF server | http://%s/onvif/device_service |
+| scopes | space-separated scopes sent in Hello and ProbeMatches; replaces the default list | "onvif://www.onvif.org/type/video_encoder onvif://www.onvif.org/name/Camera" |
 | pid_file | is the pid file created by the daemon | /var/run/wsd_simple_server.pid |
 | template_dir | the folder containing template files | /etc/wsd_simple_server |
 | foreground | don't fork | - |
 | debug | debug level from 0 to 5 | - |
 
 %s is replaced runtime with the IP address of the device.
+
+The default scopes advertise video_encoder, audio_encoder and ptz on every device.
+They are not taken from the scope= entries of the onvif_simple_server config.
+Use -s to send only what the device supports, e.g. the same list as scope=, so that discovery matches GetScopes.
+
+Each message should fit one UDP datagram of 1232 bytes (IPv6 minimum MTU).
+Larger messages are logged with a warning, as they may be fragmented.
+The templates are sent as they are, comments included, so keep them free of comments.
 
 #### IPv6 / dual-stack WS-Discovery
 

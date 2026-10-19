@@ -47,6 +47,19 @@
 
 #define RECV_BUFFER_LEN 4096
 
+/* Largest UDP payload that fits one datagram at the IPv6 minimum MTU (1280). */
+#define WSD_MAX_MSG_LEN 1232
+
+/* The type scopes are advertised whether or not the device supports them,
+ * and none are taken from the scope= entries of the onvif_simple_server
+ * config. Use -s to send the device's own list. */
+#define DEFAULT_SCOPES "onvif://www.onvif.org/type/video_encoder " \
+                       "onvif://www.onvif.org/type/audio_encoder " \
+                       "onvif://www.onvif.org/type/ptz " \
+                       "onvif://www.onvif.org/hardware/%s " \
+                       "onvif://www.onvif.org/name/%s " \
+                       "onvif://www.onvif.org/location/anywhere"
+
 #define BD_NO_CHDIR          01
 #define BD_NO_CLOSE_FILES    02
 #define BD_NO_REOPEN_STD_FDS 04
@@ -84,6 +97,8 @@ char msg_uuid[UUID_LEN + 1];
 
 char model[64];
 char hardware[64];
+char scopes[1024];       /* Hello and Bye */
+char scopes_probe[1024]; /* ProbeMatches */
 
 /* -------------------------------------------------------------------------
  * IPv4 interface auto-detection: connect a UDP socket (no packet sent) to
@@ -174,6 +189,9 @@ int create_pid(char *file_name)
 static int send_wsd_msg(int s, const char *buf, size_t len,
                         const struct sockaddr *dst, socklen_t dst_len)
 {
+    if (len > WSD_MAX_MSG_LEN)
+        log_warn("WSD message is %zu bytes (limit %d) and may be fragmented.",
+                 len, WSD_MAX_MSG_LEN);
     return (sendto(s, buf, len, 0, dst, dst_len) < 0) ? -1 : 0;
 }
 
@@ -188,13 +206,15 @@ static void send_bye(int s, const struct sockaddr *dst, socklen_t dst_len,
     gen_uuid(msg_uuid);
 
     snprintf(template_file, sizeof(template_file), "%s/Bye.xml", template_dir);
-    size = cat(NULL, template_file, 12,
+    size = cat(NULL, template_file, 14,
                "%MSG_UUID%", msg_uuid, "%MSG_NUMBER%", s_tmp, "%UUID%", uuid,
+               "%SCOPES%", scopes,
                "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr_str);
     message = (char *) malloc((size + 1) * sizeof(char));
     if (!message) { log_fatal("Malloc error."); return; }
-    cat(message, template_file, 12,
+    cat(message, template_file, 14,
         "%MSG_UUID%", msg_uuid, "%MSG_NUMBER%", s_tmp, "%UUID%", uuid,
+        "%SCOPES%", scopes,
         "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr_str);
 
     if (send_wsd_msg(s, message, strlen(message), dst, dst_len) < 0)
@@ -218,7 +238,7 @@ void signal_handler(int signal)
 
 void print_usage(char *progname)
 {
-    fprintf(stderr, "\nUsage: %s [-i INTERFACE] -x XADDR [-m MODEL] [-n MANUFACTURER] -p PID_FILE [-t TEMPLATE_DIR] [-f] [-d LEVEL]\n\n", progname);
+    fprintf(stderr, "\nUsage: %s [-i INTERFACE] -x XADDR [-m MODEL] [-n MANUFACTURER] [-s SCOPES] -p PID_FILE [-t TEMPLATE_DIR] [-f] [-d LEVEL]\n\n", progname);
     fprintf(stderr, "\t-i, --if_name\n");
     fprintf(stderr, "\t\tnetwork interface (auto-detected; use -i to force a specific interface)\n");
     fprintf(stderr, "\t-x, --xaddr\n");
@@ -228,6 +248,8 @@ void print_usage(char *progname)
     fprintf(stderr, "\t\tmodel name\n");
     fprintf(stderr, "\t-n, --hardware\n");
     fprintf(stderr, "\t\thardware manufacturer\n");
+    fprintf(stderr, "\t-s, --scopes\n");
+    fprintf(stderr, "\t\tspace-separated scope list (default: built-in list)\n");
     fprintf(stderr, "\t-p, --pid_file\n");
     fprintf(stderr, "\t\tpid file\n");
     fprintf(stderr, "\t-t, --template_dir\n");
@@ -268,15 +290,15 @@ static void handle_probe(int s, struct sockaddr *dst, socklen_t dst_len,
 
     log_info("Sending ProbeMatches message.");
     snprintf(template_file, sizeof(template_file), "%s/ProbeMatches.xml", template_dir);
-    size = cat(NULL, template_file, 14,
+    size = cat(NULL, template_file, 16,
                "%MSG_UUID%", msg_uuid, "%REL_TO_UUID%", relates_to_uuid,
-               "%MSG_NUMBER%", s_tmp, "%UUID%", uuid,
+               "%MSG_NUMBER%", s_tmp, "%UUID%", uuid, "%SCOPES%", scopes_probe,
                "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr_str);
     message_loop = (char *) malloc((size + 1) * sizeof(char));
     if (!message_loop) { log_error("Malloc error."); return; }
-    cat(message_loop, template_file, 14,
+    cat(message_loop, template_file, 16,
         "%MSG_UUID%", msg_uuid, "%REL_TO_UUID%", relates_to_uuid,
-        "%MSG_NUMBER%", s_tmp, "%UUID%", uuid,
+        "%MSG_NUMBER%", s_tmp, "%UUID%", uuid, "%SCOPES%", scopes_probe,
         "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr_str);
 
     if (send_wsd_msg(s, message_loop, strlen(message_loop), dst, dst_len) < 0)
@@ -318,6 +340,7 @@ int main(int argc, char **argv)
 
             {"model",        required_argument, 0, 'm'},
             {"hardware",     required_argument, 0, 'n'},
+            {"scopes",       required_argument, 0, 's'},
             {"template_dir", required_argument, 0, 't'},
             {"foreground",   no_argument,       0, 'f'},
             {"debug",        required_argument, 0, 'd'},
@@ -325,7 +348,7 @@ int main(int argc, char **argv)
             {0, 0, 0, 0}
         };
         int option_index = 0;
-        c = getopt_long(argc, argv, "i:p:x:m:n:t:fd:h", long_options, &option_index);
+        c = getopt_long(argc, argv, "i:p:x:m:n:s:t:fd:h", long_options, &option_index);
         if (c == -1) break;
 
         switch (c) {
@@ -339,6 +362,12 @@ int main(int argc, char **argv)
         case 'n':
             if (strlen(optarg) < sizeof(hardware)) snprintf(hardware, sizeof(hardware), "%s", optarg);
             else { print_usage(argv[0]); exit(EXIT_FAILURE); }
+            break;
+        case 's':
+            if (strlen(optarg) < sizeof(scopes)) {
+                snprintf(scopes, sizeof(scopes), "%s", optarg);
+                snprintf(scopes_probe, sizeof(scopes_probe), "%s", optarg);
+            } else { print_usage(argv[0]); exit(EXIT_FAILURE); }
             break;
         case 'p': pid_file = optarg; break;
         case 't':
@@ -363,6 +392,12 @@ int main(int argc, char **argv)
 
     if (!xaddr_s || !pid_file) { print_usage(argv[0]); exit(EXIT_SUCCESS); }
 
+    if (!scopes[0]) {
+        snprintf(scopes, sizeof(scopes), DEFAULT_SCOPES, hardware, model);
+        snprintf(scopes_probe, sizeof(scopes_probe),
+                 DEFAULT_SCOPES " onvif://www.onvif.org/Profile/Streaming", hardware, model);
+    }
+
     signal(SIGTERM, signal_handler);
     signal(SIGINT,  signal_handler);
 
@@ -380,6 +415,7 @@ int main(int argc, char **argv)
     log_debug("Argument if_name = %s", if_name ? if_name : "(auto-detect)");
     log_debug("Argument pid_file = %s", pid_file);
     log_debug("Argument xaddr = %s", xaddr_s);
+    log_debug("Argument scopes = %s", scopes);
 
 
     if (check_pid(pid_file) == 1) {
@@ -572,15 +608,17 @@ int main(int argc, char **argv)
 
     if (have_v4) {
         snprintf(template_file, sizeof(template_file), "%s/Hello.xml", template_dir);
-        size = cat(NULL, template_file, 12,
+        size = cat(NULL, template_file, 14,
                    "%MSG_UUID%", msg_uuid, "%MSG_NUMBER%", s_tmp, "%UUID%", uuid,
+                   "%SCOPES%", scopes,
                    "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr);
         message = (char *) malloc((size + 1) * sizeof(char));
         if (!message) {
             log_fatal("Malloc error."); close(sock); fclose(fLog); exit(EXIT_FAILURE);
         }
-        cat(message, template_file, 12,
+        cat(message, template_file, 14,
             "%MSG_UUID%", msg_uuid, "%MSG_NUMBER%", s_tmp, "%UUID%", uuid,
+            "%SCOPES%", scopes,
             "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr);
         if (send_wsd_msg(sock, message, strlen(message),
                          (struct sockaddr *)&addr_mcast4, addr_mcast4_len) < 0) {
@@ -596,13 +634,15 @@ int main(int argc, char **argv)
         snprintf(s_tmp, sizeof(s_tmp), "%d", msg_number);
         gen_uuid(msg_uuid);
         snprintf(template_file, sizeof(template_file), "%s/Hello.xml", template_dir);
-        size = cat(NULL, template_file, 12,
+        size = cat(NULL, template_file, 14,
                    "%MSG_UUID%", msg_uuid, "%MSG_NUMBER%", s_tmp, "%UUID%", uuid,
+                   "%SCOPES%", scopes,
                    "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr6);
         message = (char *) malloc((size + 1) * sizeof(char));
         if (message) {
-            cat(message, template_file, 12,
+            cat(message, template_file, 14,
                 "%MSG_UUID%", msg_uuid, "%MSG_NUMBER%", s_tmp, "%UUID%", uuid,
+                "%SCOPES%", scopes,
                 "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr6);
             if (send_wsd_msg(sock, message, strlen(message),
                              (struct sockaddr *)&addr_mcast6, sizeof(addr_mcast6)) < 0)
