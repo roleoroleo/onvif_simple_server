@@ -220,6 +220,7 @@ Note:
 
 - %s, %d and %f are placeholders replaced runtime with the proper parameter
 
+```
   move_left=/tmp/sd/yi-hack/bin/ipc_cmd -m left -s %f
   %s is the velocity of the pan movement
   move_right=/tmp/sd/yi-hack/bin/ipc_cmd -m right -s %f
@@ -245,6 +246,7 @@ Note:
   %f are the pan/tilt/zoom coordinates you want to move
   jump_to_rel=/tmp/sd/yi-hack/bin/ipc_cmd -J %f,%f,%f
   %f are the pan/tilt/zoom coordinates you want to move
+```
 
 - use the same folder for the input files of the events
 - max 8 events are currently supported (relay_output feature uses events messages to get the relay state, so each relay uses 1 event and the sum of events and relays cannot be greater than 8)
