@@ -131,8 +131,10 @@ int process_conf_file(char *file)
         } else {
             strncpy(value, second + 1, line_len - (second - first) - 1);
         }
-        if ((value[0] != '\0') && (value[0] == '"') && (value[strlen(value) - 1] == '"')) {
-            strncpy(value, &value[1], strlen(value) - 2);
+        size_t value_len = strlen(value);
+        if ((value_len >= 2) && (value[0] == '"') && (value[value_len - 1] == '"')) {
+            memmove(value, &value[1], value_len - 2);
+            value[value_len - 2] = '\0';
         }
         log_debug("%s: %s", param, value);
 
