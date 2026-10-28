@@ -11,6 +11,7 @@
                 <tt:Exposure>
                     <tt:Mode>%EXPOSURE_MODE%</tt:Mode>
                 </tt:Exposure>
+                %FOCUS%
                 <tt:IrCutFilter>%IRCUT_MODE%</tt:IrCutFilter>
                 <tt:Sharpness>%SHARPNESS%</tt:Sharpness>
                 <tt:WideDynamicRange>

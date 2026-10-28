@@ -111,6 +111,9 @@ adv_synology_nvr=0
 #Imaging service (optional)
 imaging_enable=1
 imaging_set_command=/usr/local/bin/set_imaging
+imaging_focus_command=/usr/local/bin/set_focus
+imaging_status_command=/usr/local/bin/get_focus
+imaging_focus_auto=1
 imaging_brightness=0.5
 imaging_contrast=0.5
 imaging_saturation=0.5
@@ -277,6 +280,8 @@ Brief explanation of some parameters:
 | adv_synology_nvr | try to set to 1 to improve compatibility, if you are using a Synology NVR |
 | imaging_enable | set to 1 to advertise the Imaging service |
 | imaging_set_command | the binary command run on SetImagingSettings, see below (empty = settings are read-only) |
+| imaging_focus_command | the binary command run on Move and Stop, see below (empty = no focus control is advertised) |
+| imaging_status_command | optional command for GetStatus, see below (empty = the focus status is reported as UNKNOWN) |
 | imaging_* | the current values reported by GetImagingSettings: brightness, contrast, saturation and sharpness range from 0.0 to 1.0, the others are 1 or 0 |
 | url | the url of your streaming service (it is not provided by onvif server) |
 | snapurl | the url of your snapshot service (tipically an http url that provides a jpg image) |
@@ -432,6 +437,7 @@ GetMoveOptions
 GetOptions
 GetServiceCapabilities
 GetStatus
+Move
 SetImagingSettings
 Stop
 ```
@@ -439,7 +445,12 @@ Stop
 SetImagingSettings validates the request and runs `imaging_set_command` with the requested values in environment variables, so nothing from the request reaches the command line:
 `ONVIF_IMAGING_BRIGHTNESS`, `ONVIF_IMAGING_CONTRAST`, `ONVIF_IMAGING_COLOR_SATURATION`, `ONVIF_IMAGING_SHARPNESS` (0.0 to 1.0),
 `ONVIF_IMAGING_IRCUT_FILTER` (ON/OFF), `ONVIF_IMAGING_WHITE_BALANCE` (AUTO/MANUAL), `ONVIF_IMAGING_EXPOSURE` (AUTO/MANUAL) and `ONVIF_IMAGING_WIDE_DYNAMIC_RANGE` (ON/OFF).
+`ONVIF_IMAGING_AUTO_FOCUS_MODE` (AUTO/MANUAL) is set the same way when focus control is enabled.
 Only the settings present in the request are set. A non-zero exit status is reported to the client as a fault.
+
+Move (continuous focus only) and Stop run `imaging_focus_command` with `ONVIF_IMAGING_FOCUS_SPEED` from -1.0 (near) to 1.0 (far); Stop passes 0.
+`imaging_status_command` is run by GetStatus and must print `<position> <state>` on one line, with the position from 0.0 to 1.0 and the state IDLE, MOVING or UNKNOWN. Anything else is reported as position 0 and UNKNOWN.
+`imaging_focus_auto` is the AutoFocusMode reported by GetImagingSettings.
 
 **DeviceIO**
 ```

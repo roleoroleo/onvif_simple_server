@@ -3,7 +3,7 @@
                    xmlns:timg="http://www.onvif.org/ver20/imaging/wsdl">
     <SOAP-ENV:Body>
         <timg:GetMoveOptionsResponse>
-            <timg:MoveOptions/>
+            <timg:MoveOptions>%CONTINUOUS%</timg:MoveOptions>
         </timg:GetMoveOptionsResponse>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>

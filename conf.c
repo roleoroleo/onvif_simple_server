@@ -60,6 +60,9 @@ int process_conf_file(char *file)
     service_ctx.factory_default_command = NULL;
     service_ctx.imaging_enable = 0;
     service_ctx.imaging_set_command = NULL;
+    service_ctx.imaging_focus_command = NULL;
+    service_ctx.imaging_status_command = NULL;
+    service_ctx.imaging_focus_auto = 1;
     service_ctx.imaging_brightness = 0.5;
     service_ctx.imaging_contrast = 0.5;
     service_ctx.imaging_saturation = 0.5;
@@ -217,6 +220,14 @@ int process_conf_file(char *file)
         } else if (strcasecmp(param, "imaging_set_command") == 0) {
             service_ctx.imaging_set_command = (char *) malloc(strlen(value) + 1);
             snprintf(service_ctx.imaging_set_command, strlen(value) + 1, "%s", value);
+        } else if (strcasecmp(param, "imaging_focus_command") == 0) {
+            service_ctx.imaging_focus_command = (char *) malloc(strlen(value) + 1);
+            snprintf(service_ctx.imaging_focus_command, strlen(value) + 1, "%s", value);
+        } else if (strcasecmp(param, "imaging_status_command") == 0) {
+            service_ctx.imaging_status_command = (char *) malloc(strlen(value) + 1);
+            snprintf(service_ctx.imaging_status_command, strlen(value) + 1, "%s", value);
+        } else if (strcasecmp(param, "imaging_focus_auto") == 0) {
+            service_ctx.imaging_focus_auto = (strcasecmp(value, "1") == 0);
         } else if (strcasecmp(param, "imaging_brightness") == 0) {
             service_ctx.imaging_brightness = atof(value);
         } else if (strcasecmp(param, "imaging_contrast") == 0) {
@@ -864,6 +875,9 @@ int process_json_conf_file(char *file)
     service_ctx.factory_default_command = NULL;
     service_ctx.imaging_enable = 0;
     service_ctx.imaging_set_command = NULL;
+    service_ctx.imaging_focus_command = NULL;
+    service_ctx.imaging_status_command = NULL;
+    service_ctx.imaging_focus_auto = 1;
     service_ctx.imaging_brightness = 0.5;
     service_ctx.imaging_contrast = 0.5;
     service_ctx.imaging_saturation = 0.5;
@@ -920,6 +934,9 @@ int process_json_conf_file(char *file)
     get_string_from_json(&(service_ctx.factory_default_command), json_file, "factory_default_command");
     get_bool_from_json(&(service_ctx.imaging_enable), json_file, "imaging_enable");
     get_string_from_json(&(service_ctx.imaging_set_command), json_file, "imaging_set_command");
+    get_string_from_json(&(service_ctx.imaging_focus_command), json_file, "imaging_focus_command");
+    get_string_from_json(&(service_ctx.imaging_status_command), json_file, "imaging_status_command");
+    get_bool_from_json_opt(&(service_ctx.imaging_focus_auto), json_file, "imaging_focus_auto");
     get_number_from_json_opt(&(service_ctx.imaging_brightness), json_file, "imaging_brightness");
     get_number_from_json_opt(&(service_ctx.imaging_contrast), json_file, "imaging_contrast");
     get_number_from_json_opt(&(service_ctx.imaging_saturation), json_file, "imaging_saturation");
@@ -1410,6 +1427,8 @@ void free_conf_file()
     if (service_ctx.manufacturer != NULL) free(service_ctx.manufacturer);
     if (service_ctx.factory_default_command != NULL) free(service_ctx.factory_default_command);
     if (service_ctx.imaging_set_command != NULL) free(service_ctx.imaging_set_command);
+    if (service_ctx.imaging_focus_command != NULL) free(service_ctx.imaging_focus_command);
+    if (service_ctx.imaging_status_command != NULL) free(service_ctx.imaging_status_command);
     if (service_ctx.password != NULL) free(service_ctx.password);
     if (service_ctx.user != NULL) free(service_ctx.user);
 }
@@ -1439,6 +1458,10 @@ void print_conf_help()
     fprintf(stderr, "\t#Imaging service: 1 to advertise it, command run on SetImagingSettings (empty = read-only)\n");
     fprintf(stderr, "\timaging_enable=0\n");
     fprintf(stderr, "\timaging_set_command=\n");
+    fprintf(stderr, "\t#Command run on imaging Move/Stop, speed in ONVIF_IMAGING_FOCUS_SPEED (empty = no focus control)\n");
+    fprintf(stderr, "\timaging_focus_command=\n");
+    fprintf(stderr, "\t#Command printing the lens state as \"<position> <IDLE|MOVING|UNKNOWN>\" for GetStatus (empty = UNKNOWN)\n");
+    fprintf(stderr, "\timaging_status_command=\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "\t#Profile 0\n");
     fprintf(stderr, "\tname=Profile_0\n");

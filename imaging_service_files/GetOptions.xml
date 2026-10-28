@@ -12,6 +12,7 @@
                     <tt:Mode>AUTO</tt:Mode>
                     <tt:Mode>MANUAL</tt:Mode>
                 </tt:Exposure>
+                %FOCUS%
                 <tt:IrCutFilterModes>ON</tt:IrCutFilterModes>
                 <tt:IrCutFilterModes>OFF</tt:IrCutFilterModes>
                 <tt:Sharpness><tt:Min>0</tt:Min><tt:Max>1</tt:Max></tt:Sharpness>
