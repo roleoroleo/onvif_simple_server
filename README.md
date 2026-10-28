@@ -108,6 +108,17 @@ adv_enable_media2=0
 adv_fault_if_unknown=0
 adv_fault_if_set=0
 adv_synology_nvr=0
+#Imaging service (optional)
+imaging_enable=1
+imaging_set_command=/usr/local/bin/set_imaging
+imaging_brightness=0.5
+imaging_contrast=0.5
+imaging_saturation=0.5
+imaging_sharpness=0.5
+imaging_ircut_on=1
+imaging_wb_auto=1
+imaging_exposure_auto=1
+imaging_wdr_on=0
 
 #Profile 0
 name=Profile_0
@@ -264,6 +275,9 @@ Brief explanation of some parameters:
 | adv_fault_if_unknown | try to set to 1 if your ONVIF client is not able to connect to the device |
 | adv_fault_if_set | try to set to 1 if your ONVIF client is not able to connect to the device |
 | adv_synology_nvr | try to set to 1 to improve compatibility, if you are using a Synology NVR |
+| imaging_enable | set to 1 to advertise the Imaging service |
+| imaging_set_command | the binary command run on SetImagingSettings, see below (empty = settings are read-only) |
+| imaging_* | the current values reported by GetImagingSettings: brightness, contrast, saturation and sharpness range from 0.0 to 1.0, the others are 1 or 0 |
 | url | the url of your streaming service (it is not provided by onvif server) |
 | snapurl | the url of your snapshot service (tipically an http url that provides a jpg image) |
 | audio_decoder | set to G711 or AAC if your device support an audio back channel |
@@ -410,6 +424,22 @@ GetDNS
 GetNTP
 SystemReboot
 ```
+
+**Imaging**
+```
+GetImagingSettings
+GetMoveOptions
+GetOptions
+GetServiceCapabilities
+GetStatus
+SetImagingSettings
+Stop
+```
+
+SetImagingSettings validates the request and runs `imaging_set_command` with the requested values in environment variables, so nothing from the request reaches the command line:
+`ONVIF_IMAGING_BRIGHTNESS`, `ONVIF_IMAGING_CONTRAST`, `ONVIF_IMAGING_COLOR_SATURATION`, `ONVIF_IMAGING_SHARPNESS` (0.0 to 1.0),
+`ONVIF_IMAGING_IRCUT_FILTER` (ON/OFF), `ONVIF_IMAGING_WHITE_BALANCE` (AUTO/MANUAL), `ONVIF_IMAGING_EXPOSURE` (AUTO/MANUAL) and `ONVIF_IMAGING_WIDE_DYNAMIC_RANGE` (ON/OFF).
+Only the settings present in the request are set. A non-zero exit status is reported to the client as a fault.
 
 **DeviceIO**
 ```

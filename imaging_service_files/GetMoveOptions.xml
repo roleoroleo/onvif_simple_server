@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope"
+                   xmlns:timg="http://www.onvif.org/ver20/imaging/wsdl">
+    <SOAP-ENV:Body>
+        <timg:GetMoveOptionsResponse>
+            <timg:MoveOptions/>
+        </timg:GetMoveOptionsResponse>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>

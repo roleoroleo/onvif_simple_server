@@ -55,6 +55,7 @@
                     <tt:WSPullPointSupport>%EVENTS_PULLPOINT%</tt:WSPullPointSupport>
                     <tt:WSPausableSubscriptionManagerInterfaceSupport>false</tt:WSPausableSubscriptionManagerInterfaceSupport>
                 </tt:Events>
+                %IMAGING_CAPABILITY%
                 <tt:Media>
                     <tt:XAddr>%MEDIA_SERVICE_ADDRESS%</tt:XAddr>
                     <tt:StreamingCapabilities>

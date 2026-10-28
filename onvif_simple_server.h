@@ -132,6 +132,16 @@ typedef struct {
     int adv_synology_nvr;
 
     char *factory_default_command;   /* SetSystemFactoryDefault hook; NULL = op not supported */
+    int imaging_enable;              /* advertise the Imaging service */
+    char *imaging_set_command;       /* SetImagingSettings hook; NULL = op not supported */
+    double imaging_brightness;       /* current values reported by GetImagingSettings, 0.0 .. 1.0 */
+    double imaging_contrast;
+    double imaging_saturation;
+    double imaging_sharpness;
+    int imaging_ircut_on;
+    int imaging_wb_auto;
+    int imaging_exposure_auto;
+    int imaging_wdr_on;
 
     stream_profile_t *profiles;
     int profiles_num;

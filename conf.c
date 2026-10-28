@@ -58,6 +58,16 @@ int process_conf_file(char *file)
     service_ctx.hardware_id = NULL;
     service_ctx.ifs = NULL;
     service_ctx.factory_default_command = NULL;
+    service_ctx.imaging_enable = 0;
+    service_ctx.imaging_set_command = NULL;
+    service_ctx.imaging_brightness = 0.5;
+    service_ctx.imaging_contrast = 0.5;
+    service_ctx.imaging_saturation = 0.5;
+    service_ctx.imaging_sharpness = 0.5;
+    service_ctx.imaging_ircut_on = 1;
+    service_ctx.imaging_wb_auto = 1;
+    service_ctx.imaging_exposure_auto = 1;
+    service_ctx.imaging_wdr_on = 0;
     service_ctx.adv_enable_media2 = 0;
     service_ctx.adv_empty_if_unknown = 0;
     service_ctx.adv_fault_if_unknown = 0;
@@ -201,6 +211,28 @@ int process_conf_file(char *file)
         } else if (strcasecmp(param, "factory_default_command") == 0) {
             service_ctx.factory_default_command = (char *) malloc(strlen(value) + 1);
             snprintf(service_ctx.factory_default_command, strlen(value) + 1, "%s", value);
+        } else if (strcasecmp(param, "imaging_enable") == 0) {
+            if (strcasecmp(value, "1") == 0)
+                service_ctx.imaging_enable = 1;
+        } else if (strcasecmp(param, "imaging_set_command") == 0) {
+            service_ctx.imaging_set_command = (char *) malloc(strlen(value) + 1);
+            snprintf(service_ctx.imaging_set_command, strlen(value) + 1, "%s", value);
+        } else if (strcasecmp(param, "imaging_brightness") == 0) {
+            service_ctx.imaging_brightness = atof(value);
+        } else if (strcasecmp(param, "imaging_contrast") == 0) {
+            service_ctx.imaging_contrast = atof(value);
+        } else if (strcasecmp(param, "imaging_saturation") == 0) {
+            service_ctx.imaging_saturation = atof(value);
+        } else if (strcasecmp(param, "imaging_sharpness") == 0) {
+            service_ctx.imaging_sharpness = atof(value);
+        } else if (strcasecmp(param, "imaging_ircut_on") == 0) {
+            service_ctx.imaging_ircut_on = (strcasecmp(value, "1") == 0);
+        } else if (strcasecmp(param, "imaging_wb_auto") == 0) {
+            service_ctx.imaging_wb_auto = (strcasecmp(value, "1") == 0);
+        } else if (strcasecmp(param, "imaging_exposure_auto") == 0) {
+            service_ctx.imaging_exposure_auto = (strcasecmp(value, "1") == 0);
+        } else if (strcasecmp(param, "imaging_wdr_on") == 0) {
+            service_ctx.imaging_wdr_on = (strcasecmp(value, "1") == 0);
 
         //Media Profile for ONVIF Media Service
         } else if (strcasecmp(param, "name") == 0) {
@@ -755,6 +787,25 @@ void get_bool_from_json(int* var, json_object* j, char* name)
     }
 }
 
+/* Like get_bool_from_json/get_double_from_json, but keep the current (default)
+ * value when the key is absent. */
+static void get_bool_from_json_opt(int* var, json_object* j, char* name)
+{
+    json_object* b = NULL;
+
+    if (json_object_object_get_ex(j, name, &b))
+        get_bool_from_json(var, j, name);
+}
+
+static void get_number_from_json_opt(double* var, json_object* j, char* name)
+{
+    json_object* d = NULL;
+
+    if (json_object_object_get_ex(j, name, &d) &&
+            (json_object_is_type(d, json_type_double) || json_object_is_type(d, json_type_int)))
+        *var = json_object_get_double(d);
+}
+
 int process_json_conf_file(char *file)
 {
     FILE *fF;
@@ -811,6 +862,16 @@ int process_json_conf_file(char *file)
     service_ctx.hardware_id = NULL;
     service_ctx.ifs = NULL;
     service_ctx.factory_default_command = NULL;
+    service_ctx.imaging_enable = 0;
+    service_ctx.imaging_set_command = NULL;
+    service_ctx.imaging_brightness = 0.5;
+    service_ctx.imaging_contrast = 0.5;
+    service_ctx.imaging_saturation = 0.5;
+    service_ctx.imaging_sharpness = 0.5;
+    service_ctx.imaging_ircut_on = 1;
+    service_ctx.imaging_wb_auto = 1;
+    service_ctx.imaging_exposure_auto = 1;
+    service_ctx.imaging_wdr_on = 0;
     service_ctx.adv_enable_media2 = 0;
     service_ctx.adv_empty_if_unknown = 0;
     service_ctx.adv_fault_if_unknown = 0;
@@ -857,6 +918,16 @@ int process_json_conf_file(char *file)
     get_string_from_json(&(service_ctx.hardware_id), json_file, "hardware_id");
     get_string_from_json(&(service_ctx.serial_num), json_file, "serial_num");
     get_string_from_json(&(service_ctx.factory_default_command), json_file, "factory_default_command");
+    get_bool_from_json(&(service_ctx.imaging_enable), json_file, "imaging_enable");
+    get_string_from_json(&(service_ctx.imaging_set_command), json_file, "imaging_set_command");
+    get_number_from_json_opt(&(service_ctx.imaging_brightness), json_file, "imaging_brightness");
+    get_number_from_json_opt(&(service_ctx.imaging_contrast), json_file, "imaging_contrast");
+    get_number_from_json_opt(&(service_ctx.imaging_saturation), json_file, "imaging_saturation");
+    get_number_from_json_opt(&(service_ctx.imaging_sharpness), json_file, "imaging_sharpness");
+    get_bool_from_json_opt(&(service_ctx.imaging_ircut_on), json_file, "imaging_ircut_on");
+    get_bool_from_json_opt(&(service_ctx.imaging_wb_auto), json_file, "imaging_wb_auto");
+    get_bool_from_json_opt(&(service_ctx.imaging_exposure_auto), json_file, "imaging_exposure_auto");
+    get_bool_from_json_opt(&(service_ctx.imaging_wdr_on), json_file, "imaging_wdr_on");
     get_string_from_json(&(service_ctx.ifs), json_file, "ifs");
     get_int_from_json(&(service_ctx.port), json_file, "port");
 
@@ -960,6 +1031,8 @@ int process_json_conf_file(char *file)
     log_debug("serial_num: %s", service_ctx.serial_num);
     log_debug("ifs: %s", service_ctx.ifs);
     log_debug("factory_default_command: %s", service_ctx.factory_default_command ? service_ctx.factory_default_command : "(none)");
+    log_debug("imaging_enable: %d", service_ctx.imaging_enable);
+    log_debug("imaging_set_command: %s", service_ctx.imaging_set_command ? service_ctx.imaging_set_command : "(none)");
     log_debug("port: %d", service_ctx.port);
     log_debug("scopes:");
     for (i = 0; i < service_ctx.scopes_num; i++) {
@@ -1336,6 +1409,7 @@ void free_conf_file()
     if (service_ctx.model != NULL) free(service_ctx.model);
     if (service_ctx.manufacturer != NULL) free(service_ctx.manufacturer);
     if (service_ctx.factory_default_command != NULL) free(service_ctx.factory_default_command);
+    if (service_ctx.imaging_set_command != NULL) free(service_ctx.imaging_set_command);
     if (service_ctx.password != NULL) free(service_ctx.password);
     if (service_ctx.user != NULL) free(service_ctx.user);
 }
@@ -1362,6 +1436,9 @@ void print_conf_help()
     fprintf(stderr, "\tadv_synology_nvr=0\n");
     fprintf(stderr, "\t#Shell command run on SetSystemFactoryDefault (empty = operation not supported)\n");
     fprintf(stderr, "\tfactory_default_command=\n");
+    fprintf(stderr, "\t#Imaging service: 1 to advertise it, command run on SetImagingSettings (empty = read-only)\n");
+    fprintf(stderr, "\timaging_enable=0\n");
+    fprintf(stderr, "\timaging_set_command=\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "\t#Profile 0\n");
     fprintf(stderr, "\tname=Profile_0\n");
