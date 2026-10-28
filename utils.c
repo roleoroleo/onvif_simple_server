@@ -1940,3 +1940,12 @@ void *reboot_thread(void *arg)
 
     return NULL;
 }
+
+int run_command(const char *cmd)
+{
+    int ret = system(cmd);
+
+    if (ret != 0)
+        log_error("command failed with status %d: %s", ret, cmd);
+    return ret;
+}
