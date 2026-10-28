@@ -290,7 +290,7 @@ void output_http_headers(long content_length)
     fprintf(stdout, "Connection: close\r\n\r\n");
 }
 
-long cat_soap_fault(char* out, const char* fault_subcode, const char* fault_reason, const char* fault_detail)
+long cat_soap_fault(char* out, size_t cap, const char* fault_subcode, const char* fault_reason, const char* fault_detail)
 {
     const char* soap_fault_template = "<?xml version=\"1.0\" ?>"
                                       "<soapenv:Envelope xmlns:soapenv=\"http://www.w3.org/2003/05/soap-envelope\""
@@ -332,7 +332,7 @@ long cat_soap_fault(char* out, const char* fault_subcode, const char* fault_reas
         fflush(stdout);
     } else {
         // Output to buffer
-        strcpy(out, soap_fault);
+        snprintf(out, cap, "%s", soap_fault);
     }
 
     return len;
@@ -346,7 +346,10 @@ long cat_soap_fault(char* out, const char* fault_subcode, const char* fault_reas
  * @param ... The argument list to replace: src1, dst1, src2, dst2, etc...
  * @return the number of processed bytes
  */
-long cat(char *out, char *filename, int num, ...)
+// Core of cat()/cat_n(). When out is a buffer, at most cap bytes (including the
+// terminating NUL) are written. The return value is the full length either way,
+// so a result >= cap means the output was truncated.
+static long vcat(char *out, size_t cap, char *filename, int num, va_list ap)
 {
     va_list valist;
     char new_line[MAX_CAT_LEN];
@@ -356,6 +359,12 @@ long cat(char *out, char *filename, int num, ...)
     int i;
     long ret = 0;
     FILE *file;
+    size_t used = 0;
+    int truncated = 0;
+    int is_buf = (out != NULL) && (cap != SIZE_MAX || strcmp("stdout", out) != 0);
+
+    if (is_buf && cap > 0)
+        out[0] = '\0';
 
     // Reset SOAP fault flag for normal file operations
     g_last_response_was_soap_fault = 0;
@@ -383,7 +392,7 @@ long cat(char *out, char *filename, int num, ...)
     if (!file) {
         log_error("Unable to open file %s", filename);
         // Return ONVIF-compliant SOAP fault instead of empty response
-        return cat_soap_fault(out,
+        return cat_soap_fault(out, cap,
                               "ter:ActionNotSupported",
                               "Optional Action Not Implemented",
                               "The requested XML template is not available on this device");
@@ -392,7 +401,7 @@ long cat(char *out, char *filename, int num, ...)
     char line[MAX_CAT_LEN];
 
     while (fgets(line, sizeof(line), file)) {
-        va_start(valist, num);
+        va_copy(valist, ap);
 
         memset(new_line, '\0', sizeof(new_line));
         for (i = 0; i < num/2; i++) {
@@ -429,18 +438,28 @@ long cat(char *out, char *filename, int num, ...)
         }
 
         if ((out != NULL) && (*l != '\0')) {
-            if (strcmp("stdout", out) == 0) {
+            if (!is_buf) {
                 if (*l != '<') {
                     fprintf(stdout, " ");
                 }
                 fprintf(stdout, "%s", l);
             } else {
-                if (*l != '<') {
-                    sprintf(ptr, " ");
-                    ptr++;
+                size_t n = strlen(l);
+                size_t need = n + (*l != '<' ? 1 : 0);
+
+                if (truncated || used + need + 1 > cap) {
+                    // drop this and every later line, keep counting
+                    if (!truncated)
+                        log_error("Output buffer too small in cat function");
+                    truncated = 1;
+                } else {
+                    if (*l != '<')
+                        *ptr++ = ' ';
+                    memcpy(ptr, l, n);
+                    ptr += n;
+                    *ptr = '\0';
+                    used += need;
                 }
-                sprintf(ptr, "%s", l);
-                ptr += strlen(l);
             }
         }
         if ((*l != '\0') && (*l != '<')) {
@@ -451,6 +470,30 @@ long cat(char *out, char *filename, int num, ...)
     }
     fclose(file);
 
+    return ret;
+}
+
+// Unbounded: the caller must have sized out from a previous cat(NULL, ...) call.
+long cat(char *out, char *filename, int num, ...)
+{
+    va_list ap;
+    long ret;
+
+    va_start(ap, num);
+    ret = vcat(out, SIZE_MAX, filename, num, ap);
+    va_end(ap);
+    return ret;
+}
+
+// Bounded: writes at most cap bytes to out, including the terminating NUL.
+long cat_n(char *out, size_t cap, char *filename, int num, ...)
+{
+    va_list ap;
+    long ret;
+
+    va_start(ap, num);
+    ret = vcat(out, cap, filename, num, ap);
+    va_end(ap);
     return ret;
 }
 
