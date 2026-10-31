@@ -112,7 +112,7 @@ typedef struct {
     char *user;
     char *password;
 
-    //Device Information
+    // Device Information
     char *manufacturer;
     char *model;
     char *firmware_ver;
@@ -125,14 +125,36 @@ typedef struct {
 
     char *ifs;
 
+    // Advanced options
     int adv_enable_media2;
+    int adv_enable_imaging;          /* advertise the Imaging service */
     int adv_empty_if_unknown;
     int adv_fault_if_unknown;
     int adv_fault_if_set;
     int adv_synology_nvr;
 
     char *factory_default_command;   /* SetSystemFactoryDefault hook; NULL = op not supported */
-    int imaging_enable;              /* advertise the Imaging service */
+
+    // Media service
+    stream_profile_t *profiles;
+    int profiles_num;
+
+    char **scopes;
+    int scopes_num;
+
+    // Relay service
+    relay_output_t *relay_outputs;
+    int relay_outputs_num;
+
+    // PZZ service
+    ptz_node_t ptz_node;
+
+    // Event service
+    event_t *events;
+    int events_enable;
+    int events_num;
+
+    // Imaging service
     char *imaging_set_command;       /* SetImagingSettings hook; NULL = op not supported */
     char *imaging_focus_command;     /* Move/Stop focus hook; NULL = no focus control */
     char *imaging_status_command;    /* prints "<position> <IDLE|MOVING|UNKNOWN>"; NULL = UNKNOWN */
@@ -146,18 +168,6 @@ typedef struct {
     int imaging_exposure_auto;
     int imaging_wdr_on;
 
-    stream_profile_t *profiles;
-    int profiles_num;
-
-    char **scopes;
-    int scopes_num;
-
-    relay_output_t *relay_outputs;
-    int relay_outputs_num;
-    ptz_node_t ptz_node;
-    event_t *events;
-    int events_enable;
-    int events_num;
 } service_context_t;
 
 // returns 0 on success -1 on error
