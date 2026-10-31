@@ -559,10 +559,9 @@ int main(int argc, char **argv)
                 log_fatal("Error joining IPv4 multicast group: %s", strerror(errno));
                 close(sock); fclose(fLog); exit(EXIT_FAILURE);
             }
+            if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF, &mreq4.imr_interface, sizeof(mreq4.imr_interface)) < 0)
+                log_warn("Cannot set IPv4 multicast interface: %s", strerror(errno));
         }
-
-        if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF, &mreq4.imr_interface, sizeof(mreq4.imr_interface)) < 0)
-            log_warn("Cannot set IPv4 multicast interface: %s", strerror(errno));
 
         /* IPv4 mcast destination: IPv4-mapped on the dual-stack socket, real IPv4 on AF_INET. */
         memset(&addr_mcast4, 0, sizeof(addr_mcast4));
