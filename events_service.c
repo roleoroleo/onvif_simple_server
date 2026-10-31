@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 roleo.
+ * Copyright (c) 2026 roleo.
  * Copyright (c) 2025 Thingino project.
  *
  * This program is free software: you can redistribute it and/or modify
