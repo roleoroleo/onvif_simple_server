@@ -554,11 +554,13 @@ int main(int argc, char **argv)
             struct ip_mreq mreq4;
             memset(&mreq4, 0, sizeof(mreq4));
             inet_pton(AF_INET, MULTICAST_ADDRESS, &mreq4.imr_multiaddr);
-            mreq4.imr_interface.s_addr = INADDR_ANY;
+            mreq4.imr_interface.s_addr = inet_addr(address);
             if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq4, sizeof(mreq4)) < 0) {
                 log_fatal("Error joining IPv4 multicast group: %s", strerror(errno));
                 close(sock); fclose(fLog); exit(EXIT_FAILURE);
             }
+            if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF, &mreq4.imr_interface, sizeof(mreq4.imr_interface)) < 0)
+                log_warn("Cannot set IPv4 multicast interface: %s", strerror(errno));
         }
 
         /* IPv4 mcast destination: IPv4-mapped on the dual-stack socket, real IPv4 on AF_INET. */
