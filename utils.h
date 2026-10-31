@@ -80,6 +80,9 @@ void destroy_shared_memory(void *shared_area, int destroy_all);
 int sem_memory_wait();
 int sem_memory_post();
 long cat(char *out, char *filename, int num, ...);
+
+// Run a configured shell command; logs and returns a non-zero status on failure
+int run_command(const char *cmd);
 long cat_soap_fault(char* out, const char* fault_subcode, const char* fault_reason, const char* fault_detail);
 void output_http_headers(long content_length);
 
