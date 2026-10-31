@@ -144,7 +144,7 @@ int imaging_set_imaging_settings()
     ezxml_t settings, sub;
     const char *val;
     double d;
-    int i, ret;
+    int i;
 
     if ((service_ctx.imaging_set_command == NULL) ||
             (service_ctx.imaging_set_command[0] == '\0')) {
@@ -219,9 +219,7 @@ int imaging_set_imaging_settings()
             unsetenv(names[i]);
     }
 
-    ret = run_command(service_ctx.imaging_set_command);
-    if (ret != 0) {
-        log_error("imaging_set_command failed with status %d", ret);
+    if (run_command(service_ctx.imaging_set_command) != 0) {
         send_action_failed_fault("imaging_service", -3);
         return -3;
     }
@@ -267,13 +265,10 @@ int imaging_get_move_options()
 static int run_focus(double speed)
 {
     char buf[32];
-    int ret;
 
     snprintf(buf, sizeof(buf), "%.4f", speed);
     setenv("ONVIF_IMAGING_FOCUS_SPEED", buf, 1);
-    ret = system(service_ctx.imaging_focus_command);
-    if (ret != 0) {
-        log_error("imaging_focus_command failed with status %d", ret);
+    if (run_command(service_ctx.imaging_focus_command) != 0) {
         send_action_failed_fault("imaging_service", -3);
         return -3;
     }
