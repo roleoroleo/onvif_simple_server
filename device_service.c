@@ -31,10 +31,10 @@
 
 extern service_context_t service_ctx;
 
-/* Imaging is opt-in (imaging_enable): when disabled the fragments are empty. */
+/* Imaging is opt-in (adv_enable_imaging): when disabled the fragments are empty. */
 static void build_imaging_service(char *buf, size_t size, const char *address, int with_capabilities)
 {
-    if (!service_ctx.imaging_enable) {
+    if (!service_ctx.adv_enable_imaging) {
         buf[0] = '\0';
         return;
     }
@@ -53,7 +53,7 @@ static void build_imaging_service(char *buf, size_t size, const char *address, i
 
 static void build_imaging_capability(char *buf, size_t size, const char *address)
 {
-    if (!service_ctx.imaging_enable) {
+    if (!service_ctx.adv_enable_imaging) {
         buf[0] = '\0';
         return;
     }
@@ -666,7 +666,7 @@ int device_get_capabilities()
                 "%EVENTS_BASESUBSCRIPTION%", ebasesubscription,
                 "%EVENTS_PULLPOINT%", epullpoint);
     } else if (icategory == 16) {
-        if (!service_ctx.imaging_enable) {
+        if (!service_ctx.adv_enable_imaging) {
             send_fault("device_service", "Receiver", "ter:ActionNotSupported", "ter:NoSuchService", "No such service", "The requested WSDL service category is not supported by the device");
             return -3;
         }
