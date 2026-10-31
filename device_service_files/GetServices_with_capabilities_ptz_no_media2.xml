@@ -114,6 +114,7 @@
                     <tt:Minor>12</tt:Minor>
                 </tds:Version>
             </tds:Service>
+            %IMAGING_SERVICE%
         </tds:GetServicesResponse>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>

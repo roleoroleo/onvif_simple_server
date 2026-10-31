@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope"
+                   xmlns:timg="http://www.onvif.org/ver20/imaging/wsdl"
+                   xmlns:tt="http://www.onvif.org/ver10/schema">
+    <SOAP-ENV:Body>
+        <timg:GetOptionsResponse>
+            <timg:ImagingOptions>
+                <tt:Brightness><tt:Min>0</tt:Min><tt:Max>1</tt:Max></tt:Brightness>
+                <tt:ColorSaturation><tt:Min>0</tt:Min><tt:Max>1</tt:Max></tt:ColorSaturation>
+                <tt:Contrast><tt:Min>0</tt:Min><tt:Max>1</tt:Max></tt:Contrast>
+                <tt:Exposure>
+                    <tt:Mode>AUTO</tt:Mode>
+                    <tt:Mode>MANUAL</tt:Mode>
+                </tt:Exposure>
+                %FOCUS%
+                <tt:IrCutFilterModes>ON</tt:IrCutFilterModes>
+                <tt:IrCutFilterModes>OFF</tt:IrCutFilterModes>
+                <tt:Sharpness><tt:Min>0</tt:Min><tt:Max>1</tt:Max></tt:Sharpness>
+                <tt:WideDynamicRange>
+                    <tt:Mode>ON</tt:Mode>
+                    <tt:Mode>OFF</tt:Mode>
+                </tt:WideDynamicRange>
+                <tt:WhiteBalance>
+                    <tt:Mode>AUTO</tt:Mode>
+                    <tt:Mode>MANUAL</tt:Mode>
+                </tt:WhiteBalance>
+            </timg:ImagingOptions>
+        </timg:GetOptionsResponse>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>

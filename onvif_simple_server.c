@@ -32,6 +32,7 @@
 #include "ptz_service.h"
 #include "events_service.h"
 #include "deviceio_service.h"
+#include "imaging_service.h"
 #include "fault.h"
 #include "ezxml_wrapper.h"
 #include "conf.h"
@@ -267,7 +268,8 @@ int main(int argc, char ** argv)
                 (strstr(tmp, "media2_service") != NULL) ||
                 (strstr(tmp, "ptz_service") != NULL) ||
                 (strstr(tmp, "events_service") != NULL) ||
-                (strstr(tmp, "deviceio_service") != NULL)) {
+                (strstr(tmp, "deviceio_service") != NULL) ||
+                (strstr(tmp, "imaging_service") != NULL)) {
             tmp = argv[argc - 1];
         } else {
             tmp = argv[0];
@@ -723,6 +725,32 @@ int main(int argc, char ** argv)
                     send_empty_response("tmd", method);
                 } else {
                     deviceio_unsupported(method);
+                }
+            }
+        } else if (strcasecmp("imaging_service", prog_name) == 0) {
+            if (service_ctx.imaging_enable == 0) {
+                send_action_not_supported_fault("imaging_service");
+            } else if (strcasecmp(method, "GetServiceCapabilities") == 0) {
+                imaging_get_service_capabilities();
+            } else if (strcasecmp(method, "GetImagingSettings") == 0) {
+                imaging_get_imaging_settings();
+            } else if (strcasecmp(method, "SetImagingSettings") == 0) {
+                imaging_set_imaging_settings();
+            } else if (strcasecmp(method, "GetOptions") == 0) {
+                imaging_get_options();
+            } else if (strcasecmp(method, "GetMoveOptions") == 0) {
+                imaging_get_move_options();
+            } else if (strcasecmp(method, "Move") == 0) {
+                imaging_move();
+            } else if (strcasecmp(method, "Stop") == 0) {
+                imaging_stop();
+            } else if (strcasecmp(method, "GetStatus") == 0) {
+                imaging_get_status();
+            } else {
+                if (service_ctx.adv_empty_if_unknown == 1) {
+                    send_empty_response("timg", method);
+                } else {
+                    imaging_unsupported(method);
                 }
             }
         }
