@@ -325,23 +325,42 @@ int device_get_service_capabilities()
     return cat("stdout", "device_service_files/GetServiceCapabilities.xml", 0);
 }
 
+/* Copy a configured string into buf with XML special characters escaped. */
+static const char *xml_text(char *buf, size_t size, const char *s)
+{
+    snprintf(buf, size, "%s", s != NULL ? s : "");
+    if (html_escape(buf, (int) size) < 0)
+        buf[0] = '\0';
+
+    return buf;
+}
+
 int device_get_device_information()
 {
+    char manufacturer[MAX_LEN], model[MAX_LEN], firmware_ver[MAX_LEN];
+    char serial_num[MAX_LEN], hardware_id[MAX_LEN];
+
+    xml_text(manufacturer, sizeof(manufacturer), service_ctx.manufacturer);
+    xml_text(model, sizeof(model), service_ctx.model);
+    xml_text(firmware_ver, sizeof(firmware_ver), service_ctx.firmware_ver);
+    xml_text(serial_num, sizeof(serial_num), service_ctx.serial_num);
+    xml_text(hardware_id, sizeof(hardware_id), service_ctx.hardware_id);
+
     long size = cat(NULL, "device_service_files/GetDeviceInformation.xml", 10,
-            "%MANUFACTURER%", service_ctx.manufacturer,
-            "%MODEL%", service_ctx.model,
-            "%FIRMWARE_VERSION%", service_ctx.firmware_ver,
-            "%SERIAL_NUMBER%", service_ctx.serial_num,
-            "%HARDWARE_ID%", service_ctx.hardware_id);
+            "%MANUFACTURER%", manufacturer,
+            "%MODEL%", model,
+            "%FIRMWARE_VERSION%", firmware_ver,
+            "%SERIAL_NUMBER%", serial_num,
+            "%HARDWARE_ID%", hardware_id);
 
     output_http_headers(size);
 
     return cat("stdout", "device_service_files/GetDeviceInformation.xml", 10,
-            "%MANUFACTURER%", service_ctx.manufacturer,
-            "%MODEL%", service_ctx.model,
-            "%FIRMWARE_VERSION%", service_ctx.firmware_ver,
-            "%SERIAL_NUMBER%", service_ctx.serial_num,
-            "%HARDWARE_ID%", service_ctx.hardware_id);
+            "%MANUFACTURER%", manufacturer,
+            "%MODEL%", model,
+            "%FIRMWARE_VERSION%", firmware_ver,
+            "%SERIAL_NUMBER%", serial_num,
+            "%HARDWARE_ID%", hardware_id);
 }
 
 int device_get_system_date_and_time()
