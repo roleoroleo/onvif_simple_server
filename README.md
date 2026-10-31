@@ -19,9 +19,9 @@ But usually is enough to work with an onvif client.
 ## Table of Contents
 - [Build](#build)
 - [Httpd](#httpd)
-- [Table of Contents](#table-of-contents)
 - [Configuration](#configuration)
 - [Compatibility](#compatibility)
+- [Testing](#testing)
 - [Credits](#credits)
 - [License](#license)
 - [Disclaimer](#disclaimer)
@@ -407,6 +407,16 @@ I tested this program with the following clients:
 
 If you test it with other clients or NVR, please let me know opening a issue or a pull request.
 
+Services at a glance (details of each function below):
+
+| Service | Needs configuration | Notes |
+|---------|---------------------|-------|
+| Device | no | Read-only information plus `SystemReboot` |
+| Media / Media2 | profiles | Stream and snapshot URIs, encoder and source configurations |
+| PTZ | `ptz=1` and the PTZ commands | Each action runs the configured shell command |
+| DeviceIO | relay outputs | Relay state is changed by the configured `open` and `close` commands |
+| Events | event entries | Pull-point and basic notification subscriptions |
+
 Below a list of the implemented functions, all other functions return a generic soap fault.
 
 **Device**
@@ -554,6 +564,10 @@ SetHomePosition
 SetPreset
 Stop
 ```
+
+## Testing
+Run `make test` to build and run the unit tests in `test/`. They use the native host compiler and stub mbedtls headers, so no crypto library is required.
+The tests currently cover the helpers in `utils.c`. The SOAP handlers are not covered yet, so test changes to them against a real client (see [Compatibility](#compatibility)).
 
 ## Credits
 Thanks to:

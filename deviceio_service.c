@@ -268,7 +268,10 @@ int deviceio_set_relay_output_state()
     }
 
     if (sys_command[0] != '\0') {
-        system(sys_command);
+        if (run_command(sys_command) != 0) {
+            send_action_failed_fault("deviceio_service", -3);
+            return -3;
+        }
     }
 
     long size = cat(NULL, "deviceio_service_files/SetRelayOutputState.xml", 0);

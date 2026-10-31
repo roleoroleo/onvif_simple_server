@@ -212,7 +212,7 @@ static void send_bye(int s, const struct sockaddr *dst, socklen_t dst_len,
                "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr_str);
     message = (char *) malloc((size + 1) * sizeof(char));
     if (!message) { log_fatal("Malloc error."); return; }
-    cat(message, template_file, 14,
+    cat_n(message, size + 1, template_file, 14,
         "%MSG_UUID%", msg_uuid, "%MSG_NUMBER%", s_tmp, "%UUID%", uuid,
         "%SCOPES%", scopes,
         "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr_str);
@@ -296,7 +296,7 @@ static void handle_probe(int s, struct sockaddr *dst, socklen_t dst_len,
                "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr_str);
     message_loop = (char *) malloc((size + 1) * sizeof(char));
     if (!message_loop) { log_error("Malloc error."); return; }
-    cat(message_loop, template_file, 16,
+    cat_n(message_loop, size + 1, template_file, 16,
         "%MSG_UUID%", msg_uuid, "%REL_TO_UUID%", relates_to_uuid,
         "%MSG_NUMBER%", s_tmp, "%UUID%", uuid, "%SCOPES%", scopes_probe,
         "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr_str);
@@ -616,7 +616,7 @@ int main(int argc, char **argv)
         if (!message) {
             log_fatal("Malloc error."); close(sock); fclose(fLog); exit(EXIT_FAILURE);
         }
-        cat(message, template_file, 14,
+        cat_n(message, size + 1, template_file, 14,
             "%MSG_UUID%", msg_uuid, "%MSG_NUMBER%", s_tmp, "%UUID%", uuid,
             "%SCOPES%", scopes,
             "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr);
@@ -640,7 +640,7 @@ int main(int argc, char **argv)
                    "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr6);
         message = (char *) malloc((size + 1) * sizeof(char));
         if (message) {
-            cat(message, template_file, 14,
+            cat_n(message, size + 1, template_file, 14,
                 "%MSG_UUID%", msg_uuid, "%MSG_NUMBER%", s_tmp, "%UUID%", uuid,
                 "%SCOPES%", scopes,
                 "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr6);

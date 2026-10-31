@@ -22,6 +22,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <limits.h>
+#include <stdint.h>
 #include <errno.h>
 #include <net/if.h>
 
@@ -33,9 +34,44 @@
 
 extern service_context_t service_ctx;
 
+/* Grow arr from n - 1 to n elements and zero the new last one (callers add
+ * exactly one element at a time). Returns NULL on failure; arr is still valid then. */
+static void *grow(void *arr, int n, size_t size)
+{
+    void *p;
+
+    if (n <= 0 || size == 0 || (size_t) n > SIZE_MAX / size) {
+        log_error("Invalid array size");
+        return NULL;
+    }
+    p = realloc(arr, n * size);
+    if (p == NULL)
+        log_error("Out of memory");
+    else
+        memset((char *) p + (n - 1) * size, 0, size);
+    return p;
+}
+
+/* Copy src into a new string stored in *dst, freeing the previous value so a
+ * repeated option does not leak. *dst must be NULL or a heap string.
+ * Returns -1 on failure and leaves *dst untouched. */
+static int dup_str(char **dst, const char *src)
+{
+    char *p = strdup(src);
+
+    if (p == NULL) {
+        log_error("Out of memory");
+        return -1;
+    }
+    free(*dst);
+    *dst = p;
+    return 0;
+}
+
 int process_conf_file(char *file)
 {
     FILE *fF;
+    void *grown;
     char line[MAX_LEN];
     char param[MAX_LEN];
     char value[MAX_LEN];
@@ -144,8 +180,10 @@ int process_conf_file(char *file)
         } else {
             strncpy(value, second + 1, line_len - (second - first) - 1);
         }
-        if ((value[0] != '\0') && (value[0] == '"') && (value[strlen(value) - 1] == '"')) {
-            strncpy(value, &value[1], strlen(value) - 2);
+        size_t value_len = strlen(value);
+        if ((value_len >= 2) && (value[0] == '"') && (value[value_len - 1] == '"')) {
+            memmove(value, &value[1], value_len - 2);
+            value[value_len - 2] = '\0';
         }
         log_debug("%s: %s", param, value);
 
@@ -168,34 +206,39 @@ int process_conf_file(char *file)
                 }
             }
         } else if (strcasecmp(param, "user") == 0) {
-            service_ctx.user = (char *) malloc(strlen(value) + 1);
-            snprintf(service_ctx.user, strlen(value) + 1, "%s", value);
+            if (dup_str(&service_ctx.user, value) != 0)
+                return -2;
         } else if (strcasecmp(param, "password") == 0) {
-            service_ctx.password = (char *) malloc(strlen(value) + 1);
-            snprintf(service_ctx.password, strlen(value) + 1, "%s", value);
+            if (dup_str(&service_ctx.password, value) != 0)
+                return -2;
         } else if (strcasecmp(param, "manufacturer") == 0) {
-            service_ctx.manufacturer = (char *) malloc(strlen(value) + 1);
-            snprintf(service_ctx.manufacturer, strlen(value) + 1, "%s", value);
+            if (dup_str(&service_ctx.manufacturer, value) != 0)
+                return -2;
         } else if (strcasecmp(param, "model") == 0) {
-            service_ctx.model = (char *) malloc(strlen(value) + 1);
-            snprintf(service_ctx.model, strlen(value) + 1, "%s", value);
+            if (dup_str(&service_ctx.model, value) != 0)
+                return -2;
         } else if (strcasecmp(param, "firmware_ver") == 0) {
-            service_ctx.firmware_ver= (char *) malloc(strlen(value) + 1);
-            snprintf(service_ctx.firmware_ver, strlen(value) + 1, "%s", value);
+            if (dup_str(&service_ctx.firmware_ver, value) != 0)
+                return -2;
         } else if (strcasecmp(param, "serial_num") == 0) {
-            service_ctx.serial_num = (char *) malloc(strlen(value) + 1);
-            snprintf(service_ctx.serial_num, strlen(value) + 1, "%s", value);
+            if (dup_str(&service_ctx.serial_num, value) != 0)
+                return -2;
         } else if (strcasecmp(param, "hardware_id") == 0) {
-            service_ctx.hardware_id = (char *) malloc(strlen(value) + 1);
-            snprintf(service_ctx.hardware_id, strlen(value) + 1, "%s", value);
+            if (dup_str(&service_ctx.hardware_id, value) != 0)
+                return -2;
         } else if (strcasecmp(param, "scope") == 0) {
             service_ctx.scopes_num++;
-            service_ctx.scopes = (char **) realloc(service_ctx.scopes, service_ctx.scopes_num * sizeof(char *));
-            service_ctx.scopes[service_ctx.scopes_num - 1] = (char *) malloc((strlen(value) + 1) * sizeof(char));
-            snprintf(service_ctx.scopes[service_ctx.scopes_num - 1], strlen(value) + 1, "%s", value);
+            grown = grow(service_ctx.scopes, service_ctx.scopes_num, sizeof(char *));
+            if (grown == NULL) {
+                service_ctx.scopes_num--;
+                return -2;
+            }
+            service_ctx.scopes = grown;
+            if (dup_str(&service_ctx.scopes[service_ctx.scopes_num - 1], value) != 0)
+                return -2;
         } else if (strcasecmp(param, "ifs") == 0) {
-            service_ctx.ifs = (char *) malloc(strlen(value) + 1);
-            snprintf(service_ctx.ifs, strlen(value) + 1, "%s", value);
+            if (dup_str(&service_ctx.ifs, value) != 0)
+                return -2;
         } else if (strcasecmp(param, "adv_enable_media2") == 0) {
             if (strcasecmp(value, "1") == 0)
                 service_ctx.adv_enable_media2 = 1;
@@ -212,20 +255,20 @@ int process_conf_file(char *file)
             if (strcasecmp(value, "1") == 0)
                 service_ctx.adv_synology_nvr = 1;
         } else if (strcasecmp(param, "factory_default_command") == 0) {
-            service_ctx.factory_default_command = (char *) malloc(strlen(value) + 1);
-            snprintf(service_ctx.factory_default_command, strlen(value) + 1, "%s", value);
+            if (dup_str(&service_ctx.factory_default_command, value) != 0)
+                return -2;
         } else if (strcasecmp(param, "imaging_enable") == 0) {
             if (strcasecmp(value, "1") == 0)
                 service_ctx.imaging_enable = 1;
         } else if (strcasecmp(param, "imaging_set_command") == 0) {
-            service_ctx.imaging_set_command = (char *) malloc(strlen(value) + 1);
-            snprintf(service_ctx.imaging_set_command, strlen(value) + 1, "%s", value);
+            if (dup_str(&service_ctx.imaging_set_command, value) != 0)
+                return -2;
         } else if (strcasecmp(param, "imaging_focus_command") == 0) {
-            service_ctx.imaging_focus_command = (char *) malloc(strlen(value) + 1);
-            snprintf(service_ctx.imaging_focus_command, strlen(value) + 1, "%s", value);
+            if (dup_str(&service_ctx.imaging_focus_command, value) != 0)
+                return -2;
         } else if (strcasecmp(param, "imaging_status_command") == 0) {
-            service_ctx.imaging_status_command = (char *) malloc(strlen(value) + 1);
-            snprintf(service_ctx.imaging_status_command, strlen(value) + 1, "%s", value);
+            if (dup_str(&service_ctx.imaging_status_command, value) != 0)
+                return -2;
         } else if (strcasecmp(param, "imaging_focus_auto") == 0) {
             service_ctx.imaging_focus_auto = (strcasecmp(value, "1") == 0);
         } else if (strcasecmp(param, "imaging_brightness") == 0) {
@@ -248,7 +291,12 @@ int process_conf_file(char *file)
         //Media Profile for ONVIF Media Service
         } else if (strcasecmp(param, "name") == 0) {
             service_ctx.profiles_num++;
-            service_ctx.profiles = (stream_profile_t *) realloc(service_ctx.profiles, service_ctx.profiles_num * sizeof(stream_profile_t));
+            grown = grow(service_ctx.profiles, service_ctx.profiles_num, sizeof(stream_profile_t));
+            if (grown == NULL) {
+                service_ctx.profiles_num--;
+                return -2;
+            }
+            service_ctx.profiles = grown;
 
             size_t vlen = strlen(value);
             while (vlen > 0 && value[vlen - 1] == '_') value[--vlen] = '\0';
@@ -262,8 +310,8 @@ int process_conf_file(char *file)
                     *p = '_';
                 }
             }
-            service_ctx.profiles[service_ctx.profiles_num - 1].name = (char *) malloc(strlen(value) + 1);
-            snprintf(service_ctx.profiles[service_ctx.profiles_num - 1].name, strlen(value) + 1, "%s", value);
+            if (dup_str(&service_ctx.profiles[service_ctx.profiles_num - 1].name, value) != 0)
+                return -2;
             service_ctx.profiles[service_ctx.profiles_num - 1].width = 0;
             service_ctx.profiles[service_ctx.profiles_num - 1].height = 0;
             service_ctx.profiles[service_ctx.profiles_num - 1].url = NULL;
@@ -300,11 +348,11 @@ int process_conf_file(char *file)
                 return -2;
             }
         } else if (strcasecmp(param, "url") == 0) {
-            service_ctx.profiles[service_ctx.profiles_num - 1].url = (char *) malloc(strlen(value) + 1);
-            snprintf(service_ctx.profiles[service_ctx.profiles_num - 1].url, strlen(value) + 1, "%s", value);
+            if (dup_str(&service_ctx.profiles[service_ctx.profiles_num - 1].url, value) != 0)
+                return -2;
         } else if (strcasecmp(param, "snapurl") == 0) {
-            service_ctx.profiles[service_ctx.profiles_num - 1].snapurl = (char *) malloc(strlen(value) + 1);
-            snprintf(service_ctx.profiles[service_ctx.profiles_num - 1].snapurl, strlen(value) + 1, "%s", value);
+            if (dup_str(&service_ctx.profiles[service_ctx.profiles_num - 1].snapurl, value) != 0)
+                return -2;
         } else if (strcasecmp(param, "type") == 0) {
             if (strcasecmp(value, "JPEG") == 0)
                 service_ctx.profiles[service_ctx.profiles_num - 1].type = JPEG;
@@ -491,88 +539,88 @@ int process_conf_file(char *file)
             }
         } else if (strcasecmp(param, "get_position") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
-                service_ctx.ptz_node.get_position = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.ptz_node.get_position, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.ptz_node.get_position, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "is_moving") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
-                service_ctx.ptz_node.is_moving = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.ptz_node.is_moving, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.ptz_node.is_moving, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "move_left") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
-                service_ctx.ptz_node.move_left = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.ptz_node.move_left, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.ptz_node.move_left, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "move_right") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
-                service_ctx.ptz_node.move_right = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.ptz_node.move_right, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.ptz_node.move_right, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "move_up") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
-                service_ctx.ptz_node.move_up = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.ptz_node.move_up, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.ptz_node.move_up, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "move_down") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
-                service_ctx.ptz_node.move_down = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.ptz_node.move_down, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.ptz_node.move_down, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "move_in") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
-                service_ctx.ptz_node.move_in = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.ptz_node.move_in, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.ptz_node.move_in, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "move_out") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
-                service_ctx.ptz_node.move_out = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.ptz_node.move_out, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.ptz_node.move_out, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "move_stop") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
-                service_ctx.ptz_node.move_stop = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.ptz_node.move_stop, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.ptz_node.move_stop, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "move_preset") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
-                service_ctx.ptz_node.move_preset = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.ptz_node.move_preset, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.ptz_node.move_preset, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "goto_home_position") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
-                service_ctx.ptz_node.goto_home_position = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.ptz_node.goto_home_position, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.ptz_node.goto_home_position, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "set_preset") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
-                service_ctx.ptz_node.set_preset = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.ptz_node.set_preset, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.ptz_node.set_preset, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "set_home_position") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
-                service_ctx.ptz_node.set_home_position = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.ptz_node.set_home_position, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.ptz_node.set_home_position, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "remove_preset") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
-                service_ctx.ptz_node.remove_preset = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.ptz_node.remove_preset, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.ptz_node.remove_preset, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "jump_to_abs") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
-                service_ctx.ptz_node.jump_to_abs = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.ptz_node.jump_to_abs, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.ptz_node.jump_to_abs, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "jump_to_rel") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
-                service_ctx.ptz_node.jump_to_rel = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.ptz_node.jump_to_rel, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.ptz_node.jump_to_rel, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "get_presets") == 0) {
             if (service_ctx.ptz_node.enable == 1) {
-                service_ctx.ptz_node.get_presets = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.ptz_node.get_presets, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.ptz_node.get_presets, value) != 0)
+                    return -2;
             }
 
         //Relay outputs
@@ -582,7 +630,12 @@ int process_conf_file(char *file)
                 log_error("Too many relay outputs, max is: %d", MAX_RELAY_OUTPUTS);
                 return -2;
             }
-            service_ctx.relay_outputs = (relay_output_t *) realloc(service_ctx.relay_outputs, service_ctx.relay_outputs_num * sizeof(relay_output_t));
+            grown = grow(service_ctx.relay_outputs, service_ctx.relay_outputs_num, sizeof(relay_output_t));
+            if (grown == NULL) {
+                service_ctx.relay_outputs_num--;
+                return -2;
+            }
+            service_ctx.relay_outputs = grown;
             if (strcasecmp(value, "close") == 0) {
                 service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
             } else {
@@ -591,11 +644,11 @@ int process_conf_file(char *file)
             service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = NULL;
             service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = NULL;
         } else if (strcasecmp(param, "close") == 0) {
-            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = (char *) malloc(strlen(value) + 1);
-            snprintf(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close, strlen(value) + 1, "%s", value);
+            if (dup_str(&service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close, value) != 0)
+                return -2;
         } else if (strcasecmp(param, "open") == 0) {
-            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = (char *) malloc(strlen(value) + 1);
-            snprintf(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open, strlen(value) + 1, "%s", value);
+            if (dup_str(&service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open, value) != 0)
+                return -2;
 
         //Events Profile for ONVIF Events Service
         } else if (strcasecmp(param, "events") == 0) {
@@ -613,34 +666,39 @@ int process_conf_file(char *file)
                     log_error("Too many events, max is: %d", MAX_EVENTS);
                     return -2;
                 }
-                service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
+                grown = grow(service_ctx.events, service_ctx.events_num, sizeof(event_t));
+                if (grown == NULL) {
+                    service_ctx.events_num--;
+                    return -2;
+                }
+                service_ctx.events = grown;
                 service_ctx.events[service_ctx.events_num - 1].topic = NULL;
                 service_ctx.events[service_ctx.events_num - 1].source_name = NULL;
                 service_ctx.events[service_ctx.events_num - 1].source_type = NULL;
                 service_ctx.events[service_ctx.events_num - 1].source_value = NULL;
                 service_ctx.events[service_ctx.events_num - 1].input_file = NULL;
-                service_ctx.events[service_ctx.events_num - 1].topic = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.events[service_ctx.events_num - 1].topic, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.events[service_ctx.events_num - 1].topic, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "source_name") == 0) {
             if (service_ctx.events_enable != EVENTS_NONE) {
-                service_ctx.events[service_ctx.events_num - 1].source_name = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.events[service_ctx.events_num - 1].source_name, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.events[service_ctx.events_num - 1].source_name, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "source_type") == 0) {
             if (service_ctx.events_enable != EVENTS_NONE) {
-                service_ctx.events[service_ctx.events_num - 1].source_type = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.events[service_ctx.events_num - 1].source_type, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.events[service_ctx.events_num - 1].source_type, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "source_value") == 0) {
             if (service_ctx.events_enable != EVENTS_NONE) {
-                service_ctx.events[service_ctx.events_num - 1].source_value = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.events[service_ctx.events_num - 1].source_value, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.events[service_ctx.events_num - 1].source_value, value) != 0)
+                    return -2;
             }
         } else if (strcasecmp(param, "input_file") == 0) {
             if (service_ctx.events_enable != EVENTS_NONE) {
-                service_ctx.events[service_ctx.events_num - 1].input_file = (char *) malloc(strlen(value) + 1);
-                snprintf(service_ctx.events[service_ctx.events_num - 1].input_file, strlen(value) + 1, "%s", value);
+                if (dup_str(&service_ctx.events[service_ctx.events_num - 1].input_file, value) != 0)
+                    return -2;
             }
         } else {
             log_warn("Unrecognized option: %s", line);
@@ -657,47 +715,52 @@ int process_conf_file(char *file)
                 return -2;
             }
             log_debug("Adding event for relay output %d", i);
-            service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
-            service_ctx.events[service_ctx.events_num - 1].topic = (char *) malloc(strlen("tns1:Device/Trigger/Relay") + 1);
-            snprintf(service_ctx.events[service_ctx.events_num - 1].topic, strlen("tns1:Device/Trigger/Relay") + 1, "%s", "tns1:Device/Trigger/Relay");
+            grown = grow(service_ctx.events, service_ctx.events_num, sizeof(event_t));
+            if (grown == NULL) {
+                service_ctx.events_num--;
+                return -2;
+            }
+            service_ctx.events = grown;
+            if (dup_str(&service_ctx.events[service_ctx.events_num - 1].topic, "tns1:Device/Trigger/Relay") != 0)
+                return -2;
             log_debug("topic: tns1:Device/Trigger/Relay");
-            service_ctx.events[service_ctx.events_num - 1].source_name = (char *) malloc(strlen("RelayToken") + 1);
-            snprintf(service_ctx.events[service_ctx.events_num - 1].source_name, strlen("RelayToken") + 1, "%s", "RelayToken");
+            if (dup_str(&service_ctx.events[service_ctx.events_num - 1].source_name, "RelayToken") != 0)
+                return -2;
             log_debug("source_name: RelayToken");
-            service_ctx.events[service_ctx.events_num - 1].source_type = (char *) malloc(strlen("tt:ReferenceToken") + 1);
-            snprintf(service_ctx.events[service_ctx.events_num - 1].source_type, strlen("tt:ReferenceToken") + 1, "%s", "tt:ReferenceToken");
+            if (dup_str(&service_ctx.events[service_ctx.events_num - 1].source_type, "tt:ReferenceToken") != 0)
+                return -2;
             log_debug("source_type: tt:ReferenceToken");
             snprintf(stmp, sizeof(stmp), "RelayOutputToken_%d", i);
-            service_ctx.events[service_ctx.events_num - 1].source_value = (char *) malloc(strlen(stmp) + 1);
-            snprintf(service_ctx.events[service_ctx.events_num - 1].source_value, strlen(stmp) + 1, "%s", stmp);
+            if (dup_str(&service_ctx.events[service_ctx.events_num - 1].source_value, stmp) != 0)
+                return -2;
             log_debug("source_value: %s", stmp);
             snprintf(stmp, sizeof(stmp), "/tmp/onvif_notify_server/relay_output_%d", i);
-            service_ctx.events[service_ctx.events_num - 1].input_file = (char *) malloc(strlen(stmp) + 1);
-            snprintf(service_ctx.events[service_ctx.events_num - 1].input_file, strlen(stmp) + 1, "%s", stmp);
+            if (dup_str(&service_ctx.events[service_ctx.events_num - 1].input_file, stmp) != 0)
+                return -2;
             log_debug("input_file: %s", stmp);
         }
     }
 
     // If a string option is NULL, set a default value
     if (service_ctx.manufacturer == NULL) {
-        service_ctx.manufacturer = (char *) malloc(strlen(DEFAULT_MANUFACTURER) + 1);
-        snprintf(service_ctx.manufacturer, strlen(DEFAULT_MANUFACTURER) + 1, "%s", DEFAULT_MANUFACTURER);
+        if (dup_str(&service_ctx.manufacturer, DEFAULT_MANUFACTURER) != 0)
+            return -2;
     }
     if (service_ctx.model == NULL) {
-        service_ctx.model = (char *) malloc(strlen(DEFAULT_MODEL) + 1);
-        snprintf(service_ctx.model, strlen(DEFAULT_MODEL) + 1, "%s", DEFAULT_MODEL);
+        if (dup_str(&service_ctx.model, DEFAULT_MODEL) != 0)
+            return -2;
     }
     if (service_ctx.firmware_ver == NULL) {
-        service_ctx.firmware_ver = (char *) malloc(strlen(DEFAULT_FW_VER) + 1);
-        snprintf(service_ctx.firmware_ver, strlen(DEFAULT_FW_VER) + 1, "%s", DEFAULT_FW_VER);
+        if (dup_str(&service_ctx.firmware_ver, DEFAULT_FW_VER) != 0)
+            return -2;
     }
     if (service_ctx.serial_num == NULL) {
-        service_ctx.serial_num = (char *) malloc(strlen(DEFAULT_SERIAL_NUM) + 1);
-        snprintf(service_ctx.serial_num, strlen(DEFAULT_SERIAL_NUM) + 1, "%s", DEFAULT_SERIAL_NUM);
+        if (dup_str(&service_ctx.serial_num, DEFAULT_SERIAL_NUM) != 0)
+            return -2;
     }
     if (service_ctx.hardware_id == NULL) {
-        service_ctx.hardware_id = (char *) malloc(strlen(DEFAULT_HW_ID) + 1);
-        snprintf(service_ctx.hardware_id, strlen(DEFAULT_HW_ID) + 1, "%s", DEFAULT_HW_ID);
+        if (dup_str(&service_ctx.hardware_id, DEFAULT_HW_ID) != 0)
+            return -2;
     }
     /* Address and interface resolution */
     if (service_ctx.ifs != NULL) {
@@ -717,11 +780,11 @@ int process_conf_file(char *file)
         }
         char auto_ifs[IFNAMSIZ];
         if (get_ifname_by_addr(service_ctx.address, auto_ifs, sizeof(auto_ifs)) == 0) {
-            service_ctx.ifs = (char *) malloc(strlen(auto_ifs) + 1);
-            snprintf(service_ctx.ifs, strlen(auto_ifs) + 1, "%s", auto_ifs);
+            if (dup_str(&service_ctx.ifs, auto_ifs) != 0)
+                return -2;
         } else {
-            service_ctx.ifs = (char *) malloc(strlen(DEFAULT_IFS) + 1);
-            snprintf(service_ctx.ifs, strlen(DEFAULT_IFS) + 1, "%s", DEFAULT_IFS);
+            if (dup_str(&service_ctx.ifs, DEFAULT_IFS) != 0)
+                return -2;
         }
     }
     if (strchr(service_ctx.address, ':'))
@@ -746,19 +809,18 @@ int process_conf_file(char *file)
 }
 
 // Remember to free the string
-void get_string_from_json(char** var, json_object* j, char* name)
+int get_string_from_json(char** var, json_object* j, char* name)
 {
     json_object* s = NULL;
 
     if (json_object_object_get_ex(j, name, &s)) {
         if (json_object_is_type(s, json_type_string)) {
             const char* str_val = json_object_get_string(s);
-            if (str_val != NULL) {
-                *var = (char*) malloc((strlen(str_val) + 1) * sizeof(char));
-                snprintf(*var, strlen(str_val) + 1, "%s", str_val);
-            }
+            if (str_val != NULL)
+                return dup_str(var, str_val);
         }
     }
+    return 0;
 }
 
 void get_int_from_json(int* var, json_object* j, char* name)
@@ -822,6 +884,7 @@ int process_json_conf_file(char *file)
     FILE *fF;
     json_object *value, *item;
     char *buffer, *tmp;
+    void *grown;
     json_object* json_file;
 
     int i, json_size;
@@ -926,16 +989,26 @@ int process_json_conf_file(char *file)
     service_ctx.ptz_node.jump_to_abs = NULL;
     service_ctx.ptz_node.jump_to_rel = NULL;
 
-    get_string_from_json(&(service_ctx.model), json_file, "model");
-    get_string_from_json(&(service_ctx.manufacturer), json_file, "manufacturer");
-    get_string_from_json(&(service_ctx.firmware_ver), json_file, "firmware_ver");
-    get_string_from_json(&(service_ctx.hardware_id), json_file, "hardware_id");
-    get_string_from_json(&(service_ctx.serial_num), json_file, "serial_num");
-    get_string_from_json(&(service_ctx.factory_default_command), json_file, "factory_default_command");
+    if (get_string_from_json(&(service_ctx.model), json_file, "model") != 0)
+        goto oom;
+    if (get_string_from_json(&(service_ctx.manufacturer), json_file, "manufacturer") != 0)
+        goto oom;
+    if (get_string_from_json(&(service_ctx.firmware_ver), json_file, "firmware_ver") != 0)
+        goto oom;
+    if (get_string_from_json(&(service_ctx.hardware_id), json_file, "hardware_id") != 0)
+        goto oom;
+    if (get_string_from_json(&(service_ctx.serial_num), json_file, "serial_num") != 0)
+        goto oom;
+    if (get_string_from_json(&(service_ctx.factory_default_command), json_file, "factory_default_command") != 0)
+        goto oom;
+
     get_bool_from_json(&(service_ctx.imaging_enable), json_file, "imaging_enable");
-    get_string_from_json(&(service_ctx.imaging_set_command), json_file, "imaging_set_command");
-    get_string_from_json(&(service_ctx.imaging_focus_command), json_file, "imaging_focus_command");
-    get_string_from_json(&(service_ctx.imaging_status_command), json_file, "imaging_status_command");
+    if (get_string_from_json(&(service_ctx.imaging_set_command), json_file, "imaging_set_command") != 0)
+        goto oom;
+    if (get_string_from_json(&(service_ctx.imaging_focus_command), json_file, "imaging_focus_command") != 0)
+        goto oom;
+    if (get_string_from_json(&(service_ctx.imaging_status_command), json_file, "imaging_status_command") != 0)
+        goto oom;
     get_bool_from_json_opt(&(service_ctx.imaging_focus_auto), json_file, "imaging_focus_auto");
     get_number_from_json_opt(&(service_ctx.imaging_brightness), json_file, "imaging_brightness");
     get_number_from_json_opt(&(service_ctx.imaging_contrast), json_file, "imaging_contrast");
@@ -945,7 +1018,9 @@ int process_json_conf_file(char *file)
     get_bool_from_json_opt(&(service_ctx.imaging_wb_auto), json_file, "imaging_wb_auto");
     get_bool_from_json_opt(&(service_ctx.imaging_exposure_auto), json_file, "imaging_exposure_auto");
     get_bool_from_json_opt(&(service_ctx.imaging_wdr_on), json_file, "imaging_wdr_on");
-    get_string_from_json(&(service_ctx.ifs), json_file, "ifs");
+
+    if (get_string_from_json(&(service_ctx.ifs), json_file, "ifs") != 0)
+        goto oom;
     get_int_from_json(&(service_ctx.port), json_file, "port");
 
     if (json_object_object_get_ex(json_file, "scopes", &value)) {
@@ -955,16 +1030,23 @@ int process_json_conf_file(char *file)
                 item = json_object_array_get_idx(value, i);
                 if (item && json_object_is_type(item, json_type_string)) {
                     service_ctx.scopes_num++;
-                    service_ctx.scopes = (char**) realloc(service_ctx.scopes, service_ctx.scopes_num * sizeof(char*));
+                    grown = grow(service_ctx.scopes, service_ctx.scopes_num, sizeof(char*));
+                    if (grown == NULL) {
+                        service_ctx.scopes_num--;
+                        goto oom;
+                    }
+                    service_ctx.scopes = grown;
                     const char* str_val = json_object_get_string(item);
-                    service_ctx.scopes[service_ctx.scopes_num - 1] = (char*) malloc((strlen(str_val) + 1) * sizeof(char));
-                    snprintf(service_ctx.scopes[service_ctx.scopes_num - 1], strlen(str_val) + 1, "%s", str_val);
+                    if (dup_str(&service_ctx.scopes[service_ctx.scopes_num - 1], str_val) != 0)
+                        goto oom;
                 }
             }
         }
     }
-    get_string_from_json(&(service_ctx.user), json_file, "user");
-    get_string_from_json(&(service_ctx.password), json_file, "password");
+    if (get_string_from_json(&(service_ctx.user), json_file, "user") != 0)
+        goto oom;
+    if (get_string_from_json(&(service_ctx.password), json_file, "password") != 0)
+        goto oom;
     get_bool_from_json(&(service_ctx.adv_enable_media2), json_file, "adv_enable_media2");
     get_bool_from_json(&(service_ctx.adv_empty_if_unknown), json_file, "adv_empty_if_unknown");
     get_bool_from_json(&(service_ctx.adv_fault_if_unknown), json_file, "adv_fault_if_unknown");
@@ -973,29 +1055,24 @@ int process_json_conf_file(char *file)
 
     // Apply sane defaults for required fields if not provided in config
     if (service_ctx.manufacturer == NULL) {
-        service_ctx.manufacturer = (char*) malloc(strlen(DEFAULT_MANUFACTURER) + 1);
-        if (service_ctx.manufacturer)
-            snprintf(service_ctx.manufacturer, strlen(DEFAULT_MANUFACTURER) + 1, "%s", DEFAULT_MANUFACTURER);
+        if (dup_str(&service_ctx.manufacturer, DEFAULT_MANUFACTURER) != 0)
+            goto oom;
     }
     if (service_ctx.model == NULL) {
-        service_ctx.model = (char*) malloc(strlen(DEFAULT_MODEL) + 1);
-        if (service_ctx.model)
-            snprintf(service_ctx.model, strlen(DEFAULT_MODEL) + 1, "%s", DEFAULT_MODEL);
+        if (dup_str(&service_ctx.model, DEFAULT_MODEL) != 0)
+            goto oom;
     }
     if (service_ctx.firmware_ver == NULL) {
-        service_ctx.firmware_ver = (char*) malloc(strlen(DEFAULT_FW_VER) + 1);
-        if (service_ctx.firmware_ver)
-            snprintf(service_ctx.firmware_ver, strlen(DEFAULT_FW_VER) + 1, "%s", DEFAULT_FW_VER);
+        if (dup_str(&service_ctx.firmware_ver, DEFAULT_FW_VER) != 0)
+            goto oom;
     }
     if (service_ctx.serial_num == NULL) {
-        service_ctx.serial_num = (char*) malloc(strlen(DEFAULT_SERIAL_NUM) + 1);
-        if (service_ctx.serial_num)
-            snprintf(service_ctx.serial_num, strlen(DEFAULT_SERIAL_NUM) + 1, "%s", DEFAULT_SERIAL_NUM);
+        if (dup_str(&service_ctx.serial_num, DEFAULT_SERIAL_NUM) != 0)
+            goto oom;
     }
     if (service_ctx.hardware_id == NULL) {
-        service_ctx.hardware_id = (char*) malloc(strlen(DEFAULT_HW_ID) + 1);
-        if (service_ctx.hardware_id)
-            snprintf(service_ctx.hardware_id, strlen(DEFAULT_HW_ID) + 1, "%s", DEFAULT_HW_ID);
+        if (dup_str(&service_ctx.hardware_id, DEFAULT_HW_ID) != 0)
+            goto oom;
     }
     /* Address and interface resolution */
     if (service_ctx.ifs != NULL) {
@@ -1015,11 +1092,11 @@ int process_json_conf_file(char *file)
         }
         char auto_ifs[IFNAMSIZ];
         if (get_ifname_by_addr(service_ctx.address, auto_ifs, sizeof(auto_ifs)) == 0) {
-            service_ctx.ifs = (char*) malloc(strlen(auto_ifs) + 1);
-            if (service_ctx.ifs) snprintf(service_ctx.ifs, strlen(auto_ifs) + 1, "%s", auto_ifs);
+            if (dup_str(&service_ctx.ifs, auto_ifs) != 0)
+                goto oom;
         } else {
-            service_ctx.ifs = (char*) malloc(strlen(DEFAULT_IFS) + 1);
-            if (service_ctx.ifs) snprintf(service_ctx.ifs, strlen(DEFAULT_IFS) + 1, "%s", DEFAULT_IFS);
+            if (dup_str(&service_ctx.ifs, DEFAULT_IFS) != 0)
+                goto oom;
         }
     }
     if (strchr(service_ctx.address, ':'))
@@ -1077,7 +1154,12 @@ int process_json_conf_file(char *file)
                     continue;
 
                 service_ctx.profiles_num++;
-                service_ctx.profiles = (stream_profile_t *) realloc(service_ctx.profiles, service_ctx.profiles_num * sizeof(stream_profile_t));
+                grown = grow(service_ctx.profiles, service_ctx.profiles_num, sizeof(stream_profile_t));
+                if (grown == NULL) {
+                    service_ctx.profiles_num--;
+                    goto oom;
+                }
+                service_ctx.profiles = grown;
 
                 // Init defaults
                 service_ctx.profiles[service_ctx.profiles_num - 1].name = NULL;
@@ -1091,7 +1173,9 @@ int process_json_conf_file(char *file)
                 service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
                 service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
 
-                get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].name), item, "name");
+                if (get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].name), item, "name") != 0)
+
+                    goto oom;
                 char *n = service_ctx.profiles[service_ctx.profiles_num - 1].name;
                 if (n != NULL) {
                     size_t nlen = strlen(n);
@@ -1109,10 +1193,13 @@ int process_json_conf_file(char *file)
                 get_int_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].width), item, "width");
                 get_int_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].height), item, "height");
                 get_int_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].framerate), item, "framerate");
-                get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].url), item, "url");
-                get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].snapurl), item, "snapurl");
+                if (get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].url), item, "url") != 0)
+                    goto oom;
+                if (get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].snapurl), item, "snapurl") != 0)
+                    goto oom;
                 tmp = NULL;
-                get_string_from_json(&tmp, item, "type");
+                if (get_string_from_json(&tmp, item, "type") != 0)
+                    goto oom;
                 if (tmp != NULL) {
                     if (strcasecmp(tmp, "JPEG") == 0)
                         service_ctx.profiles[service_ctx.profiles_num - 1].type = JPEG;
@@ -1125,7 +1212,8 @@ int process_json_conf_file(char *file)
                     free(tmp);
                 }
                 tmp = NULL;
-                get_string_from_json(&tmp, item, "audio_encoder");
+                if (get_string_from_json(&tmp, item, "audio_encoder") != 0)
+                    goto oom;
                 if (tmp != NULL) {
                     if (strcasecmp(tmp, "NONE") == 0)
                         service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AUDIO_NONE;
@@ -1138,7 +1226,8 @@ int process_json_conf_file(char *file)
                     free(tmp);
                 }
                 tmp = NULL;
-                get_string_from_json(&tmp, item, "audio_decoder");
+                if (get_string_from_json(&tmp, item, "audio_decoder") != 0)
+                    goto oom;
                 if (tmp != NULL) {
                     if (strcasecmp(tmp, "NONE") == 0)
                         service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
@@ -1186,23 +1275,40 @@ int process_json_conf_file(char *file)
         get_double_from_json(&(service_ctx.ptz_node.max_step_y), value, "max_step_y");
         get_double_from_json(&(service_ctx.ptz_node.min_step_z), value, "min_step_z");
         get_double_from_json(&(service_ctx.ptz_node.max_step_z), value, "max_step_z");
-        get_string_from_json(&(service_ctx.ptz_node.get_position), value, "get_position");
-        get_string_from_json(&(service_ctx.ptz_node.is_moving), value, "is_moving");
-        get_string_from_json(&(service_ctx.ptz_node.move_left), value, "move_left");
-        get_string_from_json(&(service_ctx.ptz_node.move_right), value, "move_right");
-        get_string_from_json(&(service_ctx.ptz_node.move_up), value, "move_up");
-        get_string_from_json(&(service_ctx.ptz_node.move_down), value, "move_down");
-        get_string_from_json(&(service_ctx.ptz_node.move_in), value, "move_in");
-        get_string_from_json(&(service_ctx.ptz_node.move_out), value, "move_out");
-        get_string_from_json(&(service_ctx.ptz_node.move_stop), value, "move_stop");
-        get_string_from_json(&(service_ctx.ptz_node.move_preset), value, "move_preset");
-        get_string_from_json(&(service_ctx.ptz_node.goto_home_position), value, "goto_home_position");
-        get_string_from_json(&(service_ctx.ptz_node.set_preset), value, "set_preset");
-        get_string_from_json(&(service_ctx.ptz_node.set_home_position), value, "set_home_position");
-        get_string_from_json(&(service_ctx.ptz_node.remove_preset), value, "remove_preset");
-        get_string_from_json(&(service_ctx.ptz_node.jump_to_abs), value, "jump_to_abs");
-        get_string_from_json(&(service_ctx.ptz_node.jump_to_rel), value, "jump_to_rel");
-        get_string_from_json(&(service_ctx.ptz_node.get_presets), value, "get_presets");
+        if (get_string_from_json(&(service_ctx.ptz_node.get_position), value, "get_position") != 0)
+            goto oom;
+        if (get_string_from_json(&(service_ctx.ptz_node.is_moving), value, "is_moving") != 0)
+            goto oom;
+        if (get_string_from_json(&(service_ctx.ptz_node.move_left), value, "move_left") != 0)
+            goto oom;
+        if (get_string_from_json(&(service_ctx.ptz_node.move_right), value, "move_right") != 0)
+            goto oom;
+        if (get_string_from_json(&(service_ctx.ptz_node.move_up), value, "move_up") != 0)
+            goto oom;
+        if (get_string_from_json(&(service_ctx.ptz_node.move_down), value, "move_down") != 0)
+            goto oom;
+        if (get_string_from_json(&(service_ctx.ptz_node.move_in), value, "move_in") != 0)
+            goto oom;
+        if (get_string_from_json(&(service_ctx.ptz_node.move_out), value, "move_out") != 0)
+            goto oom;
+        if (get_string_from_json(&(service_ctx.ptz_node.move_stop), value, "move_stop") != 0)
+            goto oom;
+        if (get_string_from_json(&(service_ctx.ptz_node.move_preset), value, "move_preset") != 0)
+            goto oom;
+        if (get_string_from_json(&(service_ctx.ptz_node.goto_home_position), value, "goto_home_position") != 0)
+            goto oom;
+        if (get_string_from_json(&(service_ctx.ptz_node.set_preset), value, "set_preset") != 0)
+            goto oom;
+        if (get_string_from_json(&(service_ctx.ptz_node.set_home_position), value, "set_home_position") != 0)
+            goto oom;
+        if (get_string_from_json(&(service_ctx.ptz_node.remove_preset), value, "remove_preset") != 0)
+            goto oom;
+        if (get_string_from_json(&(service_ctx.ptz_node.jump_to_abs), value, "jump_to_abs") != 0)
+            goto oom;
+        if (get_string_from_json(&(service_ctx.ptz_node.jump_to_rel), value, "jump_to_rel") != 0)
+            goto oom;
+        if (get_string_from_json(&(service_ctx.ptz_node.get_presets), value, "get_presets") != 0)
+            goto oom;
 
         // Print debug
         log_debug("enable: %d", service_ctx.ptz_node.enable);
@@ -1248,7 +1354,12 @@ int process_json_conf_file(char *file)
                     log_error("Ignore relay, too many relay outputs, max is: %d", MAX_RELAY_OUTPUTS);
                     service_ctx.relay_outputs_num--;
                 } else {
-                    service_ctx.relay_outputs = (relay_output_t *) realloc(service_ctx.relay_outputs, service_ctx.relay_outputs_num * sizeof(relay_output_t));
+                    grown = grow(service_ctx.relay_outputs, service_ctx.relay_outputs_num, sizeof(relay_output_t));
+                    if (grown == NULL) {
+                        service_ctx.relay_outputs_num--;
+                        goto oom;
+                    }
+                    service_ctx.relay_outputs = grown;
 
                     // Init variables before reading
                     service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
@@ -1256,7 +1367,8 @@ int process_json_conf_file(char *file)
                     service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = NULL;
 
                     tmp = NULL;
-                    get_string_from_json(&tmp, item, "idle_state");
+                    if (get_string_from_json(&tmp, item, "idle_state") != 0)
+                        goto oom;
                     if (tmp != NULL) {
                         if (strcasecmp(tmp, "close") == 0) {
                             service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
@@ -1265,8 +1377,10 @@ int process_json_conf_file(char *file)
                         }
                         free(tmp);
                     }
-                    get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close), item, "close");
-                    get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open), item, "open");
+                    if (get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close), item, "close") != 0)
+                        goto oom;
+                    if (get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open), item, "open") != 0)
+                        goto oom;
 
                     // Print debug
                     log_debug("Relay: %d", service_ctx.relay_outputs_num - 1);
@@ -1301,7 +1415,12 @@ int process_json_conf_file(char *file)
                         log_error("Ignore event, too many events, max is: %d", MAX_EVENTS);
                         service_ctx.events_num--;
                     } else {
-                        service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
+                        grown = grow(service_ctx.events, service_ctx.events_num, sizeof(event_t));
+                        if (grown == NULL) {
+                            service_ctx.events_num--;
+                            goto oom;
+                        }
+                        service_ctx.events = grown;
 
                         // Init variables before reading
                         service_ctx.events[service_ctx.events_num - 1].topic = NULL;
@@ -1310,11 +1429,17 @@ int process_json_conf_file(char *file)
                         service_ctx.events[service_ctx.events_num - 1].source_value = NULL;
                         service_ctx.events[service_ctx.events_num - 1].input_file = NULL;
 
-                        get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].topic), item, "topic");
-                        get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_name), item, "source_name");
-                        get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_type), item, "source_type");
-                        get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_value), item, "source_value");
-                        get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].input_file), item, "input_file");
+                        if (get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].topic), item, "topic") != 0)
+
+                            goto oom;
+                        if (get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_name), item, "source_name") != 0)
+                            goto oom;
+                        if (get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_type), item, "source_type") != 0)
+                            goto oom;
+                        if (get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_value), item, "source_value") != 0)
+                            goto oom;
+                        if (get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].input_file), item, "input_file") != 0)
+                            goto oom;
 
                         // Print debug
                         log_debug("Event: %d", service_ctx.events_num - 1);
@@ -1340,23 +1465,28 @@ int process_json_conf_file(char *file)
                 return -2;
             }
             log_debug("Adding event for relay output %d", i);
-            service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
-            service_ctx.events[service_ctx.events_num - 1].topic = (char *) malloc(strlen("tns1:Device/Trigger/Relay") + 1);
-            snprintf(service_ctx.events[service_ctx.events_num - 1].topic, strlen("tns1:Device/Trigger/Relay") + 1, "%s", "tns1:Device/Trigger/Relay");
+            grown = grow(service_ctx.events, service_ctx.events_num, sizeof(event_t));
+            if (grown == NULL) {
+                service_ctx.events_num--;
+                goto oom;
+            }
+            service_ctx.events = grown;
+            if (dup_str(&service_ctx.events[service_ctx.events_num - 1].topic, "tns1:Device/Trigger/Relay") != 0)
+                goto oom;
             log_debug("topic: tns1:Device/Trigger/Relay");
-            service_ctx.events[service_ctx.events_num - 1].source_name = (char *) malloc(strlen("RelayToken") + 1);
-            snprintf(service_ctx.events[service_ctx.events_num - 1].source_name, strlen("RelayToken") + 1, "%s", "RelayToken");
+            if (dup_str(&service_ctx.events[service_ctx.events_num - 1].source_name, "RelayToken") != 0)
+                goto oom;
             log_debug("source_name: RelayToken");
-            service_ctx.events[service_ctx.events_num - 1].source_type = (char *) malloc(strlen("tt:ReferenceToken") + 1);
-            snprintf(service_ctx.events[service_ctx.events_num - 1].source_type, strlen("tt:ReferenceToken") + 1, "%s", "tt:ReferenceToken");
+            if (dup_str(&service_ctx.events[service_ctx.events_num - 1].source_type, "tt:ReferenceToken") != 0)
+                goto oom;
             log_debug("source_type: tt:ReferenceToken");
             snprintf(stmp, sizeof(stmp), "RelayOutputToken_%d", i);
-            service_ctx.events[service_ctx.events_num - 1].source_value = (char *) malloc(strlen(stmp) + 1);
-            snprintf(service_ctx.events[service_ctx.events_num - 1].source_value, strlen(stmp) + 1, "%s", stmp);
+            if (dup_str(&service_ctx.events[service_ctx.events_num - 1].source_value, stmp) != 0)
+                goto oom;
             log_debug("source_value: %s", stmp);
             snprintf(stmp, sizeof(stmp), "/tmp/onvif_notify_server/relay_output_%d", i);
-            service_ctx.events[service_ctx.events_num - 1].input_file = (char *) malloc(strlen(stmp) + 1);
-            snprintf(service_ctx.events[service_ctx.events_num - 1].input_file, strlen(stmp) + 1, "%s", stmp);
+            if (dup_str(&service_ctx.events[service_ctx.events_num - 1].input_file, stmp) != 0)
+                goto oom;
             log_debug("input_file: %s", stmp);
         }
     }
@@ -1365,6 +1495,11 @@ int process_json_conf_file(char *file)
     free(buffer);
 
     return 0;
+
+oom:
+    json_object_put(json_file);
+    free(buffer);
+    return -2;
 }
 
 void free_conf_file()

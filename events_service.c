@@ -767,7 +767,7 @@ int events_get_event_properties()
                 "%TOPIC_L2_START%", topic_ls[1],
                 "%TOPIC_L3_START%", topic_ls[2],
                 "%SOURCE_NAME%", service_ctx.events[i].source_name,
-                "%SOURCE_TYPE%", service_ctx.events[i].source_type,
+                "%SOURCE_TYPE%", service_ctx.events[i].source_type != NULL ? service_ctx.events[i].source_type : "tt:ReferenceToken",
                 "%DATA_NAME%", data_name,
                 "%DATA_TYPE%", data_type,
                 "%TOPIC_L3_END%", topic_le[2],
