@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 /* Pull in the function under test */
 #include "../utils.h"
@@ -122,6 +124,48 @@ static void test_determinism(void)
 }
 
 /* -------------------------------------------------------------------------
+ * Test: cat_n() never writes past its capacity
+ * ---------------------------------------------------------------------- */
+static void test_cat_n(void)
+{
+    char path[] = "/tmp/test_utils_cat_XXXXXX";
+    int fd = mkstemp(path);
+    const char *tpl = "<a>%X%</a>\n<b>%X%</b>\n";
+    char buf[64];
+    long size, ret;
+    size_t cap;
+
+    if (fd < 0 || write(fd, tpl, strlen(tpl)) != (ssize_t) strlen(tpl)) {
+        CHECK("cat_n: template file created", 0);
+        return;
+    }
+    close(fd);
+
+    size = cat(NULL, path, 2, "%X%", "hello");
+    CHECK("cat_n: size pass counts the expanded template", size == 24);
+
+    memset(buf, 'Z', sizeof(buf));
+    ret = cat_n(buf, size + 1, path, 2, "%X%", "hello");
+    CHECK("cat_n: exact fit returns the full size", ret == size);
+    CHECK("cat_n: exact fit is NUL terminated", buf[size] == '\0' && strlen(buf) == (size_t) size);
+    CHECK("cat_n: exact fit leaves the canary", buf[size + 1] == 'Z');
+
+    for (cap = 1; cap <= (size_t) size; cap++) {
+        memset(buf, 'Z', sizeof(buf));
+        ret = cat_n(buf, cap, path, 2, "%X%", "hello");
+        if (ret != size || strlen(buf) >= cap || buf[cap] != 'Z')
+            break;
+    }
+    CHECK("cat_n: every smaller capacity truncates safely", cap == (size_t) size + 1);
+
+    memset(buf, 'Z', sizeof(buf));
+    ret = cat_n(buf, 0, path, 2, "%X%", "hello");
+    CHECK("cat_n: zero capacity writes nothing", ret == size && buf[0] == 'Z');
+
+    unlink(path);
+}
+
+/* -------------------------------------------------------------------------
  * main
  * ---------------------------------------------------------------------- */
 int main(void)
@@ -131,6 +175,7 @@ int main(void)
     test_output_format();
     test_determinism();
     test_buffer_canary();
+    test_cat_n();
     printf("---\n%d/%d passed", g_pass, g_tests);
     if (g_fail)
         printf("  (%d FAILED)", g_fail);

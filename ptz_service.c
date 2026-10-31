@@ -87,8 +87,12 @@ int init_presets()
             if (sscanf(line, "%d=%1023s %lf %lf %lf", &num, name, &x, &y, &z) == 0) {
                 return -3;
             } else if (strlen(name) != 0) {
+                preset_t *items = (preset_t *) realloc(presets.items, sizeof(preset_t) * (presets.count + 1));
+                if (items == NULL) {
+                    return -4;
+                }
+                presets.items = items;
                 presets.count++;
-                presets.items = (preset_t *) realloc(presets.items, sizeof(preset_t) * presets.count);
                 presets.items[presets.count - 1].name = (char *) malloc(strlen(name) + 1);
                 snprintf(presets.items[presets.count - 1].name, strlen(name) + 1, "%s", name);
                 presets.items[presets.count - 1].number = num;

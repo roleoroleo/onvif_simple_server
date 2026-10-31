@@ -342,7 +342,7 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
     }
 
     snprintf(message, size + strlen(header) + 1, "%s", header);
-    cat(&message[strlen(header)], template_file, 12,
+    cat_n(&message[strlen(header)], size + 1, template_file, 12,
             "%TOPIC%", service_ctx.events[alarm_index].topic,
             "%UTC_TIME%", utctime,
             "%PROPERTY%", property,
