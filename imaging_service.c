@@ -219,7 +219,7 @@ int imaging_set_imaging_settings()
             unsetenv(names[i]);
     }
 
-    ret = system(service_ctx.imaging_set_command);
+    ret = run_command(service_ctx.imaging_set_command);
     if (ret != 0) {
         log_error("imaging_set_command failed with status %d", ret);
         send_action_failed_fault("imaging_service", -3);
