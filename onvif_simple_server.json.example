@@ -14,8 +14,8 @@
     "user": "admin",
     "password": "admin",
     "adv_enable_media2": false,
+    "adv_enable_imaging": false,
     "adv_fault_if_unknown": false,
-    "imaging_enable": false,
     "adv_fault_if_set": false,
     "adv_synology_nvr": false,
 

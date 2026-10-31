@@ -728,7 +728,7 @@ int main(int argc, char ** argv)
                 }
             }
         } else if (strcasecmp("imaging_service", prog_name) == 0) {
-            if (service_ctx.imaging_enable == 0) {
+            if (service_ctx.adv_enable_imaging == 0) {
                 send_action_not_supported_fault("imaging_service");
             } else if (strcasecmp(method, "GetServiceCapabilities") == 0) {
                 imaging_get_service_capabilities();

@@ -105,11 +105,11 @@ user=
 password=
 #Advanced options
 adv_enable_media2=0
+adv_enable_imaging=0
 adv_fault_if_unknown=0
 adv_fault_if_set=0
 adv_synology_nvr=0
 #Imaging service (optional)
-imaging_enable=1
 imaging_set_command=/usr/local/bin/set_imaging
 imaging_focus_command=/usr/local/bin/set_focus
 imaging_status_command=/usr/local/bin/get_focus
@@ -275,10 +275,10 @@ Brief explanation of some parameters:
 | port | the TCP port used by your http server |
 | user | the user you want to set for WS-UsernameToken authentication, if blank security is disabled |
 | adv_enable_media2 | enable media2 methods for Profile T |
+| adv_enable_imaging | set to 1 to advertise the Imaging service |
 | adv_fault_if_unknown | try to set to 1 if your ONVIF client is not able to connect to the device |
 | adv_fault_if_set | try to set to 1 if your ONVIF client is not able to connect to the device |
 | adv_synology_nvr | try to set to 1 to improve compatibility, if you are using a Synology NVR |
-| imaging_enable | set to 1 to advertise the Imaging service |
 | imaging_set_command | the binary command run on SetImagingSettings, see below (empty = settings are read-only) |
 | imaging_focus_command | the binary command run on Move and Stop, see below (empty = no focus control is advertised) |
 | imaging_status_command | optional command for GetStatus, see below (empty = the focus status is reported as UNKNOWN) |
