@@ -25,7 +25,7 @@
 
 extern service_context_t service_ctx;
 
-int send_empty_response(char *ns, char *method)
+int send_empty_response(char *ns, const char *method)
 {
     int ret;
     char *response = (char *) malloc(strlen(ns) + strlen(method) + 10);
