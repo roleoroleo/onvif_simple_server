@@ -279,7 +279,8 @@ const char *get_element_in_element(const char *name, ezxml_t father)
         }
 
         // Check brothers
-        while((pk = child->ordered)) {
+        pk = child;
+        while((pk = pk->ordered)) {
             // Check if this node is "<name>"
             if (strcmp(name, pk->name) == 0) {
                 return pk->txt;
@@ -323,7 +324,8 @@ ezxml_t get_element_in_element_ptr(const char *name, ezxml_t father)
         }
 
         // Check brothers
-        while((pk = child->ordered)) {
+        pk = child;
+        while((pk = pk->ordered)) {
             // Check if this node is "<name>"
             if (strcmp(name, pk->name) == 0) {
                 return pk;
