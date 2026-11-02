@@ -254,6 +254,21 @@ ezxml_t get_element_ptr(ezxml_t start_from, char *name, char *first_node)
 }
 
 /**
+ * Check whether an element tag is "<name>" or "<prefix:name>".
+ */
+static int tag_matches(const char *tag, const char *name)
+{
+    size_t tag_len = strlen(tag);
+    size_t name_len = strlen(name);
+
+    if (strcmp(tag, name) == 0)
+        return 1;
+
+    return tag_len > name_len && tag[tag_len - name_len - 1] == ':' &&
+            strcmp(&tag[tag_len - name_len], name) == 0;
+}
+
+/**
  * Get the child element with name "name" starting from node "father"
  * @param name The name of the element to find
  * @param father The node where to find the element
@@ -261,38 +276,11 @@ ezxml_t get_element_ptr(ezxml_t start_from, char *name, char *first_node)
  */
 const char *get_element_in_element(const char *name, ezxml_t father)
 {
-    char name_copy[256];
-    ezxml_t child = father->child;
     ezxml_t pk;
 
-    if (child != NULL) {
-        // Check if this node is "<name>"
-        if (strcmp(name, child->name) == 0) {
-            return child->txt;
-        }
-
-        // Check if this node is "<something:name>"
-        name_copy[0] = ':';
-        snprintf(&name_copy[1], sizeof(name_copy) - 1, "%s", name);
-        if (strcmp(name_copy, &(child->name)[strlen(child->name) - strlen(name_copy)]) == 0) {
-            return child->txt;
-        }
-
-        // Check brothers
-        pk = child;
-        while((pk = pk->ordered)) {
-            // Check if this node is "<name>"
-            if (strcmp(name, pk->name) == 0) {
-                return pk->txt;
-            }
-
-            // Check if this node is "<something:name>"
-            name_copy[0] = ':';
-            snprintf(&name_copy[1], sizeof(name_copy) - 1, "%s", name);
-            if (strcmp(name_copy, &(pk->name)[strlen(pk->name) - strlen(name_copy)]) == 0) {
-                return pk->txt;
-            }
-        }
+    for (pk = father->child; pk != NULL; pk = pk->ordered) {
+        if (tag_matches(pk->name, name))
+            return pk->txt;
     }
 
     return NULL;
@@ -306,38 +294,11 @@ const char *get_element_in_element(const char *name, ezxml_t father)
  */
 ezxml_t get_element_in_element_ptr(const char *name, ezxml_t father)
 {
-    char name_copy[256];
-    ezxml_t child = father->child;
     ezxml_t pk;
 
-    if (child != NULL) {
-        // Check if this node is "<name>"
-        if (strcmp(name, child->name) == 0) {
-            return child;
-        }
-
-        // Check if this node is "<something:name>"
-        name_copy[0] = ':';
-        snprintf(&name_copy[1], sizeof(name_copy) - 1, "%s", name);
-        if (strcmp(name_copy, &(child->name)[strlen(child->name) - strlen(name_copy)]) == 0) {
-            return child;
-        }
-
-        // Check brothers
-        pk = child;
-        while((pk = pk->ordered)) {
-            // Check if this node is "<name>"
-            if (strcmp(name, pk->name) == 0) {
-                return pk;
-            }
-
-            // Check if this node is "<something:name>"
-            name_copy[0] = ':';
-            snprintf(&name_copy[1], sizeof(name_copy) - 1, "%s", name);
-            if (strcmp(name_copy, &(pk->name)[strlen(pk->name) - strlen(name_copy)]) == 0) {
-                return pk;
-            }
-        }
+    for (pk = father->child; pk != NULL; pk = pk->ordered) {
+        if (tag_matches(pk->name, name))
+            return pk;
     }
 
     return NULL;
