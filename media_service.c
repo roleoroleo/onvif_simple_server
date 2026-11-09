@@ -15,6 +15,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "media_service.h"
@@ -1849,6 +1850,42 @@ int media_set_audio_output_configuration()
         send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The configuration does not exist");
         return -3;
     }
+}
+
+/*
+ * SetSynchronizationPoint for Media and Media2: run sync_point_command with the
+ * profile name in ONVIF_PROFILE_TOKEN (never on the command line). Without a
+ * command the request is only acknowledged.
+ */
+int set_synchronization_point(char *service, char *ns)
+{
+    const char *token = get_element("ProfileToken", "Body");
+    int i;
+
+    for (i = 0; (token != NULL) && (i < service_ctx.profiles_num); i++) {
+        if ((service_ctx.profiles[i].name != NULL) &&
+                (strcasecmp(service_ctx.profiles[i].name, token) == 0))
+            break;
+    }
+    if ((token == NULL) || (i == service_ctx.profiles_num)) {
+        send_fault(service, "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile does not exist");
+        return -1;
+    }
+
+    if ((service_ctx.sync_point_command != NULL) && (service_ctx.sync_point_command[0] != '\0')) {
+        setenv("ONVIF_PROFILE_TOKEN", service_ctx.profiles[i].name, 1);
+        if (run_command(service_ctx.sync_point_command) != 0) {
+            send_action_failed_fault(service, -2);
+            return -2;
+        }
+    }
+
+    return send_empty_response(ns, "SetSynchronizationPoint");
+}
+
+int media_set_synchronization_point()
+{
+    return set_synchronization_point("media_service", "trt");
 }
 
 int media_unsupported(const char *method)

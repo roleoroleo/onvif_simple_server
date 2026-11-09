@@ -134,6 +134,7 @@ typedef struct {
     int adv_synology_nvr;
 
     char *factory_default_command;   /* SetSystemFactoryDefault hook; NULL = op not supported */
+    char *sync_point_command;        /* SetSynchronizationPoint hook; NULL = request only acknowledged */
 
     // Media service
     stream_profile_t *profiles;

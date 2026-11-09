@@ -41,6 +41,8 @@ int media2_set_video_encoder_configuration();
 int media2_set_audio_encoder_configuration();
 int media2_set_audio_output_configuration();
 
+int media2_set_synchronization_point();
+
 int media2_unsupported(const char *method);
 
 #endif //MEDIA2_SERVICE_H
