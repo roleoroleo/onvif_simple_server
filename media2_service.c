@@ -221,7 +221,7 @@ int media2_get_profiles()
                 }
                 if (typeAEC) {
                     if (service_ctx.profiles[h].audio_encoder != AUDIO_NONE) {
-                        set_audio_codec(audio_enc_h, 16, service_ctx.profiles[0].audio_encoder, 2);
+                        set_audio_codec(audio_enc_h, 16, service_ctx.profiles[h].audio_encoder, 2);
                         size += cat(dest, "media2_service_files/GetProfiles_AEC.xml", 4,
                                 "%PROFILE%", profile[h],
                                 "%AUDIO_ENCODING%", audio_enc_h);
