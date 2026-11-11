@@ -542,6 +542,8 @@ int main(int argc, char ** argv)
                 media_get_snapshot_uri();
             } else if (strcasecmp(method, "GetStreamUri") == 0) {
                 media_get_stream_uri();
+            } else if (strcasecmp(method, "SetSynchronizationPoint") == 0) {
+                media_set_synchronization_point();
             } else if (strcasecmp(method, "GetAudioSources") == 0) {
                 media_get_audio_sources();
             } else if (strcasecmp(method, "GetAudioSourceConfigurations") == 0) {
@@ -630,6 +632,8 @@ int main(int argc, char ** argv)
                 media2_get_snapshot_uri();
             } else if (strcasecmp(method, "GetStreamUri") == 0) {
                 media2_get_stream_uri();
+            } else if (strcasecmp(method, "SetSynchronizationPoint") == 0) {
+                media2_set_synchronization_point();
             } else {
                 if (service_ctx.adv_empty_if_unknown == 1) {
                     send_empty_response("tr2", method);

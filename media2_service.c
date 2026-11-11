@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "media2_service.h"
+#include "media_service.h"
 #include "conf.h"
 #include "fault.h"
 #include "utils.h"
@@ -1505,6 +1506,11 @@ int media2_set_audio_output_configuration()
         send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The configuration does not exist");
         return -3;
     }
+}
+
+int media2_set_synchronization_point()
+{
+    return set_synchronization_point("media2_service", "tr2");
 }
 
 int media2_unsupported(const char *method)

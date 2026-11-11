@@ -122,6 +122,8 @@ imaging_ircut_on=1
 imaging_wb_auto=1
 imaging_exposure_auto=1
 imaging_wdr_on=0
+#SetSynchronizationPoint (optional)
+sync_point_command=/usr/local/bin/sync_point
 
 #Profile 0
 name=Profile_0
@@ -283,6 +285,7 @@ Brief explanation of some parameters:
 | imaging_focus_command | the binary command run on Move and Stop, see below (empty = no focus control is advertised) |
 | imaging_status_command | optional command for GetStatus, see below (empty = the focus status is reported as UNKNOWN) |
 | imaging_* | the current values reported by GetImagingSettings: brightness, contrast, saturation and sharpness range from 0.0 to 1.0, the others are 1 or 0 |
+| sync_point_command | the binary command run on SetSynchronizationPoint, see below (empty = the request is only acknowledged) |
 | url | the url of your streaming service (it is not provided by onvif server) |
 | snapurl | the url of your snapshot service (tipically an http url that provides a jpg image) |
 | audio_decoder | set to G711 or AAC if your device support an audio back channel |
@@ -521,6 +524,7 @@ GetVideoEncoderConfiguration
 GetVideoEncoderConfigurationOptions
 GetVideoEncoderConfigurations
 GetVideoSources
+SetSynchronizationPoint
 ```
 
 **Media2**
@@ -542,7 +546,17 @@ GetVideoEncoderConfigurations
 GetVideoSourceConfigurationOptions
 GetVideoSourceConfigurations
 GetVideoSourceModes
+SetSynchronizationPoint
 ```
+
+SetSynchronizationPoint (Media and Media2) runs `sync_point_command` with `ONVIF_PROFILE_TOKEN` set to the requested profile name.
+The command should make the stream source send a key frame, and start a new metadata document if the stream carries one.
+It must return quickly. A non-zero exit status is reported to the client as a fault.
+Without `sync_point_command` the request is acknowledged and nothing else happens.
+
+GetStreamUri (Media and Media2) ignores the requested protocol and always returns the `url` of the profile.
+A client that asks for RTSP over HTTP gets the same url, so the RTSP server must accept RTSP-over-HTTP tunneling on that port.
+Requests for multicast or RTSPS get this url as well.
 
 **PTZ**
 ```

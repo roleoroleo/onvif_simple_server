@@ -58,6 +58,9 @@ int media_set_video_encoder_configuration();
 int media_set_audio_encoder_configuration();
 int media_set_audio_output_configuration();
 
+int set_synchronization_point(char *service, char *ns);
+int media_set_synchronization_point();
+
 int media_unsupported(const char *method);
 
 #endif //MEDIA_SERVICE_H
