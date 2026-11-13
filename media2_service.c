@@ -79,33 +79,24 @@ int media2_get_service_capabilities()
             "%CAPABILITIES%", cap);
 }
 
-int media2_get_profiles()
+typedef struct {
+    int vsc, asc, vec, aec, ptz, aoc, adc;
+} config_types_t;
+
+/* The Configurations element of profile h, for GetProfiles */
+static long get_profile_configurations(char *dest, int h, const config_types_t *t)
 {
     char profiles_num[2];
-    char stmp_w_h[16], stmp_h_h[16];
-    char stmp_w_l[16], stmp_h_l[16];
-    char stmp_fps_h[16], stmp_fps_l[16];
-    char audio_enc_h[16], audio_enc_l[16];
-    char video_enc_h[16], video_enc_l[16];
-    const char *profile_token = get_element("Token", "Body");
-    ezxml_t x_type;
-    int n_type;
-    char xml_name[MAX_LEN];
-    long size;
-    int q, h;
+    char stmp_w[16], stmp_h[16], stmp_fps[16];
+    char audio_enc[16], video_enc[16];
+    char min_x[256], max_x[256], min_y[256], max_y[256], min_z[256], max_z[256];
     char *h264profile[] = { "High", "Main" };
     char *profile[] = { "Profile_0", "Profile_1" };
-    int c;
-    char dest_a[] = "stdout";
-    char *dest;
-    int typeVSC = 0, typeASC = 0, typeVEC = 0, typeAEC = 0, typePTZ = 0, typeAOC = 0, typeADC = 0;
-    char min_x[256], max_x[256], min_y[256], max_y[256], min_z[256], max_z[256];
     int vsrc = get_video_source_index();
+    long size;
 
-    audio_enc_h[0] = '\0';
-    audio_enc_l[0] = '\0';
-    video_enc_h[0] = '\0';
-    video_enc_l[0] = '\0';
+    audio_enc[0] = '\0';
+    video_enc[0] = '\0';
     snprintf(profiles_num, sizeof(profiles_num), "%d", service_ctx.profiles_num);
     snprintf(min_x, sizeof(min_x), "%.1f", service_ctx.ptz_node.min_step_x);
     snprintf(max_x, sizeof(max_x), "%.1f", service_ctx.ptz_node.max_step_x);
@@ -114,25 +105,106 @@ int media2_get_profiles()
     snprintf(min_z, sizeof(min_z), "%.1f", service_ctx.ptz_node.min_step_z);
     snprintf(max_z, sizeof(max_z), "%.1f", service_ctx.ptz_node.max_step_z);
 
+    size = cat(dest, "media2_service_files/GetProfiles_confstart.xml", 0);
+
+    if (t->vsc) {
+        // Get VideoSource from the largest profile
+        snprintf(stmp_w, sizeof(stmp_w), "%d", service_ctx.profiles[vsrc].width);
+        snprintf(stmp_h, sizeof(stmp_h), "%d", service_ctx.profiles[vsrc].height);
+        size += cat(dest, "media2_service_files/GetProfiles_VSC.xml", 6,
+                "%PROFILES_NUM%", profiles_num,
+                "%VSC_WIDTH%", stmp_w,
+                "%VSC_HEIGHT%", stmp_h);
+    }
+    if (t->asc) {
+        if (((service_ctx.profiles_num > 0) && (service_ctx.profiles[0].audio_encoder != AUDIO_NONE)) ||
+                ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_encoder != AUDIO_NONE))) {
+
+            size += cat(dest, "media2_service_files/GetProfiles_ASC.xml", 2,
+                    "%PROFILES_NUM%", profiles_num);
+        }
+    }
+    if (t->vec) {
+        snprintf(stmp_w, sizeof(stmp_w), "%d", service_ctx.profiles[h].width);
+        snprintf(stmp_h, sizeof(stmp_h), "%d", service_ctx.profiles[h].height);
+        snprintf(stmp_fps, sizeof(stmp_fps), "%d", service_ctx.profiles[h].framerate > 0 ? service_ctx.profiles[h].framerate : 30);
+        set_video_codec(video_enc, 16, service_ctx.profiles[h].type, 2);
+        size += cat(dest, "media2_service_files/GetProfiles_VEC.xml", 12,
+                "%H264PROFILE%", h264profile[h],
+                "%PROFILE%", profile[h],
+                "%VIDEO_ENCODING%", video_enc,
+                "%VEC_WIDTH%", stmp_w,
+                "%VEC_HEIGHT%", stmp_h,
+                "%FRAMERATE%", stmp_fps);
+    }
+    if (t->aec) {
+        if (service_ctx.profiles[h].audio_encoder != AUDIO_NONE) {
+            set_audio_codec(audio_enc, 16, service_ctx.profiles[h].audio_encoder, 2);
+            size += cat(dest, "media2_service_files/GetProfiles_AEC.xml", 4,
+                    "%PROFILE%", profile[h],
+                    "%AUDIO_ENCODING%", audio_enc);
+        }
+    }
+    if (t->ptz) {
+        if (service_ctx.ptz_node.enable == 1) {
+            size += cat(dest, ptz_supports_zoom() ? "media2_service_files/GetProfiles_PTZ.xml" : "media2_service_files/GetProfiles_PTZ_nozoom.xml", 12,
+                    "%MIN_X%", min_x,
+                    "%MAX_X%", max_x,
+                    "%MIN_Y%", min_y,
+                    "%MAX_Y%", max_y,
+                    "%MIN_Z%", min_z,
+                    "%MAX_Z%", max_z);
+        }
+    }
+    if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {
+        if (t->aoc) {
+            size += cat(dest, "media2_service_files/GetProfiles_AOC.xml", 2,
+                    "%PROFILES_NUM%", profiles_num);
+        }
+        if (t->adc) {
+            size += cat(dest, "media2_service_files/GetProfiles_ADC.xml", 2,
+                    "%PROFILE%", profile[h]);
+        }
+    }
+
+    size += cat(dest, "media2_service_files/GetProfiles_confend.xml", 0);
+
+    return size;
+}
+
+int media2_get_profiles()
+{
+    const char *profile_token = get_element("Token", "Body");
+    ezxml_t x_type;
+    int n_type;
+    long size = 0;
+    int q = 0, h = 0;
+    char *profile[] = { "Profile_0", "Profile_1" };
+    int c;
+    char dest_a[] = "stdout";
+    char *dest;
+    config_types_t t;
+
+    memset(&t, 0, sizeof(t));
     x_type = get_element_ptr(NULL, "Type", "Body");
     n_type = 0;
     do {
         if (x_type != NULL) {
-            if (strstr(x_type->txt, "VideoSource") != NULL) typeVSC = 1;
-            if (strstr(x_type->txt, "AudioSource") != NULL) typeASC = 1;
-            if (strstr(x_type->txt, "VideoEncoder") != NULL) typeVEC = 1;
-            if (strstr(x_type->txt, "AudioEncoder") != NULL) typeAEC = 1;
-            if (strstr(x_type->txt, "PTZ") != NULL) typePTZ = 1;
-            if (strstr(x_type->txt, "AudioOutput") != NULL) typeAOC = 1;
-            if (strstr(x_type->txt, "AudioDecoder") != NULL) typeADC = 1;
+            if (strstr(x_type->txt, "VideoSource") != NULL) t.vsc = 1;
+            if (strstr(x_type->txt, "AudioSource") != NULL) t.asc = 1;
+            if (strstr(x_type->txt, "VideoEncoder") != NULL) t.vec = 1;
+            if (strstr(x_type->txt, "AudioEncoder") != NULL) t.aec = 1;
+            if (strstr(x_type->txt, "PTZ") != NULL) t.ptz = 1;
+            if (strstr(x_type->txt, "AudioOutput") != NULL) t.aoc = 1;
+            if (strstr(x_type->txt, "AudioDecoder") != NULL) t.adc = 1;
             if (strstr(x_type->txt, "All") != NULL) {
-                typeVSC = 1;
-                typeASC = 1;
-                typeVEC = 1;
-                typeAEC = 1;
-                typePTZ = 1;
-                typeAOC = 1;
-                typeADC = 1;
+                t.vsc = 1;
+                t.asc = 1;
+                t.vec = 1;
+                t.aec = 1;
+                t.ptz = 1;
+                t.aoc = 1;
+                t.adc = 1;
             }
             n_type++;
             x_type = x_type->next;
@@ -173,239 +245,32 @@ int media2_get_profiles()
         output_http_headers(size);
 
         return cat("stdout", "media2_service_files/GetProfiles_none.xml", 0);
-
-    } else if (q == 1) {
-        // We need 1st step to evaluate content length
-        for (c = 0; c < 2; c++) {
-            if (c == 0) {
-                dest = NULL;
-            } else {
-                dest = dest_a;
-                output_http_headers(size);
-            }
-
-            size = cat(dest, "media2_service_files/GetProfiles_header.xml", 2,
-                    "%PROFILE%", profile[h]);
-
-            if (n_type > 0) {
-                size += cat(dest, "media2_service_files/GetProfiles_confstart.xml", 0);
-
-                if (typeVSC) {
-                    // Get VideoSource from the largest profile
-                    snprintf(stmp_w_h, sizeof(stmp_w_h), "%d", service_ctx.profiles[vsrc].width);
-                    snprintf(stmp_h_h, sizeof(stmp_h_h), "%d", service_ctx.profiles[vsrc].height);
-                    size += cat(dest, "media2_service_files/GetProfiles_VSC.xml", 6,
-                            "%PROFILES_NUM%", profiles_num,
-                            "%VSC_WIDTH%", stmp_w_h,
-                            "%VSC_HEIGHT%", stmp_h_h);
-                }
-                if (typeASC) {
-                    if (((service_ctx.profiles_num > 0) && (service_ctx.profiles[0].audio_encoder != AUDIO_NONE)) ||
-                            ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_encoder != AUDIO_NONE))) {
-
-                        size += cat(dest, "media2_service_files/GetProfiles_ASC.xml", 2,
-                                "%PROFILES_NUM%", profiles_num);
-                    }
-                }
-                if (typeVEC) {
-                    snprintf(stmp_w_h, sizeof(stmp_w_h), "%d", service_ctx.profiles[h].width);
-                    snprintf(stmp_h_h, sizeof(stmp_h_h), "%d", service_ctx.profiles[h].height);
-                    snprintf(stmp_fps_h, sizeof(stmp_fps_h), "%d", service_ctx.profiles[h].framerate > 0 ? service_ctx.profiles[h].framerate : 30);
-                    set_video_codec(video_enc_h, 16, service_ctx.profiles[h].type, 2);
-                    size += cat(dest, "media2_service_files/GetProfiles_VEC.xml", 12,
-                            "%H264PROFILE%", h264profile[h],
-                            "%PROFILE%", profile[h],
-                            "%VIDEO_ENCODING%", video_enc_h,
-                            "%VEC_WIDTH%", stmp_w_h,
-                            "%VEC_HEIGHT%", stmp_h_h,
-                            "%FRAMERATE%", stmp_fps_h);
-                }
-                if (typeAEC) {
-                    if (service_ctx.profiles[h].audio_encoder != AUDIO_NONE) {
-                        set_audio_codec(audio_enc_h, 16, service_ctx.profiles[h].audio_encoder, 2);
-                        size += cat(dest, "media2_service_files/GetProfiles_AEC.xml", 4,
-                                "%PROFILE%", profile[h],
-                                "%AUDIO_ENCODING%", audio_enc_h);
-                    }
-                }
-                if (typePTZ) {
-                    if (service_ctx.ptz_node.enable == 1) {
-                        size += cat(dest, ptz_supports_zoom() ? "media2_service_files/GetProfiles_PTZ.xml" : "media2_service_files/GetProfiles_PTZ_nozoom.xml", 12,
-                                "%MIN_X%", min_x,
-                                "%MAX_X%", max_x,
-                                "%MIN_Y%", min_y,
-                                "%MAX_Y%", max_y,
-                                "%MIN_Z%", min_z,
-                                "%MAX_Z%", max_z);
-                    }
-                }
-                if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {
-                    if (typeAOC) {
-                        size += cat(dest, "media2_service_files/GetProfiles_AOC.xml", 2,
-                                "%PROFILES_NUM%", profiles_num);
-                    }
-                    if (typeADC) {
-                        size += cat(dest, "media2_service_files/GetProfiles_ADC.xml", 2,
-                                "%PROFILE%", profile[h]);
-                    }
-                }
-
-                size += cat(dest, "media2_service_files/GetProfiles_confend.xml", 0);
-            }
-            size += cat(dest, "media2_service_files/GetProfiles_footer.xml", 0);
-        }
-    } else if (q == 2) {
-        // We need 1st step to evaluate content length
-        for (c = 0; c < 2; c++) {
-            if (c == 0) {
-                dest = NULL;
-            } else {
-                dest = dest_a;
-                output_http_headers(size);
-            }
-
-            h = 0;
-            size = cat(dest, "media2_service_files/GetProfiles_header.xml", 2,
-                    "%PROFILE%", profile[h]);
-
-            if (n_type > 0) {
-                size += cat(dest, "media2_service_files/GetProfiles_confstart.xml", 0);
-
-                if (typeVSC) {
-                    // Get VideoSource from the largest profile
-                    snprintf(stmp_w_h, sizeof(stmp_w_h), "%d", service_ctx.profiles[vsrc].width);
-                    snprintf(stmp_h_h, sizeof(stmp_h_h), "%d", service_ctx.profiles[vsrc].height);
-                    size += cat(dest, "media2_service_files/GetProfiles_VSC.xml", 6,
-                            "%PROFILES_NUM%", profiles_num,
-                            "%VSC_WIDTH%", stmp_w_h,
-                            "%VSC_HEIGHT%", stmp_h_h);
-                }
-                if (typeASC) {
-                    if (((service_ctx.profiles_num > 0) && (service_ctx.profiles[0].audio_encoder != AUDIO_NONE)) ||
-                            ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_encoder != AUDIO_NONE))) {
-
-                        size += cat(dest, "media2_service_files/GetProfiles_ASC.xml", 2,
-                                "%PROFILES_NUM%", profiles_num);
-                    }
-                }
-                if (typeVEC) {
-                    snprintf(stmp_w_h, sizeof(stmp_w_h), "%d", service_ctx.profiles[h].width);
-                    snprintf(stmp_h_h, sizeof(stmp_h_h), "%d", service_ctx.profiles[h].height);
-                    snprintf(stmp_fps_h, sizeof(stmp_fps_h), "%d", service_ctx.profiles[h].framerate > 0 ? service_ctx.profiles[h].framerate : 30);
-                    set_video_codec(video_enc_h, 16, service_ctx.profiles[h].type, 2);
-                    size += cat(dest, "media2_service_files/GetProfiles_VEC.xml", 12,
-                            "%H264PROFILE%", h264profile[h],
-                            "%PROFILE%", profile[h],
-                            "%VIDEO_ENCODING%", video_enc_h,
-                            "%VEC_WIDTH%", stmp_w_h,
-                            "%VEC_HEIGHT%", stmp_h_h,
-                            "%FRAMERATE%", stmp_fps_h);
-                }
-                if (typeAEC) {
-                    if (service_ctx.profiles[h].audio_encoder != AUDIO_NONE) {
-                        set_audio_codec(audio_enc_h, 16, service_ctx.profiles[h].audio_encoder, 2);
-                        size += cat(dest, "media2_service_files/GetProfiles_AEC.xml", 4,
-                                "%PROFILE%", profile[h],
-                                "%AUDIO_ENCODING%", audio_enc_h);
-                    }
-                }
-                if (typePTZ) {
-                    if (service_ctx.ptz_node.enable == 1) {
-                        size += cat(dest, ptz_supports_zoom() ? "media2_service_files/GetProfiles_PTZ.xml" : "media2_service_files/GetProfiles_PTZ_nozoom.xml", 12,
-                                "%MIN_X%", min_x,
-                                "%MAX_X%", max_x,
-                                "%MIN_Y%", min_y,
-                                "%MAX_Y%", max_y,
-                                "%MIN_Z%", min_z,
-                                "%MAX_Z%", max_z);
-                    }
-                }
-                if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {
-                    if (typeAOC) {
-                        size += cat(dest, "media2_service_files/GetProfiles_AOC.xml", 2,
-                                "%PROFILES_NUM%", profiles_num);
-                    }
-                    if (typeADC) {
-                        size += cat(dest, "media2_service_files/GetProfiles_ADC.xml", 2,
-                                "%PROFILE%", profile[h]);
-                    }
-                }
-
-                size += cat(dest, "media2_service_files/GetProfiles_confend.xml", 0);
-            }
-
-            h = 1;
-            size += cat(dest, "media2_service_files/GetProfiles_middle.xml", 2,
-                    "%PROFILE%", profile[h]);
-
-            if (n_type > 0) {
-                size += cat(dest, "media2_service_files/GetProfiles_confstart.xml", 0);
-
-                if (typeVSC) {
-                    // Get VideoSource from the largest profile
-                    snprintf(stmp_w_l, sizeof(stmp_w_l), "%d", service_ctx.profiles[vsrc].width);
-                    snprintf(stmp_h_l, sizeof(stmp_h_l), "%d", service_ctx.profiles[vsrc].height);
-                    size += cat(dest, "media2_service_files/GetProfiles_VSC.xml", 6,
-                            "%PROFILES_NUM%", profiles_num,
-                            "%VSC_WIDTH%", stmp_w_l,
-                            "%VSC_HEIGHT%", stmp_h_l);
-                }
-                if (typeASC) {
-                    if (((service_ctx.profiles_num > 0) && (service_ctx.profiles[0].audio_encoder != AUDIO_NONE)) ||
-                            ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_encoder != AUDIO_NONE))) {
-
-                        size += cat(dest, "media2_service_files/GetProfiles_ASC.xml", 2,
-                                "%PROFILES_NUM%", profiles_num);
-                    }
-                }
-                if (typeVEC) {
-                    snprintf(stmp_w_l, sizeof(stmp_w_l), "%d", service_ctx.profiles[h].width);
-                    snprintf(stmp_h_l, sizeof(stmp_h_l), "%d", service_ctx.profiles[h].height);
-                    snprintf(stmp_fps_l, sizeof(stmp_fps_l), "%d", service_ctx.profiles[h].framerate > 0 ? service_ctx.profiles[h].framerate : 30);
-                    set_video_codec(video_enc_l, 16, service_ctx.profiles[h].type, 2);
-                    size += cat(dest, "media2_service_files/GetProfiles_VEC.xml", 12,
-                            "%H264PROFILE%", h264profile[h],
-                            "%PROFILE%", profile[h],
-                            "%VIDEO_ENCODING%", video_enc_l,
-                            "%VEC_WIDTH%", stmp_w_l,
-                            "%VEC_HEIGHT%", stmp_h_l,
-                            "%FRAMERATE%", stmp_fps_l);
-                }
-                if (typeAEC) {
-                    if (service_ctx.profiles[h].audio_encoder != AUDIO_NONE) {
-                        set_audio_codec(audio_enc_l, 16, service_ctx.profiles[h].audio_encoder, 2);
-                        size += cat(dest, "media2_service_files/GetProfiles_AEC.xml", 4,
-                                "%PROFILE%", profile[h],
-                                "%AUDIO_ENCODING%", audio_enc_l);
-                    }
-                }
-                if (typePTZ) {
-                    if (service_ctx.ptz_node.enable == 1) {
-                        size += cat(dest, ptz_supports_zoom() ? "media2_service_files/GetProfiles_PTZ.xml" : "media2_service_files/GetProfiles_PTZ_nozoom.xml", 12,
-                                "%MIN_X%", min_x,
-                                "%MAX_X%", max_x,
-                                "%MIN_Y%", min_y,
-                                "%MAX_Y%", max_y,
-                                "%MIN_Z%", min_z,
-                                "%MAX_Z%", max_z);
-                    }
-                }
-                if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {
-                    if (typeAOC) {
-                        size += cat(dest, "media2_service_files/GetProfiles_AOC.xml", 2,
-                                "%PROFILES_NUM%", profiles_num);
-                    }
-                    if (typeADC) {
-                        size += cat(dest, "media2_service_files/GetProfiles_ADC.xml", 2,
-                                "%PROFILE%", profile[h]);
-                    }
-                }
-
-                size += cat(dest, "media2_service_files/GetProfiles_confend.xml", 0);
-            }
-            size += cat(dest, "media2_service_files/GetProfiles_footer.xml", 0);
-        }
     }
+
+    // We need 1st step to evaluate content length
+    for (c = 0; c < 2; c++) {
+        if (c == 0) {
+            dest = NULL;
+        } else {
+            dest = dest_a;
+            output_http_headers(size);
+        }
+
+        size = cat(dest, "media2_service_files/GetProfiles_header.xml", 2,
+                "%PROFILE%", profile[h]);
+        if (n_type > 0)
+            size += get_profile_configurations(dest, h, &t);
+
+        if (q == 2) {
+            size += cat(dest, "media2_service_files/GetProfiles_middle.xml", 2,
+                    "%PROFILE%", profile[1]);
+            if (n_type > 0)
+                size += get_profile_configurations(dest, 1, &t);
+        }
+        size += cat(dest, "media2_service_files/GetProfiles_footer.xml", 0);
+    }
+
+    return size;
 }
 
 int media2_get_video_source_modes()
