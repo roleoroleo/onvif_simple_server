@@ -14,6 +14,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,7 +48,11 @@ static int parse_unit_range(const char *s, double *out)
     char *end;
     double d = strtod(s, &end);
 
-    if ((end == s) || (*end != '\0') || !(d >= 0.0) || (d > 1.0))
+    if (end == s)
+        return -1;
+    while (isspace((unsigned char) *end))
+        end++;
+    if ((*end != '\0') || !(d >= 0.0) || (d > 1.0))
         return -1;
     *out = d;
     return 0;
@@ -59,7 +64,11 @@ static int parse_speed(const char *s, double *out)
     char *end;
     double d = strtod(s, &end);
 
-    if ((end == s) || (*end != '\0') || !(d >= -1.0) || (d > 1.0))
+    if (end == s)
+        return -1;
+    while (isspace((unsigned char) *end))
+        end++;
+    if ((*end != '\0') || !(d >= -1.0) || (d > 1.0))
         return -1;
     *out = d;
     return 0;
@@ -304,9 +313,10 @@ int imaging_move()
 
 int imaging_stop()
 {
+    if (check_video_source_token(get_element("VideoSourceToken", "Body")) != 0)
+        return -1;
+
     if (has_focus()) {
-        if (check_video_source_token(get_element("VideoSourceToken", "Body")) != 0)
-            return -1;
         if (run_focus(0.0) != 0)
             return -3;
     }

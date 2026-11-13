@@ -36,6 +36,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <time.h>
+#include <errno.h>
 #include <pthread.h>
 
 #ifdef HAVE_WOLFSSL
@@ -750,10 +751,10 @@ char *rtrim(char *s)
 {
     int iret = strlen(s);
     char* back = s + iret;
-    back--;
-    while (isspace(*back)) {
-        *back = '\0';
+
+    while ((back > s) && isspace((unsigned char) back[-1])) {
         back--;
+        *back = '\0';
     }
     return s;
 }
@@ -846,7 +847,7 @@ int html_escape(char *url, int max_len)
 
     f = url;
     t = (char *) &s_tmp[0];
-    while (*f != '\0' && (t - s_tmp) < (max_len - 10)) { // Leave room for escape sequences
+    while (*f != '\0') {
         switch (*f) {
         case '\"':
             if ((t - s_tmp) < (max_len - 6)) { // &quot; = 6 chars
@@ -930,6 +931,8 @@ int html_escape(char *url, int max_len)
     *t = '\0'; // Ensure null termination
 
     snprintf(url, max_len, "%s", (char *) s_tmp);
+
+    return 0;
 }
 
 /**
@@ -1843,16 +1846,28 @@ ssize_t spawn_capture(const char *cmd, char *buf, size_t len, int timeout_sec)
     fcntl(pipefd[0], F_SETFL, O_NONBLOCK);
 
     ssize_t total = 0;
-    struct timeval tv = { .tv_sec = timeout_sec, .tv_usec = 0 };
-    fd_set rfds;
-    FD_ZERO(&rfds);
-    FD_SET(pipefd[0], &rfds);
+    time_t end = time(NULL) + timeout_sec;
 
-    if (select(pipefd[0] + 1, &rfds, NULL, NULL, &tv) > 0) {
+    /* Read until EOF, a full buffer or the timeout: the command may write
+     * its output in several parts. */
+    while (total < (ssize_t)(len - 1)) {
+        time_t left = end - time(NULL);
+        struct timeval tv;
+        fd_set rfds;
         ssize_t n;
-        while (total < (ssize_t)(len - 1) &&
-               (n = read(pipefd[0], buf + total, len - 1 - (size_t)total)) > 0)
+
+        if (left < 0) break;
+        tv.tv_sec = left;
+        tv.tv_usec = 0;
+        FD_ZERO(&rfds);
+        FD_SET(pipefd[0], &rfds);
+        if (select(pipefd[0] + 1, &rfds, NULL, NULL, &tv) <= 0) break;
+
+        n = read(pipefd[0], buf + total, len - 1 - (size_t)total);
+        if (n > 0)
             total += n;
+        else if ((n == 0) || ((errno != EAGAIN) && (errno != EINTR)))
+            break;
     }
 
     buf[total] = '\0';

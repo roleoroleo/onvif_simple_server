@@ -411,7 +411,10 @@ int main(int argc, char ** argv)
                 auth_error = 4;
             }
 
-            if (auth_error == 0) {
+            if ((auth_error == 0) && (service_ctx.password == NULL)) {
+                log_error("No password configured for user %s", service_ctx.user);
+                auth_error = 10;
+            } else if (auth_error == 0) {
                 // Calculate digest and check the password
                 // Digest = B64ENCODE( SHA1( B64DECODE( Nonce ) + Date + Password ) )
                 if (nonce_size + strlen(security.created) + strlen(service_ctx.password) > sizeof(auth)) {
@@ -702,7 +705,7 @@ int main(int argc, char ** argv)
                 events_set_synchronization_point();
             } else {
                 if (service_ctx.adv_empty_if_unknown == 1) {
-                    send_empty_response("ted", method);
+                    send_empty_response("tev", method);
                 } else {
                     events_unsupported(method);
                 }
@@ -757,6 +760,8 @@ int main(int argc, char ** argv)
                     imaging_unsupported(method);
                 }
             }
+        } else {
+            send_action_not_supported_fault(prog_name);
         }
     } else {
         // hack to handle a bug with Synology

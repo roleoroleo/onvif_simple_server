@@ -180,7 +180,7 @@ int media_get_video_source_configuration_options()
     }
 
     if ((strcasecmp(service_ctx.profiles[0].name, token) == 0) ||
-            (strcasecmp(service_ctx.profiles[1].name, token) == 0) ||
+            ((service_ctx.profiles_num == 2) && (strcasecmp(service_ctx.profiles[1].name, token) == 0)) ||
             (strcasecmp("VideoSourceConfigToken", token) == 0)) {
 
         int vsrc = get_video_source_index();
@@ -881,7 +881,7 @@ int media_get_guaranteed_number_of_video_encoder_instances()
         return -1;
     }
 
-    if (strncasecmp("VideoSourceConfigToken", configuration_token, 22) == 0) {
+    if ((configuration_token != NULL) && (strncasecmp("VideoSourceConfigToken", configuration_token, 22) == 0)) {
 
         long size = cat(NULL, "media_service_files/GetGuaranteedNumberOfVideoEncoderInstances.xml", 4,
                 "%TOTAL_NUMBER%", stmp,
@@ -1025,7 +1025,8 @@ int media_get_stream_uri()
 
 int media_get_audio_sources()
 {
-    if ((service_ctx.profiles[0].audio_encoder != AUDIO_NONE) || (service_ctx.profiles[1].audio_encoder != AUDIO_NONE)) {
+    if ((service_ctx.profiles[0].audio_encoder != AUDIO_NONE) ||
+            ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_encoder != AUDIO_NONE))) {
         long size = cat(NULL, "media_service_files/GetAudioSources.xml", 0);
 
         output_http_headers(size);
@@ -1137,7 +1138,8 @@ int media_get_audio_source_configuration_options()
         strncpy(token, service_ctx.profiles[0].name, 9);
     }
 
-    if ((service_ctx.profiles[0].audio_encoder == AUDIO_NONE) && (service_ctx.profiles[1].audio_encoder == AUDIO_NONE)) {
+    if ((service_ctx.profiles[0].audio_encoder == AUDIO_NONE) &&
+            ((service_ctx.profiles_num < 2) || (service_ctx.profiles[1].audio_encoder == AUDIO_NONE))) {
         send_fault("media_service", "Receiver", "ter:ActionNotSupported", "ter:AudioNotSupported", "AudioNotSupported", "The device does not support audio");
         return -1;
     }
@@ -1221,7 +1223,8 @@ int media_get_audio_encoder_configurations()
     char audio_encoder_high[16];
     char audio_encoder_low[16];
 
-    if ((service_ctx.profiles[0].audio_encoder == AUDIO_NONE) && (service_ctx.profiles[1].audio_encoder == AUDIO_NONE)) {
+    if ((service_ctx.profiles[0].audio_encoder == AUDIO_NONE) &&
+            ((service_ctx.profiles_num < 2) || (service_ctx.profiles[1].audio_encoder == AUDIO_NONE))) {
         send_fault("media_service", "Receiver", "ter:ActionNotSupported", "ter:AudioNotSupported", "AudioNotSupported", "The device does not support audio");
         return -1;
     }

@@ -314,7 +314,7 @@ int ptz_get_node()
     snprintf(max_z, sizeof(max_z), "%.1f", service_ctx.ptz_node.max_step_z);
 
     const char *node_token = get_element("NodeToken", "Body");
-    if (strcmp("PTZNodeToken", node_token) != 0) {
+    if ((node_token == NULL) || (strcmp("PTZNodeToken", node_token) != 0)) {
         send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoEntity", "No entity", "No such node on the device");
         return -1;
     }
@@ -417,7 +417,7 @@ int ptz_goto_preset()
     }
 
     preset_token = get_element("PresetToken", "Body");
-    if (sscanf(preset_token, "PresetToken_%d", &preset_number) != 1) {
+    if ((preset_token == NULL) || (sscanf(preset_token, "PresetToken_%d", &preset_number) != 1)) {
         send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
         return -3;
     }
@@ -621,9 +621,9 @@ int ptz_relative_move()
     double dy = 0;
     double dz = 0;
     char sys_command_tmp[MAX_LEN];
-    char sys_command[MAX_LEN];
+    char sys_command[MAX_LEN] = "";
     int ret = 0;
-    ezxml_t node, node_p, node_z;
+    ezxml_t node, node_p = NULL, node_z = NULL;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
     if (node == NULL) {
@@ -721,17 +721,21 @@ int ptz_relative_move()
                     // Approximation 4: I don't know how many degrees is max_step_y, assume 180°
                     dx = dx / (360.0 / service_ctx.ptz_node.max_step_x);
                     dy = dy / (180.0 / service_ctx.ptz_node.max_step_y);
-                    snprintf(sys_command, sizeof(sys_command), service_ctx.ptz_node.jump_to_rel, dx, dy, 0);
+                    snprintf(sys_command, sizeof(sys_command), service_ctx.ptz_node.jump_to_rel, dx, dy, 0.0);
                 }
             }
         }
     }
 
     if (node_z != NULL) {
-        if (strcmp("http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace", space_z) == 0) {
+        if ((space_z != NULL) && (strcmp("http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace", space_z) == 0)) {
             // do nothing
         }
     }
+
+    // Nothing to move (e.g. only a Zoom, or an unknown PanTilt space)
+    if ((ret == 0) && (sys_command[0] == '\0'))
+        ret = -4;
 
     if (ret == 0) {
         if (run_command(sys_command) != 0) {
@@ -760,7 +764,7 @@ int ptz_absolute_move()
     double dy = 0.0;
     double dz = 0.0;
     char sys_command_tmp[MAX_LEN];
-    char sys_command[MAX_LEN];
+    char sys_command[MAX_LEN] = "";
     int ret = 0;
     ezxml_t node, node_c;
 
@@ -823,6 +827,10 @@ int ptz_absolute_move()
             snprintf(sys_command, sizeof(sys_command), service_ctx.ptz_node.jump_to_abs, dx, dy, dz);
         }
     }
+
+    // Nothing to move (e.g. only a Zoom)
+    if ((ret == 0) && (sys_command[0] == '\0'))
+        ret = -4;
 
     if (ret == 0) {
         if (run_command(sys_command) != 0) {
@@ -1202,7 +1210,7 @@ int ptz_remove_preset()
         return -2;
     }
     preset_token = get_element("PresetToken", "Body");
-    if (sscanf(preset_token, "PresetToken_%d", &preset_number) != 1) {
+    if ((preset_token == NULL) || (sscanf(preset_token, "PresetToken_%d", &preset_number) != 1)) {
         send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
         return -3;
     }
