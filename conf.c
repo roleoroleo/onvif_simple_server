@@ -1397,7 +1397,7 @@ int process_json_conf_file(char *file)
         log_debug("\tenable: %d", service_ctx.events_enable);
         log_debug("");
 
-        if (json_object_object_get_ex(json_file, "events", &value)) {
+        if (json_object_object_get_ex(value, "events", &value)) {
             if (value && json_object_is_type(value, json_type_array)) {
                 size_t array_len = json_object_array_length(value);
                 for (size_t i = 0; i < array_len; i++) {

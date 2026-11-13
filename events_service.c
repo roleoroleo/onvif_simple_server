@@ -395,8 +395,8 @@ int events_pull_messages()
                     "%TOPIC%", service_ctx.events[i].topic,
                     "%UTC_TIME%", iso_str_3,
                     "%PROPERTY%", property,
-                    "%SOURCE_NAME%", service_ctx.events[i].source_name,
-                    "%SOURCE_VALUE%", service_ctx.events[i].source_value,
+                    "%SOURCE_NAME%", service_ctx.events[i].source_name != NULL ? service_ctx.events[i].source_name : "",
+                    "%SOURCE_VALUE%", service_ctx.events[i].source_value != NULL ? service_ctx.events[i].source_value : "",
                     "%DATA_NAME%", data_name,
                     "%DATA_VALUE%", data_value);
                 if (c == 0) total_size += size;
@@ -766,7 +766,7 @@ int events_get_event_properties()
                 "%TOPIC_L1_START%", topic_ls[0],
                 "%TOPIC_L2_START%", topic_ls[1],
                 "%TOPIC_L3_START%", topic_ls[2],
-                "%SOURCE_NAME%", service_ctx.events[i].source_name,
+                "%SOURCE_NAME%", service_ctx.events[i].source_name != NULL ? service_ctx.events[i].source_name : "",
                 "%SOURCE_TYPE%", service_ctx.events[i].source_type != NULL ? service_ctx.events[i].source_type : "tt:ReferenceToken",
                 "%DATA_NAME%", data_name,
                 "%DATA_TYPE%", data_type,
