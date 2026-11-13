@@ -174,7 +174,7 @@ char *ezxml_decode(char *s, char **ent, char t)
         else if (t != 'c' && ! strncmp(s, "&#", 2)) { // character reference
             if (s[2] == 'x') c = strtol(s + 3, &e, 16); // base 16
             else c = strtol(s + 2, &e, 10); // base 10
-            if (! c || *e != ';') { s++; continue; } // not a character ref
+            if (c <= 0 || c > 0x10FFFF || *e != ';') { s++; continue; } // not a valid character ref
 
             if (c < 0x80) *(s++) = c; // US-ASCII subset
             else { // multi-byte UTF-8 sequence
