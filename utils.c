@@ -750,10 +750,10 @@ char *rtrim(char *s)
 {
     int iret = strlen(s);
     char* back = s + iret;
-    back--;
-    while (isspace(*back)) {
-        *back = '\0';
+
+    while ((back > s) && isspace((unsigned char) back[-1])) {
         back--;
+        *back = '\0';
     }
     return s;
 }
@@ -846,7 +846,7 @@ int html_escape(char *url, int max_len)
 
     f = url;
     t = (char *) &s_tmp[0];
-    while (*f != '\0' && (t - s_tmp) < (max_len - 10)) { // Leave room for escape sequences
+    while (*f != '\0') {
         switch (*f) {
         case '\"':
             if ((t - s_tmp) < (max_len - 6)) { // &quot; = 6 chars
@@ -930,6 +930,8 @@ int html_escape(char *url, int max_len)
     *t = '\0'; // Ensure null termination
 
     snprintf(url, max_len, "%s", (char *) s_tmp);
+
+    return 0;
 }
 
 /**

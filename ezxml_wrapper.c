@@ -73,7 +73,7 @@ const char *get_method(int skip_prefix)
     snprintf(first_node, sizeof(first_node), "%s", ":Body");
     while (xml) {
         len = strlen(xml->name);
-        if (strcmp(first_node, &(xml->name)[len - 5]) == 0) break;
+        if ((len >= 5) && (strcmp(first_node, &(xml->name)[len - 5]) == 0)) break;
         xml = xml->ordered;
     }
     if ((xml) && (xml->child)) {
@@ -113,7 +113,8 @@ const char *get_element_rec(ezxml_t xml, char *name, char *first_node)
         px = xml->child;
         snprintf(name_copy, sizeof(name_copy), "%s", first_node);
         while (px) {
-            if (strcmp(first_node, &(px->name)[strlen(px->name) - strlen(first_node)]) == 0) {
+            if ((strlen(px->name) >= strlen(first_node)) &&
+                    (strcmp(first_node, &(px->name)[strlen(px->name) - strlen(first_node)]) == 0)) {
                 ret = get_element_rec(px, name, first_node);
                 return ret;
             } else {
@@ -130,7 +131,8 @@ const char *get_element_rec(ezxml_t xml, char *name, char *first_node)
         // Check if this node is "<something:name>"
         name_copy[0] = ':';
         snprintf(&name_copy[1], sizeof(name_copy) - 1, "%s", name);
-        if (strcmp(name_copy, &(xml->name)[strlen(xml->name) - strlen(name_copy)]) == 0) {
+        if ((strlen(xml->name) >= strlen(name_copy)) &&
+                (strcmp(name_copy, &(xml->name)[strlen(xml->name) - strlen(name_copy)]) == 0)) {
             return xml->txt;
         }
 
@@ -192,7 +194,8 @@ ezxml_t get_element_rec_ptr(ezxml_t xml, char *name, char *first_node)
         px = xml->child;
         snprintf(name_copy, sizeof(name_copy), "%s", first_node);
         while (px) {
-            if (strcmp(first_node, &(px->name)[strlen(px->name) - strlen(first_node)]) == 0) {
+            if ((strlen(px->name) >= strlen(first_node)) &&
+                    (strcmp(first_node, &(px->name)[strlen(px->name) - strlen(first_node)]) == 0)) {
                 ret = get_element_rec_ptr(px, name, first_node);
                 return ret;
             } else {
@@ -209,7 +212,8 @@ ezxml_t get_element_rec_ptr(ezxml_t xml, char *name, char *first_node)
         // Check if this node is "<something:name>"
         name_copy[0] = ':';
         snprintf(&name_copy[1], sizeof(name_copy) - 1, "%s", name);
-        if (strcmp(name_copy, &(xml->name)[strlen(xml->name) - strlen(name_copy)]) == 0) {
+        if ((strlen(xml->name) >= strlen(name_copy)) &&
+                (strcmp(name_copy, &(xml->name)[strlen(xml->name) - strlen(name_copy)]) == 0)) {
             return xml;
         }
 
