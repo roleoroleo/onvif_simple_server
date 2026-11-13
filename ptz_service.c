@@ -728,7 +728,7 @@ int ptz_relative_move()
     }
 
     if (node_z != NULL) {
-        if (strcmp("http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace", space_z) == 0) {
+        if ((space_z != NULL) && (strcmp("http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace", space_z) == 0)) {
             // do nothing
         }
     }
