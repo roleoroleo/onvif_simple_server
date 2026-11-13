@@ -705,7 +705,7 @@ int main(int argc, char ** argv)
                 events_set_synchronization_point();
             } else {
                 if (service_ctx.adv_empty_if_unknown == 1) {
-                    send_empty_response("ted", method);
+                    send_empty_response("tev", method);
                 } else {
                     events_unsupported(method);
                 }
