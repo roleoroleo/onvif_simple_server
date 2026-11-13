@@ -1,0 +1,4 @@
+                    <%ELEMENT% token="AnalyticsConfigToken"%NS_DECL%>
+                        <tt:Name>AnalyticsConfig</tt:Name>
+                        <tt:UseCount>%USE_COUNT%</tt:UseCount>
+                        <tt:AnalyticsEngineConfiguration>

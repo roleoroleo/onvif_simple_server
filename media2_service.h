@@ -43,6 +43,13 @@ int media2_set_audio_output_configuration();
 
 int media2_set_synchronization_point();
 
+int media2_get_metadata_configurations();
+int media2_get_metadata_configuration_options();
+int media2_get_analytics_configurations();
+int media2_add_configuration();
+int media2_remove_configuration();
+int media2_set_metadata_configuration();
+
 int media2_unsupported(const char *method);
 
 #endif //MEDIA2_SERVICE_H

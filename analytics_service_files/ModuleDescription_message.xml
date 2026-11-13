@@ -1,0 +1,9 @@
+                    <tt:Messages IsProperty="true">
+                        <tt:Source>
+                            <tt:SimpleItemDescription Name="%SOURCE_NAME%" Type="%SOURCE_TYPE%"/>
+                        </tt:Source>
+                        <tt:Data>
+                            <tt:SimpleItemDescription Name="%DATA_NAME%" Type="%DATA_TYPE%"/>
+                        </tt:Data>
+                        <tt:ParentTopic>%TOPIC%</tt:ParentTopic>
+                    </tt:Messages>

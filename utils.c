@@ -935,6 +935,134 @@ int html_escape(char *url, int max_len)
     return 0;
 }
 
+/* 1 if s is valid UTF-8 and has only characters that XML 1.0 allows */
+int is_xml_chars(const char *s)
+{
+    const unsigned char *p = (const unsigned char *) s;
+    unsigned int c;
+    int i, n;
+
+    while (*p != '\0') {
+        if (*p < 0x80) {
+            if ((*p < 0x20) && (*p != '\t') && (*p != '\n') && (*p != '\r'))
+                return 0;
+            p++;
+            continue;
+        }
+        if ((*p & 0xe0) == 0xc0) {
+            n = 1;
+            c = *p & 0x1f;
+        } else if ((*p & 0xf0) == 0xe0) {
+            n = 2;
+            c = *p & 0x0f;
+        } else if ((*p & 0xf8) == 0xf0) {
+            n = 3;
+            c = *p & 0x07;
+        } else {
+            return 0;
+        }
+        for (i = 1; i <= n; i++) {
+            if ((p[i] & 0xc0) != 0x80)
+                return 0;
+            c = (c << 6) | (p[i] & 0x3f);
+        }
+        if (((n == 1) && (c < 0x80)) || ((n == 2) && (c < 0x800)) || ((n == 3) && (c < 0x10000)) ||
+                (c > 0x10ffff) || ((c >= 0xd800) && (c <= 0xdfff)) || (c == 0xfffe) || (c == 0xffff))
+            return 0;
+        p += n + 1;
+    }
+    return 1;
+}
+
+/* Read a regular file of at most max bytes into a new NUL-terminated buffer.
+ * O_NONBLOCK keeps FIFOs and files like /proc/kmsg from blocking the request.
+ * Returns NULL on error; *len gets the byte count. */
+char *read_file(const char *path, size_t max, size_t *len)
+{
+    struct stat st;
+    char *buf;
+    size_t n = 0;
+    ssize_t r;
+    int fd;
+
+    fd = open(path, O_RDONLY | O_NONBLOCK);
+    if (fd < 0)
+        return NULL;
+    if ((fstat(fd, &st) != 0) || !S_ISREG(st.st_mode) || (st.st_size > (off_t) max)) {
+        close(fd);
+        return NULL;
+    }
+    buf = (char *) malloc(max + 1);
+    if (buf == NULL) {
+        close(fd);
+        return NULL;
+    }
+    while (n <= max) {
+        r = read(fd, buf + n, max + 1 - n);
+        if (r < 0) {
+            free(buf);
+            close(fd);
+            return NULL;
+        }
+        if (r == 0)
+            break;
+        n += r;
+    }
+    close(fd);
+    if (n > max) {
+        free(buf);
+        return NULL;
+    }
+    buf[n] = '\0';
+    if (len != NULL)
+        *len = n;
+    return buf;
+}
+
+/* 1 if uri is one of the namespace names no prefix may be bound to */
+int is_reserved_namespace(const char *uri)
+{
+    return (strcmp(uri, "http://www.w3.org/XML/1998/namespace") == 0) ||
+            (strcmp(uri, "http://www.w3.org/2000/xmlns/") == 0);
+}
+
+/* 1 if the first len bytes of s are an XML NCName (ASCII only) */
+int is_ncname(const char *s, size_t len)
+{
+    size_t i;
+
+    if ((len == 0) || !(isalpha((unsigned char) s[0]) || (s[0] == '_')))
+        return 0;
+    for (i = 1; i < len; i++) {
+        if (!(isalnum((unsigned char) s[i]) || (s[i] == '_') || (s[i] == '-') || (s[i] == '.')))
+            return 0;
+    }
+    return 1;
+}
+
+/* Copy a configured string into buf with XML special characters escaped. */
+const char *xml_text(char *buf, size_t size, const char *s)
+{
+    snprintf(buf, size, "%s", s != NULL ? s : "");
+    if (html_escape(buf, (int) size) < 0)
+        buf[0] = '\0';
+
+    return buf;
+}
+
+void get_event_description(const event_t *e, const char **source_type,
+        const char **data_name, const char **data_type)
+{
+    *source_type = (e->source_type != NULL) ? e->source_type : "tt:ReferenceToken";
+    if ((e->topic != NULL) && (strcmp("tns1:Device/Trigger/Relay", e->topic) == 0)) {
+        *data_name = "LogicalState";
+        *data_type = "tt:RelayLogicalState";
+    } else {
+        *data_name = "State";
+        *data_type = "xsd:boolean";
+    }
+}
+
 /**
  * Hashes a given sequence of bytes using the SHA1 algorithm
  * @param output The hash

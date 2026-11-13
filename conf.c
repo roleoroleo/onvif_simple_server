@@ -68,6 +68,21 @@ static int dup_str(char **dst, const char *src)
     return 0;
 }
 
+/* Profile M needs Media2, and a metadata track needs Profile M. */
+static void check_analytics_conf()
+{
+    int i;
+
+    if ((service_ctx.adv_enable_analytics == 1) && (service_ctx.adv_enable_media2 == 0)) {
+        log_warn("adv_enable_analytics needs adv_enable_media2=1, analytics disabled");
+        service_ctx.adv_enable_analytics = 0;
+    }
+    if (service_ctx.adv_enable_analytics == 0) {
+        for (i = 0; i < service_ctx.profiles_num; i++)
+            service_ctx.profiles[i].metadata = 0;
+    }
+}
+
 int process_conf_file(char *file)
 {
     FILE *fF;
@@ -97,6 +112,8 @@ int process_conf_file(char *file)
     service_ctx.sync_point_command = NULL;
     service_ctx.adv_enable_media2 = 0;
     service_ctx.adv_enable_imaging = 0;
+    service_ctx.adv_enable_analytics = 0;
+    service_ctx.analytics_file = NULL;
     service_ctx.adv_empty_if_unknown = 0;
     service_ctx.adv_fault_if_unknown = 0;
     service_ctx.adv_fault_if_set = 0;
@@ -245,6 +262,12 @@ int process_conf_file(char *file)
         } else if (strcasecmp(param, "adv_enable_imaging") == 0) {
             if (strcasecmp(value, "1") == 0)
                 service_ctx.adv_enable_imaging = 1;
+        } else if (strcasecmp(param, "adv_enable_analytics") == 0) {
+            if (strcasecmp(value, "1") == 0)
+                service_ctx.adv_enable_analytics = 1;
+        } else if (strcasecmp(param, "analytics_file") == 0) {
+            if (dup_str(&service_ctx.analytics_file, value) != 0)
+                return -2;
         } else if (strcasecmp(param, "adv_empty_if_unknown") == 0) {
             if (strcasecmp(value, "1") == 0)
                 service_ctx.adv_empty_if_unknown = 1;
@@ -297,6 +320,7 @@ int process_conf_file(char *file)
             service_ctx.profiles[service_ctx.profiles_num - 1].framerate = 30;
             service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
             service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
+            service_ctx.profiles[service_ctx.profiles_num - 1].metadata = 0;
         } else if (strcasecmp(param, "width") == 0) {
             errno = 0;
             service_ctx.profiles[service_ctx.profiles_num - 1].width = strtol(value, &endptr, 10);
@@ -360,6 +384,9 @@ int process_conf_file(char *file)
                 service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = G726;
             else if (strcasecmp(value, "AAC") == 0)
                 service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AAC;
+        } else if (strcasecmp(param, "metadata") == 0) {
+            if (service_ctx.profiles_num > 0)
+                service_ctx.profiles[service_ctx.profiles_num - 1].metadata = (strcasecmp(value, "1") == 0);
 
         //PTZ Profile for ONVIF PTZ Service
         } else if (strcasecmp(param, "ptz") == 0) {
@@ -811,6 +838,8 @@ int process_conf_file(char *file)
         log_info("Device UUID: %s", service_ctx.device_uuid);
     }
 
+    check_analytics_conf();
+
     return 0;
 }
 
@@ -945,6 +974,8 @@ int process_json_conf_file(char *file)
     service_ctx.sync_point_command = NULL;
     service_ctx.adv_enable_media2 = 0;
     service_ctx.adv_enable_imaging = 0;
+    service_ctx.adv_enable_analytics = 0;
+    service_ctx.analytics_file = NULL;
     service_ctx.adv_empty_if_unknown = 0;
     service_ctx.adv_fault_if_unknown = 0;
     service_ctx.adv_fault_if_set = 0;
@@ -1011,6 +1042,8 @@ int process_json_conf_file(char *file)
         goto oom;
     if (get_string_from_json(&(service_ctx.sync_point_command), json_file, "sync_point_command") != 0)
         goto oom;
+    if (get_string_from_json(&(service_ctx.analytics_file), json_file, "analytics_file") != 0)
+        goto oom;
 
 
     if (get_string_from_json(&(service_ctx.ifs), json_file, "ifs") != 0)
@@ -1043,6 +1076,7 @@ int process_json_conf_file(char *file)
         goto oom;
     get_bool_from_json(&(service_ctx.adv_enable_media2), json_file, "adv_enable_media2");
     get_bool_from_json(&(service_ctx.adv_enable_imaging), json_file, "adv_enable_imaging");
+    get_bool_from_json(&(service_ctx.adv_enable_analytics), json_file, "adv_enable_analytics");
     get_bool_from_json(&(service_ctx.adv_empty_if_unknown), json_file, "adv_empty_if_unknown");
     get_bool_from_json(&(service_ctx.adv_fault_if_unknown), json_file, "adv_fault_if_unknown");
     get_bool_from_json(&(service_ctx.adv_fault_if_set), json_file, "adv_fault_if_set");
@@ -1121,6 +1155,7 @@ int process_json_conf_file(char *file)
     log_debug("ifs: %s", service_ctx.ifs);
     log_debug("factory_default_command: %s", service_ctx.factory_default_command ? service_ctx.factory_default_command : "(none)");
     log_debug("sync_point_command: %s", service_ctx.sync_point_command ? service_ctx.sync_point_command : "(none)");
+    log_debug("analytics_file: %s", service_ctx.analytics_file ? service_ctx.analytics_file : "(none)");
     log_debug("port: %d", service_ctx.port);
     log_debug("scopes:");
     for (i = 0; i < service_ctx.scopes_num; i++) {
@@ -1132,6 +1167,7 @@ int process_json_conf_file(char *file)
     }
     log_debug("adv_enable_media2: %d", service_ctx.adv_enable_media2);
     log_debug("adv_enable_imaging: %d", service_ctx.adv_enable_imaging);
+    log_debug("adv_enable_analytics: %d", service_ctx.adv_enable_analytics);
     log_debug("adv_empty_if_unknown: %d", service_ctx.adv_empty_if_unknown);
     log_debug("adv_fault_if_unknown: %d", service_ctx.adv_fault_if_unknown);
     log_debug("adv_fault_if_set: %d", service_ctx.adv_fault_if_set);
@@ -1167,6 +1203,7 @@ int process_json_conf_file(char *file)
                 service_ctx.profiles[service_ctx.profiles_num - 1].framerate = 30;
                 service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
                 service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
+                service_ctx.profiles[service_ctx.profiles_num - 1].metadata = 0;
 
                 if (get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].name), item, "name") != 0)
 
@@ -1234,6 +1271,7 @@ int process_json_conf_file(char *file)
                         service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AAC;
                     free(tmp);
                 }
+                get_bool_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].metadata), item, "metadata");
 
                 // Print debug
                 log_debug("Profile %d", service_ctx.profiles_num - 1);
@@ -1246,6 +1284,7 @@ int process_json_conf_file(char *file)
                 log_debug("\tframerate: %d", service_ctx.profiles[service_ctx.profiles_num - 1].framerate);
                 log_debug("\taudio_encoder: %d", service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder);
                 log_debug("\taudio_decoder: %d", service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder);
+                log_debug("\tmetadata: %d", service_ctx.profiles[service_ctx.profiles_num - 1].metadata);
                 log_debug("");
             }
         }
@@ -1529,6 +1568,8 @@ int process_json_conf_file(char *file)
     log_debug("imaging_exposure_auto: %d", service_ctx.imaging_exposure_auto);
     log_debug("imaging_wdr_on: %d", service_ctx.imaging_wdr_on);
 
+    check_analytics_conf();
+
     json_object_put(json_file);
     free(buffer);
 
@@ -1600,6 +1641,7 @@ void free_conf_file()
     if (service_ctx.manufacturer != NULL) free(service_ctx.manufacturer);
     if (service_ctx.factory_default_command != NULL) free(service_ctx.factory_default_command);
     if (service_ctx.sync_point_command != NULL) free(service_ctx.sync_point_command);
+    if (service_ctx.analytics_file != NULL) free(service_ctx.analytics_file);
     if (service_ctx.password != NULL) free(service_ctx.password);
     if (service_ctx.user != NULL) free(service_ctx.user);
     if (service_ctx.imaging_set_command != NULL) free(service_ctx.imaging_set_command);
@@ -1625,6 +1667,10 @@ void print_conf_help()
     fprintf(stderr, "\tadv_enable_media2=0\n");
     fprintf(stderr, "\t#Imaging service: 1 to advertise it\n");
     fprintf(stderr, "\tadv_enable_imaging=0\n");
+    fprintf(stderr, "\t#Profile M metadata and Analytics service: 1 to enable it (needs adv_enable_media2=1)\n");
+    fprintf(stderr, "\tadv_enable_analytics=0\n");
+    fprintf(stderr, "\t#Analytics description file, written by the analytics pipeline\n");
+    fprintf(stderr, "\tanalytics_file=/tmp/onvif_simple_server/analytics.json\n");
     fprintf(stderr, "\tadv_empty_if_unknown=0\n");
     fprintf(stderr, "\tadv_fault_if_unknown=0\n");
     fprintf(stderr, "\tadv_fault_if_set=0\n");
@@ -1643,6 +1689,8 @@ void print_conf_help()
     fprintf(stderr, "\ttype=H264\n");
     fprintf(stderr, "\taudio_encoder=AAC\n");
     fprintf(stderr, "\taudio_decoder=G711\n");
+    fprintf(stderr, "\t#1 if the stream carries a metadata track (needs adv_enable_analytics=1)\n");
+    fprintf(stderr, "\tmetadata=0\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "\t#Profile 1\n");
     fprintf(stderr, "\tname=Profile_1\n");
@@ -1653,6 +1701,7 @@ void print_conf_help()
     fprintf(stderr, "\ttype=H264\n");
     fprintf(stderr, "\taudio_encoder=AAC\n");
     fprintf(stderr, "\taudio_decoder=NONE\n");
+    fprintf(stderr, "\tmetadata=0\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "\t#PTZ\n");
     fprintf(stderr, "\tptz=1\n");

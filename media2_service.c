@@ -26,6 +26,8 @@
 #include "ezxml_wrapper.h"
 #include "onvif_simple_server.h"
 #include "ptz_service.h"
+#include "analytics_service.h"
+#include "analytics_desc.h"
 
 extern service_context_t service_ctx;
 
@@ -69,6 +71,9 @@ int media2_get_service_capabilities()
     if (service_ctx.ptz_node.enable == 1) {
         snprintf(cap + strlen(cap), sizeof(cap) - strlen(cap), "%s", " PTZ");
     }
+    if (service_ctx.adv_enable_analytics == 1) {
+        snprintf(cap + strlen(cap), sizeof(cap) - strlen(cap), "%s", " Metadata Analytics");
+    }
 
     long size = cat(NULL, "media2_service_files/GetServiceCapabilities.xml", 2,
             "%CAPABILITIES%", cap);
@@ -80,11 +85,23 @@ int media2_get_service_capabilities()
 }
 
 typedef struct {
-    int vsc, asc, vec, aec, ptz, aoc, adc;
+    int vsc, asc, vec, aec, ptz, aoc, adc, met, ana;
 } config_types_t;
 
+/* tt:MetadataConfiguration as element (tr2:Metadata or tr2:Configurations) */
+static long render_metadata_configuration(char *dest, const char *element)
+{
+    char use_count[16];
+
+    snprintf(use_count, sizeof(use_count), "%d", analytics_use_count());
+
+    return cat(dest, "media2_service_files/MetadataConfiguration.xml", 4,
+            "%ELEMENT%", element,
+            "%USE_COUNT%", use_count);
+}
+
 /* The Configurations element of profile h, for GetProfiles */
-static long get_profile_configurations(char *dest, int h, const config_types_t *t)
+static long get_profile_configurations(char *dest, int h, const config_types_t *t, const analytics_desc_t *desc)
 {
     char profiles_num[2];
     char stmp_w[16], stmp_h[16], stmp_fps[16];
@@ -145,6 +162,9 @@ static long get_profile_configurations(char *dest, int h, const config_types_t *
                     "%AUDIO_ENCODING%", audio_enc);
         }
     }
+    if (t->ana && service_ctx.profiles[h].metadata) {
+        size += analytics_render_configuration(dest, "tr2:Analytics", desc);
+    }
     if (t->ptz) {
         if (service_ctx.ptz_node.enable == 1) {
             size += cat(dest, ptz_supports_zoom() ? "media2_service_files/GetProfiles_PTZ.xml" : "media2_service_files/GetProfiles_PTZ_nozoom.xml", 12,
@@ -155,6 +175,9 @@ static long get_profile_configurations(char *dest, int h, const config_types_t *
                     "%MIN_Z%", min_z,
                     "%MAX_Z%", max_z);
         }
+    }
+    if (t->met && service_ctx.profiles[h].metadata) {
+        size += render_metadata_configuration(dest, "tr2:Metadata");
     }
     if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {
         if (t->aoc) {
@@ -184,6 +207,7 @@ int media2_get_profiles()
     char dest_a[] = "stdout";
     char *dest;
     config_types_t t;
+    analytics_desc_t desc;
 
     memset(&t, 0, sizeof(t));
     x_type = get_element_ptr(NULL, "Type", "Body");
@@ -197,6 +221,8 @@ int media2_get_profiles()
             if (strstr(x_type->txt, "PTZ") != NULL) t.ptz = 1;
             if (strstr(x_type->txt, "AudioOutput") != NULL) t.aoc = 1;
             if (strstr(x_type->txt, "AudioDecoder") != NULL) t.adc = 1;
+            if (strstr(x_type->txt, "Metadata") != NULL) t.met = 1;
+            if (strstr(x_type->txt, "Analytics") != NULL) t.ana = 1;
             if (strstr(x_type->txt, "All") != NULL) {
                 t.vsc = 1;
                 t.asc = 1;
@@ -205,6 +231,8 @@ int media2_get_profiles()
                 t.ptz = 1;
                 t.aoc = 1;
                 t.adc = 1;
+                t.met = 1;
+                t.ana = 1;
             }
             n_type++;
             x_type = x_type->next;
@@ -247,6 +275,11 @@ int media2_get_profiles()
         return cat("stdout", "media2_service_files/GetProfiles_none.xml", 0);
     }
 
+    // The analytics configuration lists the modules of the description file
+    memset(&desc, 0, sizeof(desc));
+    if ((n_type > 0) && t.ana && (analytics_use_count() > 0))
+        analytics_desc_load(&desc, service_ctx.analytics_file);
+
     // We need 1st step to evaluate content length
     for (c = 0; c < 2; c++) {
         if (c == 0) {
@@ -259,16 +292,18 @@ int media2_get_profiles()
         size = cat(dest, "media2_service_files/GetProfiles_header.xml", 2,
                 "%PROFILE%", profile[h]);
         if (n_type > 0)
-            size += get_profile_configurations(dest, h, &t);
+            size += get_profile_configurations(dest, h, &t, &desc);
 
         if (q == 2) {
             size += cat(dest, "media2_service_files/GetProfiles_middle.xml", 2,
                     "%PROFILE%", profile[1]);
             if (n_type > 0)
-                size += get_profile_configurations(dest, 1, &t);
+                size += get_profile_configurations(dest, 1, &t, &desc);
         }
         size += cat(dest, "media2_service_files/GetProfiles_footer.xml", 0);
     }
+
+    analytics_desc_free(&desc);
 
     return size;
 }
@@ -1376,6 +1411,145 @@ int media2_set_audio_output_configuration()
 int media2_set_synchronization_point()
 {
     return set_synchronization_point("media2_service", "tr2");
+}
+
+/* Check the optional tokens of a request for the fixed metadata or analytics
+ * configuration. Every profile is compatible with it. */
+static int check_fixed_configuration_request(const char *config_token)
+{
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
+    int i;
+
+    if ((configuration_token != NULL) && (strcasecmp(configuration_token, config_token) != 0)) {
+        send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
+        return -1;
+    }
+    if (profile_token != NULL) {
+        for (i = 0; i < service_ctx.profiles_num; i++) {
+            if ((service_ctx.profiles[i].name != NULL) &&
+                    (strcasecmp(service_ctx.profiles[i].name, profile_token) == 0))
+                break;
+        }
+        if (i == service_ctx.profiles_num) {
+            send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile does not exist");
+            return -2;
+        }
+    }
+
+    return 0;
+}
+
+int media2_get_metadata_configurations()
+{
+    char dest_a[] = "stdout";
+    char *dest;
+    long size = 0;
+    int c;
+
+    if (check_fixed_configuration_request(METADATA_CONFIG_TOKEN) != 0)
+        return -1;
+
+    // We need 1st step to evaluate content length
+    for (c = 0; c < 2; c++) {
+        if (c == 0) {
+            dest = NULL;
+        } else {
+            dest = dest_a;
+            output_http_headers(size);
+        }
+
+        size = cat(dest, "media2_service_files/Configurations_header.xml", 2,
+                "%METHOD%", "GetMetadataConfigurations");
+        size += render_metadata_configuration(dest, "tr2:Configurations");
+        size += cat(dest, "media2_service_files/Configurations_footer.xml", 2,
+                "%METHOD%", "GetMetadataConfigurations");
+    }
+
+    return size;
+}
+
+int media2_get_metadata_configuration_options()
+{
+    if (check_fixed_configuration_request(METADATA_CONFIG_TOKEN) != 0)
+        return -1;
+
+    long size = cat(NULL, "media2_service_files/GetMetadataConfigurationOptions.xml", 0);
+
+    output_http_headers(size);
+
+    return cat("stdout", "media2_service_files/GetMetadataConfigurationOptions.xml", 0);
+}
+
+int media2_get_analytics_configurations()
+{
+    analytics_desc_t desc;
+    char dest_a[] = "stdout";
+    char *dest;
+    long size = 0;
+    int c;
+
+    if (check_fixed_configuration_request(ANALYTICS_CONFIG_TOKEN) != 0)
+        return -1;
+
+    analytics_desc_load(&desc, service_ctx.analytics_file);
+
+    // We need 1st step to evaluate content length
+    for (c = 0; c < 2; c++) {
+        if (c == 0) {
+            dest = NULL;
+        } else {
+            dest = dest_a;
+            output_http_headers(size);
+        }
+
+        size = cat(dest, "media2_service_files/Configurations_header.xml", 2,
+                "%METHOD%", "GetAnalyticsConfigurations");
+        size += analytics_render_configuration(dest, "tr2:Configurations", &desc);
+        size += cat(dest, "media2_service_files/Configurations_footer.xml", 2,
+                "%METHOD%", "GetAnalyticsConfigurations");
+    }
+
+    analytics_desc_free(&desc);
+
+    return size;
+}
+
+/* The profiles and their configurations are fixed */
+int media2_add_configuration()
+{
+    send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:ConfigModify", "Config modify", "The configuration parameters are not possible to set");
+    return -1;
+}
+
+int media2_remove_configuration()
+{
+    send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:ConfigModify", "Config modify", "The configuration parameters are not possible to set");
+    return -1;
+}
+
+int media2_set_metadata_configuration()
+{
+    const char *token = NULL;
+    ezxml_t node;
+
+    node = get_element_ptr(NULL, "Configuration", "Body");
+    if (node != NULL) {
+        token = get_attribute(node, "token");
+    }
+
+    if ((node == NULL) || (token == NULL)) {
+        send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The configuration does not exist");
+        return -1;
+    }
+
+    if (strcasecmp(METADATA_CONFIG_TOKEN, token) == 0) {
+        send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:ConfigModify", "Config modify", "The configuration parameters are not possible to set");
+        return -2;
+    } else {
+        send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The configuration does not exist");
+        return -3;
+    }
 }
 
 int media2_unsupported(const char *method)
