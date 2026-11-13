@@ -568,13 +568,9 @@ ezxml_t ezxml_parse_str(char *s, size_t len)
             else return ezxml_err(root, d, "unclosed <![CDATA[");
         }
         else if (! strncmp(s, "!DOCTYPE", 8)) { // dtd
-            for (l = 0; *s && ((! l && *s != '>') || (l && (*s != ']' || 
-                 *(s + strspn(s + 1, EZXML_WS) + 1) != '>')));
-                 l = (*s == '[') ? 1 : l) s += strcspn(s + 1, "[]>") + 1;
-            if (! *s && e != '>')
-                return ezxml_err(root, d, "unclosed <!DOCTYPE");
-            d = (l) ? strchr(d, '[') + 1 : d;
-            if (l && ! ezxml_internal_dtd(root, d, s++ - d)) return &root->xml;
+            // SOAP forbids DTDs, and the parsed requests come from the network:
+            // entity expansion and the DTD parser are not safe for that.
+            return ezxml_err(root, d, "<!DOCTYPE not allowed");
         }
         else if (*s == '?') { // <?...?> processing instructions
             do { s = strchr(s, '?'); } while (s && *(++s) && *s != '>');
