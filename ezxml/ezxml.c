@@ -476,6 +476,7 @@ ezxml_t ezxml_parse_str(char *s, size_t len)
     root->m = s;
     if (! len) return ezxml_err(root, NULL, "root tag missing");
     root->u = ezxml_str2utf8(&s, &len); // convert utf-16 to utf-8
+    if (! len) return ezxml_err(root, NULL, "root tag missing"); // e.g. only a UTF-16 BOM
     root->e = (root->s = s) + len; // record start and end of work area
     
     e = s[len - 1]; // save end char
