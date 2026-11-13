@@ -721,7 +721,7 @@ int ptz_relative_move()
                     // Approximation 4: I don't know how many degrees is max_step_y, assume 180°
                     dx = dx / (360.0 / service_ctx.ptz_node.max_step_x);
                     dy = dy / (180.0 / service_ctx.ptz_node.max_step_y);
-                    snprintf(sys_command, sizeof(sys_command), service_ctx.ptz_node.jump_to_rel, dx, dy, 0);
+                    snprintf(sys_command, sizeof(sys_command), service_ctx.ptz_node.jump_to_rel, dx, dy, 0.0);
                 }
             }
         }
