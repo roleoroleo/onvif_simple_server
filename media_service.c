@@ -881,7 +881,7 @@ int media_get_guaranteed_number_of_video_encoder_instances()
         return -1;
     }
 
-    if (strncasecmp("VideoSourceConfigToken", configuration_token, 22) == 0) {
+    if ((configuration_token != NULL) && (strncasecmp("VideoSourceConfigToken", configuration_token, 22) == 0)) {
 
         long size = cat(NULL, "media_service_files/GetGuaranteedNumberOfVideoEncoderInstances.xml", 4,
                 "%TOTAL_NUMBER%", stmp,
