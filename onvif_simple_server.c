@@ -33,6 +33,7 @@
 #include "events_service.h"
 #include "deviceio_service.h"
 #include "imaging_service.h"
+#include "analytics_service.h"
 #include "fault.h"
 #include "ezxml_wrapper.h"
 #include "conf.h"
@@ -269,7 +270,8 @@ int main(int argc, char ** argv)
                 (strstr(tmp, "ptz_service") != NULL) ||
                 (strstr(tmp, "events_service") != NULL) ||
                 (strstr(tmp, "deviceio_service") != NULL) ||
-                (strstr(tmp, "imaging_service") != NULL)) {
+                (strstr(tmp, "imaging_service") != NULL) ||
+                (strstr(tmp, "analytics_service") != NULL)) {
             tmp = argv[argc - 1];
         } else {
             tmp = argv[0];
@@ -411,7 +413,10 @@ int main(int argc, char ** argv)
                 auth_error = 4;
             }
 
-            if (auth_error == 0) {
+            if ((auth_error == 0) && (service_ctx.password == NULL)) {
+                log_error("No password configured for user %s", service_ctx.user);
+                auth_error = 10;
+            } else if (auth_error == 0) {
                 // Calculate digest and check the password
                 // Digest = B64ENCODE( SHA1( B64DECODE( Nonce ) + Date + Password ) )
                 if (nonce_size + strlen(security.created) + strlen(service_ctx.password) > sizeof(auth)) {
@@ -634,6 +639,18 @@ int main(int argc, char ** argv)
                 media2_get_stream_uri();
             } else if (strcasecmp(method, "SetSynchronizationPoint") == 0) {
                 media2_set_synchronization_point();
+            } else if ((service_ctx.adv_enable_analytics == 1) && (strcasecmp(method, "GetMetadataConfigurations") == 0)) {
+                media2_get_metadata_configurations();
+            } else if ((service_ctx.adv_enable_analytics == 1) && (strcasecmp(method, "GetMetadataConfigurationOptions") == 0)) {
+                media2_get_metadata_configuration_options();
+            } else if ((service_ctx.adv_enable_analytics == 1) && (strcasecmp(method, "GetAnalyticsConfigurations") == 0)) {
+                media2_get_analytics_configurations();
+            } else if ((service_ctx.adv_enable_analytics == 1) && (service_ctx.adv_fault_if_set == 1) && (strcasecmp(method, "AddConfiguration") == 0)) {
+                media2_add_configuration();
+            } else if ((service_ctx.adv_enable_analytics == 1) && (service_ctx.adv_fault_if_set == 1) && (strcasecmp(method, "RemoveConfiguration") == 0)) {
+                media2_remove_configuration();
+            } else if ((service_ctx.adv_enable_analytics == 1) && (service_ctx.adv_fault_if_set == 1) && (strcasecmp(method, "SetMetadataConfiguration") == 0)) {
+                media2_set_metadata_configuration();
             } else {
                 if (service_ctx.adv_empty_if_unknown == 1) {
                     send_empty_response("tr2", method);
@@ -702,7 +719,7 @@ int main(int argc, char ** argv)
                 events_set_synchronization_point();
             } else {
                 if (service_ctx.adv_empty_if_unknown == 1) {
-                    send_empty_response("ted", method);
+                    send_empty_response("tev", method);
                 } else {
                     events_unsupported(method);
                 }
@@ -757,6 +774,30 @@ int main(int argc, char ** argv)
                     imaging_unsupported(method);
                 }
             }
+        } else if (strcasecmp("analytics_service", prog_name) == 0) {
+            if (service_ctx.adv_enable_analytics == 0) {
+                send_action_not_supported_fault("analytics_service");
+            } else if (strcasecmp(method, "GetServiceCapabilities") == 0) {
+                analytics_get_service_capabilities();
+            } else if (strcasecmp(method, "GetSupportedAnalyticsModules") == 0) {
+                analytics_get_supported_analytics_modules();
+            } else if (strcasecmp(method, "GetAnalyticsModules") == 0) {
+                analytics_get_analytics_modules();
+            } else if (strcasecmp(method, "GetSupportedMetadata") == 0) {
+                analytics_get_supported_metadata();
+            } else if (strcasecmp(method, "CreateAnalyticsModules") == 0) {
+                analytics_create_analytics_modules();
+            } else if (strcasecmp(method, "DeleteAnalyticsModules") == 0) {
+                analytics_delete_analytics_modules();
+            } else {
+                if (service_ctx.adv_empty_if_unknown == 1) {
+                    analytics_empty_response(method);
+                } else {
+                    analytics_unsupported(method);
+                }
+            }
+        } else {
+            send_action_not_supported_fault(prog_name);
         }
     } else {
         // hack to handle a bug with Synology

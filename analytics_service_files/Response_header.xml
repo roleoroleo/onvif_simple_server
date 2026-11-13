@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope"
+                   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                   xmlns:tns1="http://www.onvif.org/ver10/topics"
+                   xmlns:tt="http://www.onvif.org/ver10/schema"
+                   xmlns:tan="http://www.onvif.org/ver20/analytics/wsdl">
+    <SOAP-ENV:Body>
+        <tan:%METHOD%Response%NS_DECL%>

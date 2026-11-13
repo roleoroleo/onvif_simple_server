@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope"
+                   xmlns:tan="http://www.onvif.org/ver20/analytics/wsdl">
+    <SOAP-ENV:Body>
+        <tan:GetServiceCapabilitiesResponse>
+            <tan:Capabilities %CAPABILITIES%/>
+        </tan:GetServiceCapabilitiesResponse>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>

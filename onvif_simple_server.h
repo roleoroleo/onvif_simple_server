@@ -63,6 +63,7 @@ typedef struct {
     int  framerate;     /* fps, 0 = unknown */
     int  audio_encoder;
     int  audio_decoder;
+    int  metadata;      /* carries a metadata track (Profile M) */
 } stream_profile_t;
 
 typedef struct {
@@ -107,6 +108,10 @@ typedef struct {
     char *input_file;
 } event_t;
 
+// Item names and types of an event message; NULL source_type means tt:ReferenceToken
+void get_event_description(const event_t *e, const char **source_type,
+        const char **data_name, const char **data_type);
+
 typedef struct {
     int   port;
     char *user;
@@ -128,6 +133,8 @@ typedef struct {
     // Advanced options
     int adv_enable_media2;
     int adv_enable_imaging;          /* advertise the Imaging service */
+    int adv_enable_analytics;        /* Profile M: metadata and Analytics service, needs Media2 */
+    char *analytics_file;            /* analytics description file written by the pipeline */
     int adv_empty_if_unknown;
     int adv_fault_if_unknown;
     int adv_fault_if_set;

@@ -26,6 +26,8 @@
 #include "ezxml_wrapper.h"
 #include "onvif_simple_server.h"
 #include "ptz_service.h"
+#include "analytics_service.h"
+#include "analytics_desc.h"
 
 extern service_context_t service_ctx;
 
@@ -69,6 +71,9 @@ int media2_get_service_capabilities()
     if (service_ctx.ptz_node.enable == 1) {
         snprintf(cap + strlen(cap), sizeof(cap) - strlen(cap), "%s", " PTZ");
     }
+    if (service_ctx.adv_enable_analytics == 1) {
+        snprintf(cap + strlen(cap), sizeof(cap) - strlen(cap), "%s", " Metadata Analytics");
+    }
 
     long size = cat(NULL, "media2_service_files/GetServiceCapabilities.xml", 2,
             "%CAPABILITIES%", cap);
@@ -79,33 +84,36 @@ int media2_get_service_capabilities()
             "%CAPABILITIES%", cap);
 }
 
-int media2_get_profiles()
+typedef struct {
+    int vsc, asc, vec, aec, ptz, aoc, adc, met, ana;
+} config_types_t;
+
+/* tt:MetadataConfiguration as element (tr2:Metadata or tr2:Configurations) */
+static long render_metadata_configuration(char *dest, const char *element)
+{
+    char use_count[16];
+
+    snprintf(use_count, sizeof(use_count), "%d", analytics_use_count());
+
+    return cat(dest, "media2_service_files/MetadataConfiguration.xml", 4,
+            "%ELEMENT%", element,
+            "%USE_COUNT%", use_count);
+}
+
+/* The Configurations element of profile h, for GetProfiles */
+static long get_profile_configurations(char *dest, int h, const config_types_t *t, const analytics_desc_t *desc)
 {
     char profiles_num[2];
-    char stmp_w_h[16], stmp_h_h[16];
-    char stmp_w_l[16], stmp_h_l[16];
-    char stmp_fps_h[16], stmp_fps_l[16];
-    char audio_enc_h[16], audio_enc_l[16];
-    char video_enc_h[16], video_enc_l[16];
-    const char *profile_token = get_element("Token", "Body");
-    ezxml_t x_type;
-    int n_type;
-    char xml_name[MAX_LEN];
-    long size;
-    int q, h;
+    char stmp_w[16], stmp_h[16], stmp_fps[16];
+    char audio_enc[16], video_enc[16];
+    char min_x[256], max_x[256], min_y[256], max_y[256], min_z[256], max_z[256];
     char *h264profile[] = { "High", "Main" };
     char *profile[] = { "Profile_0", "Profile_1" };
-    int c;
-    char dest_a[] = "stdout";
-    char *dest;
-    int typeVSC = 0, typeASC = 0, typeVEC = 0, typeAEC = 0, typePTZ = 0, typeAOC = 0, typeADC = 0;
-    char min_x[256], max_x[256], min_y[256], max_y[256], min_z[256], max_z[256];
     int vsrc = get_video_source_index();
+    long size;
 
-    audio_enc_h[0] = '\0';
-    audio_enc_l[0] = '\0';
-    video_enc_h[0] = '\0';
-    video_enc_l[0] = '\0';
+    audio_enc[0] = '\0';
+    video_enc[0] = '\0';
     snprintf(profiles_num, sizeof(profiles_num), "%d", service_ctx.profiles_num);
     snprintf(min_x, sizeof(min_x), "%.1f", service_ctx.ptz_node.min_step_x);
     snprintf(max_x, sizeof(max_x), "%.1f", service_ctx.ptz_node.max_step_x);
@@ -114,25 +122,117 @@ int media2_get_profiles()
     snprintf(min_z, sizeof(min_z), "%.1f", service_ctx.ptz_node.min_step_z);
     snprintf(max_z, sizeof(max_z), "%.1f", service_ctx.ptz_node.max_step_z);
 
+    size = cat(dest, "media2_service_files/GetProfiles_confstart.xml", 0);
+
+    if (t->vsc) {
+        // Get VideoSource from the largest profile
+        snprintf(stmp_w, sizeof(stmp_w), "%d", service_ctx.profiles[vsrc].width);
+        snprintf(stmp_h, sizeof(stmp_h), "%d", service_ctx.profiles[vsrc].height);
+        size += cat(dest, "media2_service_files/GetProfiles_VSC.xml", 6,
+                "%PROFILES_NUM%", profiles_num,
+                "%VSC_WIDTH%", stmp_w,
+                "%VSC_HEIGHT%", stmp_h);
+    }
+    if (t->asc) {
+        if (((service_ctx.profiles_num > 0) && (service_ctx.profiles[0].audio_encoder != AUDIO_NONE)) ||
+                ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_encoder != AUDIO_NONE))) {
+
+            size += cat(dest, "media2_service_files/GetProfiles_ASC.xml", 2,
+                    "%PROFILES_NUM%", profiles_num);
+        }
+    }
+    if (t->vec) {
+        snprintf(stmp_w, sizeof(stmp_w), "%d", service_ctx.profiles[h].width);
+        snprintf(stmp_h, sizeof(stmp_h), "%d", service_ctx.profiles[h].height);
+        snprintf(stmp_fps, sizeof(stmp_fps), "%d", service_ctx.profiles[h].framerate > 0 ? service_ctx.profiles[h].framerate : 30);
+        set_video_codec(video_enc, 16, service_ctx.profiles[h].type, 2);
+        size += cat(dest, "media2_service_files/GetProfiles_VEC.xml", 12,
+                "%H264PROFILE%", h264profile[h],
+                "%PROFILE%", profile[h],
+                "%VIDEO_ENCODING%", video_enc,
+                "%VEC_WIDTH%", stmp_w,
+                "%VEC_HEIGHT%", stmp_h,
+                "%FRAMERATE%", stmp_fps);
+    }
+    if (t->aec) {
+        if (service_ctx.profiles[h].audio_encoder != AUDIO_NONE) {
+            set_audio_codec(audio_enc, 16, service_ctx.profiles[h].audio_encoder, 2);
+            size += cat(dest, "media2_service_files/GetProfiles_AEC.xml", 4,
+                    "%PROFILE%", profile[h],
+                    "%AUDIO_ENCODING%", audio_enc);
+        }
+    }
+    if (t->ana && service_ctx.profiles[h].metadata) {
+        size += analytics_render_configuration(dest, "tr2:Analytics", desc);
+    }
+    if (t->ptz) {
+        if (service_ctx.ptz_node.enable == 1) {
+            size += cat(dest, ptz_supports_zoom() ? "media2_service_files/GetProfiles_PTZ.xml" : "media2_service_files/GetProfiles_PTZ_nozoom.xml", 12,
+                    "%MIN_X%", min_x,
+                    "%MAX_X%", max_x,
+                    "%MIN_Y%", min_y,
+                    "%MAX_Y%", max_y,
+                    "%MIN_Z%", min_z,
+                    "%MAX_Z%", max_z);
+        }
+    }
+    if (t->met && service_ctx.profiles[h].metadata) {
+        size += render_metadata_configuration(dest, "tr2:Metadata");
+    }
+    if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {
+        if (t->aoc) {
+            size += cat(dest, "media2_service_files/GetProfiles_AOC.xml", 2,
+                    "%PROFILES_NUM%", profiles_num);
+        }
+        if (t->adc) {
+            size += cat(dest, "media2_service_files/GetProfiles_ADC.xml", 2,
+                    "%PROFILE%", profile[h]);
+        }
+    }
+
+    size += cat(dest, "media2_service_files/GetProfiles_confend.xml", 0);
+
+    return size;
+}
+
+int media2_get_profiles()
+{
+    const char *profile_token = get_element("Token", "Body");
+    ezxml_t x_type;
+    int n_type;
+    long size = 0;
+    int q = 0, h = 0;
+    char *profile[] = { "Profile_0", "Profile_1" };
+    int c;
+    char dest_a[] = "stdout";
+    char *dest;
+    config_types_t t;
+    analytics_desc_t desc;
+
+    memset(&t, 0, sizeof(t));
     x_type = get_element_ptr(NULL, "Type", "Body");
     n_type = 0;
     do {
         if (x_type != NULL) {
-            if (strstr(x_type->txt, "VideoSource") != NULL) typeVSC = 1;
-            if (strstr(x_type->txt, "AudioSource") != NULL) typeASC = 1;
-            if (strstr(x_type->txt, "VideoEncoder") != NULL) typeVEC = 1;
-            if (strstr(x_type->txt, "AudioEncoder") != NULL) typeAEC = 1;
-            if (strstr(x_type->txt, "PTZ") != NULL) typePTZ = 1;
-            if (strstr(x_type->txt, "AudioOutput") != NULL) typeAOC = 1;
-            if (strstr(x_type->txt, "AudioDecoder") != NULL) typeADC = 1;
+            if (strstr(x_type->txt, "VideoSource") != NULL) t.vsc = 1;
+            if (strstr(x_type->txt, "AudioSource") != NULL) t.asc = 1;
+            if (strstr(x_type->txt, "VideoEncoder") != NULL) t.vec = 1;
+            if (strstr(x_type->txt, "AudioEncoder") != NULL) t.aec = 1;
+            if (strstr(x_type->txt, "PTZ") != NULL) t.ptz = 1;
+            if (strstr(x_type->txt, "AudioOutput") != NULL) t.aoc = 1;
+            if (strstr(x_type->txt, "AudioDecoder") != NULL) t.adc = 1;
+            if (strstr(x_type->txt, "Metadata") != NULL) t.met = 1;
+            if (strstr(x_type->txt, "Analytics") != NULL) t.ana = 1;
             if (strstr(x_type->txt, "All") != NULL) {
-                typeVSC = 1;
-                typeASC = 1;
-                typeVEC = 1;
-                typeAEC = 1;
-                typePTZ = 1;
-                typeAOC = 1;
-                typeADC = 1;
+                t.vsc = 1;
+                t.asc = 1;
+                t.vec = 1;
+                t.aec = 1;
+                t.ptz = 1;
+                t.aoc = 1;
+                t.adc = 1;
+                t.met = 1;
+                t.ana = 1;
             }
             n_type++;
             x_type = x_type->next;
@@ -173,239 +273,39 @@ int media2_get_profiles()
         output_http_headers(size);
 
         return cat("stdout", "media2_service_files/GetProfiles_none.xml", 0);
-
-    } else if (q == 1) {
-        // We need 1st step to evaluate content length
-        for (c = 0; c < 2; c++) {
-            if (c == 0) {
-                dest = NULL;
-            } else {
-                dest = dest_a;
-                output_http_headers(size);
-            }
-
-            size = cat(dest, "media2_service_files/GetProfiles_header.xml", 2,
-                    "%PROFILE%", profile[h]);
-
-            if (n_type > 0) {
-                size += cat(dest, "media2_service_files/GetProfiles_confstart.xml", 0);
-
-                if (typeVSC) {
-                    // Get VideoSource from the largest profile
-                    snprintf(stmp_w_h, sizeof(stmp_w_h), "%d", service_ctx.profiles[vsrc].width);
-                    snprintf(stmp_h_h, sizeof(stmp_h_h), "%d", service_ctx.profiles[vsrc].height);
-                    size += cat(dest, "media2_service_files/GetProfiles_VSC.xml", 6,
-                            "%PROFILES_NUM%", profiles_num,
-                            "%VSC_WIDTH%", stmp_w_h,
-                            "%VSC_HEIGHT%", stmp_h_h);
-                }
-                if (typeASC) {
-                    if (((service_ctx.profiles_num > 0) && (service_ctx.profiles[0].audio_encoder != AUDIO_NONE)) ||
-                            ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_encoder != AUDIO_NONE))) {
-
-                        size += cat(dest, "media2_service_files/GetProfiles_ASC.xml", 2,
-                                "%PROFILES_NUM%", profiles_num);
-                    }
-                }
-                if (typeVEC) {
-                    snprintf(stmp_w_h, sizeof(stmp_w_h), "%d", service_ctx.profiles[h].width);
-                    snprintf(stmp_h_h, sizeof(stmp_h_h), "%d", service_ctx.profiles[h].height);
-                    snprintf(stmp_fps_h, sizeof(stmp_fps_h), "%d", service_ctx.profiles[h].framerate > 0 ? service_ctx.profiles[h].framerate : 30);
-                    set_video_codec(video_enc_h, 16, service_ctx.profiles[h].type, 2);
-                    size += cat(dest, "media2_service_files/GetProfiles_VEC.xml", 12,
-                            "%H264PROFILE%", h264profile[h],
-                            "%PROFILE%", profile[h],
-                            "%VIDEO_ENCODING%", video_enc_h,
-                            "%VEC_WIDTH%", stmp_w_h,
-                            "%VEC_HEIGHT%", stmp_h_h,
-                            "%FRAMERATE%", stmp_fps_h);
-                }
-                if (typeAEC) {
-                    if (service_ctx.profiles[h].audio_encoder != AUDIO_NONE) {
-                        set_audio_codec(audio_enc_h, 16, service_ctx.profiles[h].audio_encoder, 2);
-                        size += cat(dest, "media2_service_files/GetProfiles_AEC.xml", 4,
-                                "%PROFILE%", profile[h],
-                                "%AUDIO_ENCODING%", audio_enc_h);
-                    }
-                }
-                if (typePTZ) {
-                    if (service_ctx.ptz_node.enable == 1) {
-                        size += cat(dest, ptz_supports_zoom() ? "media2_service_files/GetProfiles_PTZ.xml" : "media2_service_files/GetProfiles_PTZ_nozoom.xml", 12,
-                                "%MIN_X%", min_x,
-                                "%MAX_X%", max_x,
-                                "%MIN_Y%", min_y,
-                                "%MAX_Y%", max_y,
-                                "%MIN_Z%", min_z,
-                                "%MAX_Z%", max_z);
-                    }
-                }
-                if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {
-                    if (typeAOC) {
-                        size += cat(dest, "media2_service_files/GetProfiles_AOC.xml", 2,
-                                "%PROFILES_NUM%", profiles_num);
-                    }
-                    if (typeADC) {
-                        size += cat(dest, "media2_service_files/GetProfiles_ADC.xml", 2,
-                                "%PROFILE%", profile[h]);
-                    }
-                }
-
-                size += cat(dest, "media2_service_files/GetProfiles_confend.xml", 0);
-            }
-            size += cat(dest, "media2_service_files/GetProfiles_footer.xml", 0);
-        }
-    } else if (q == 2) {
-        // We need 1st step to evaluate content length
-        for (c = 0; c < 2; c++) {
-            if (c == 0) {
-                dest = NULL;
-            } else {
-                dest = dest_a;
-                output_http_headers(size);
-            }
-
-            h = 0;
-            size = cat(dest, "media2_service_files/GetProfiles_header.xml", 2,
-                    "%PROFILE%", profile[h]);
-
-            if (n_type > 0) {
-                size += cat(dest, "media2_service_files/GetProfiles_confstart.xml", 0);
-
-                if (typeVSC) {
-                    // Get VideoSource from the largest profile
-                    snprintf(stmp_w_h, sizeof(stmp_w_h), "%d", service_ctx.profiles[vsrc].width);
-                    snprintf(stmp_h_h, sizeof(stmp_h_h), "%d", service_ctx.profiles[vsrc].height);
-                    size += cat(dest, "media2_service_files/GetProfiles_VSC.xml", 6,
-                            "%PROFILES_NUM%", profiles_num,
-                            "%VSC_WIDTH%", stmp_w_h,
-                            "%VSC_HEIGHT%", stmp_h_h);
-                }
-                if (typeASC) {
-                    if (((service_ctx.profiles_num > 0) && (service_ctx.profiles[0].audio_encoder != AUDIO_NONE)) ||
-                            ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_encoder != AUDIO_NONE))) {
-
-                        size += cat(dest, "media2_service_files/GetProfiles_ASC.xml", 2,
-                                "%PROFILES_NUM%", profiles_num);
-                    }
-                }
-                if (typeVEC) {
-                    snprintf(stmp_w_h, sizeof(stmp_w_h), "%d", service_ctx.profiles[h].width);
-                    snprintf(stmp_h_h, sizeof(stmp_h_h), "%d", service_ctx.profiles[h].height);
-                    snprintf(stmp_fps_h, sizeof(stmp_fps_h), "%d", service_ctx.profiles[h].framerate > 0 ? service_ctx.profiles[h].framerate : 30);
-                    set_video_codec(video_enc_h, 16, service_ctx.profiles[h].type, 2);
-                    size += cat(dest, "media2_service_files/GetProfiles_VEC.xml", 12,
-                            "%H264PROFILE%", h264profile[h],
-                            "%PROFILE%", profile[h],
-                            "%VIDEO_ENCODING%", video_enc_h,
-                            "%VEC_WIDTH%", stmp_w_h,
-                            "%VEC_HEIGHT%", stmp_h_h,
-                            "%FRAMERATE%", stmp_fps_h);
-                }
-                if (typeAEC) {
-                    if (service_ctx.profiles[h].audio_encoder != AUDIO_NONE) {
-                        set_audio_codec(audio_enc_h, 16, service_ctx.profiles[h].audio_encoder, 2);
-                        size += cat(dest, "media2_service_files/GetProfiles_AEC.xml", 4,
-                                "%PROFILE%", profile[h],
-                                "%AUDIO_ENCODING%", audio_enc_h);
-                    }
-                }
-                if (typePTZ) {
-                    if (service_ctx.ptz_node.enable == 1) {
-                        size += cat(dest, ptz_supports_zoom() ? "media2_service_files/GetProfiles_PTZ.xml" : "media2_service_files/GetProfiles_PTZ_nozoom.xml", 12,
-                                "%MIN_X%", min_x,
-                                "%MAX_X%", max_x,
-                                "%MIN_Y%", min_y,
-                                "%MAX_Y%", max_y,
-                                "%MIN_Z%", min_z,
-                                "%MAX_Z%", max_z);
-                    }
-                }
-                if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {
-                    if (typeAOC) {
-                        size += cat(dest, "media2_service_files/GetProfiles_AOC.xml", 2,
-                                "%PROFILES_NUM%", profiles_num);
-                    }
-                    if (typeADC) {
-                        size += cat(dest, "media2_service_files/GetProfiles_ADC.xml", 2,
-                                "%PROFILE%", profile[h]);
-                    }
-                }
-
-                size += cat(dest, "media2_service_files/GetProfiles_confend.xml", 0);
-            }
-
-            h = 1;
-            size += cat(dest, "media2_service_files/GetProfiles_middle.xml", 2,
-                    "%PROFILE%", profile[h]);
-
-            if (n_type > 0) {
-                size += cat(dest, "media2_service_files/GetProfiles_confstart.xml", 0);
-
-                if (typeVSC) {
-                    // Get VideoSource from the largest profile
-                    snprintf(stmp_w_l, sizeof(stmp_w_l), "%d", service_ctx.profiles[vsrc].width);
-                    snprintf(stmp_h_l, sizeof(stmp_h_l), "%d", service_ctx.profiles[vsrc].height);
-                    size += cat(dest, "media2_service_files/GetProfiles_VSC.xml", 6,
-                            "%PROFILES_NUM%", profiles_num,
-                            "%VSC_WIDTH%", stmp_w_l,
-                            "%VSC_HEIGHT%", stmp_h_l);
-                }
-                if (typeASC) {
-                    if (((service_ctx.profiles_num > 0) && (service_ctx.profiles[0].audio_encoder != AUDIO_NONE)) ||
-                            ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_encoder != AUDIO_NONE))) {
-
-                        size += cat(dest, "media2_service_files/GetProfiles_ASC.xml", 2,
-                                "%PROFILES_NUM%", profiles_num);
-                    }
-                }
-                if (typeVEC) {
-                    snprintf(stmp_w_l, sizeof(stmp_w_l), "%d", service_ctx.profiles[h].width);
-                    snprintf(stmp_h_l, sizeof(stmp_h_l), "%d", service_ctx.profiles[h].height);
-                    snprintf(stmp_fps_l, sizeof(stmp_fps_l), "%d", service_ctx.profiles[h].framerate > 0 ? service_ctx.profiles[h].framerate : 30);
-                    set_video_codec(video_enc_l, 16, service_ctx.profiles[h].type, 2);
-                    size += cat(dest, "media2_service_files/GetProfiles_VEC.xml", 12,
-                            "%H264PROFILE%", h264profile[h],
-                            "%PROFILE%", profile[h],
-                            "%VIDEO_ENCODING%", video_enc_l,
-                            "%VEC_WIDTH%", stmp_w_l,
-                            "%VEC_HEIGHT%", stmp_h_l,
-                            "%FRAMERATE%", stmp_fps_l);
-                }
-                if (typeAEC) {
-                    if (service_ctx.profiles[h].audio_encoder != AUDIO_NONE) {
-                        set_audio_codec(audio_enc_l, 16, service_ctx.profiles[h].audio_encoder, 2);
-                        size += cat(dest, "media2_service_files/GetProfiles_AEC.xml", 4,
-                                "%PROFILE%", profile[h],
-                                "%AUDIO_ENCODING%", audio_enc_l);
-                    }
-                }
-                if (typePTZ) {
-                    if (service_ctx.ptz_node.enable == 1) {
-                        size += cat(dest, ptz_supports_zoom() ? "media2_service_files/GetProfiles_PTZ.xml" : "media2_service_files/GetProfiles_PTZ_nozoom.xml", 12,
-                                "%MIN_X%", min_x,
-                                "%MAX_X%", max_x,
-                                "%MIN_Y%", min_y,
-                                "%MAX_Y%", max_y,
-                                "%MIN_Z%", min_z,
-                                "%MAX_Z%", max_z);
-                    }
-                }
-                if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {
-                    if (typeAOC) {
-                        size += cat(dest, "media2_service_files/GetProfiles_AOC.xml", 2,
-                                "%PROFILES_NUM%", profiles_num);
-                    }
-                    if (typeADC) {
-                        size += cat(dest, "media2_service_files/GetProfiles_ADC.xml", 2,
-                                "%PROFILE%", profile[h]);
-                    }
-                }
-
-                size += cat(dest, "media2_service_files/GetProfiles_confend.xml", 0);
-            }
-            size += cat(dest, "media2_service_files/GetProfiles_footer.xml", 0);
-        }
     }
+
+    // The analytics configuration lists the modules of the description file
+    memset(&desc, 0, sizeof(desc));
+    if ((n_type > 0) && t.ana && (analytics_use_count() > 0))
+        analytics_desc_load(&desc, service_ctx.analytics_file);
+
+    // We need 1st step to evaluate content length
+    for (c = 0; c < 2; c++) {
+        if (c == 0) {
+            dest = NULL;
+        } else {
+            dest = dest_a;
+            output_http_headers(size);
+        }
+
+        size = cat(dest, "media2_service_files/GetProfiles_header.xml", 2,
+                "%PROFILE%", profile[h]);
+        if (n_type > 0)
+            size += get_profile_configurations(dest, h, &t, &desc);
+
+        if (q == 2) {
+            size += cat(dest, "media2_service_files/GetProfiles_middle.xml", 2,
+                    "%PROFILE%", profile[1]);
+            if (n_type > 0)
+                size += get_profile_configurations(dest, 1, &t, &desc);
+        }
+        size += cat(dest, "media2_service_files/GetProfiles_footer.xml", 0);
+    }
+
+    analytics_desc_free(&desc);
+
+    return size;
 }
 
 int media2_get_video_source_modes()
@@ -413,7 +313,7 @@ int media2_get_video_source_modes()
     const char *token = get_element("VideoSourceToken", "Body");
     char stmp_w[16], stmp_h[16], video_enc[16];
 
-    if (strcasecmp("VideoSourceToken", token) == 0) {
+    if ((token != NULL) && (strcasecmp("VideoSourceToken", token) == 0)) {
 
         // Get data from the largest profile (the physical source)
         char stmp_fps[8];
@@ -460,7 +360,7 @@ int media2_get_video_source_configurations()
     }
 
     if ((strcasecmp(service_ctx.profiles[0].name, token) == 0) ||
-            (strcasecmp(service_ctx.profiles[1].name, token) == 0) ||
+            ((service_ctx.profiles_num == 2) && (strcasecmp(service_ctx.profiles[1].name, token) == 0)) ||
             (strcasecmp("VideoSourceConfigToken", token) == 0)) {
 
         int vsrc = get_video_source_index();
@@ -502,7 +402,7 @@ int media2_get_video_source_configuration_options()
     }
 
     if ((strcasecmp(service_ctx.profiles[0].name, token) == 0) ||
-            (strcasecmp(service_ctx.profiles[1].name, token) == 0) ||
+            ((service_ctx.profiles_num == 2) && (strcasecmp(service_ctx.profiles[1].name, token) == 0)) ||
             (strcasecmp("VideoSourceConfigToken", token) == 0)) {
 
         int vsrc = get_video_source_index();
@@ -738,7 +638,7 @@ int media2_get_audio_source_configurations()
     }
 
     if ((strcasecmp(service_ctx.profiles[0].name, token) == 0) ||
-            (strcasecmp(service_ctx.profiles[1].name, token) == 0) ||
+            ((service_ctx.profiles_num == 2) && (strcasecmp(service_ctx.profiles[1].name, token) == 0)) ||
             (strcasecmp("AudioSourceConfigToken", token) == 0)) {
 
         profiles_num = service_ctx.profiles_num;
@@ -1057,7 +957,7 @@ int media2_get_audio_output_configurations()
     }
 
     if ((strcasecmp(service_ctx.profiles[0].name, token) == 0) ||
-            (strcasecmp(service_ctx.profiles[1].name, token) == 0) ||
+            ((service_ctx.profiles_num == 2) && (strcasecmp(service_ctx.profiles[1].name, token) == 0)) ||
             (strcasecmp("AudioOutputConfigToken", token) == 0)) {
 
         profiles_num = service_ctx.profiles_num;
@@ -1511,6 +1411,145 @@ int media2_set_audio_output_configuration()
 int media2_set_synchronization_point()
 {
     return set_synchronization_point("media2_service", "tr2");
+}
+
+/* Check the optional tokens of a request for the fixed metadata or analytics
+ * configuration. Every profile is compatible with it. */
+static int check_fixed_configuration_request(const char *config_token)
+{
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
+    int i;
+
+    if ((configuration_token != NULL) && (strcasecmp(configuration_token, config_token) != 0)) {
+        send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The requested configuration indicated does not exist");
+        return -1;
+    }
+    if (profile_token != NULL) {
+        for (i = 0; i < service_ctx.profiles_num; i++) {
+            if ((service_ctx.profiles[i].name != NULL) &&
+                    (strcasecmp(service_ctx.profiles[i].name, profile_token) == 0))
+                break;
+        }
+        if (i == service_ctx.profiles_num) {
+            send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile does not exist");
+            return -2;
+        }
+    }
+
+    return 0;
+}
+
+int media2_get_metadata_configurations()
+{
+    char dest_a[] = "stdout";
+    char *dest;
+    long size = 0;
+    int c;
+
+    if (check_fixed_configuration_request(METADATA_CONFIG_TOKEN) != 0)
+        return -1;
+
+    // We need 1st step to evaluate content length
+    for (c = 0; c < 2; c++) {
+        if (c == 0) {
+            dest = NULL;
+        } else {
+            dest = dest_a;
+            output_http_headers(size);
+        }
+
+        size = cat(dest, "media2_service_files/Configurations_header.xml", 2,
+                "%METHOD%", "GetMetadataConfigurations");
+        size += render_metadata_configuration(dest, "tr2:Configurations");
+        size += cat(dest, "media2_service_files/Configurations_footer.xml", 2,
+                "%METHOD%", "GetMetadataConfigurations");
+    }
+
+    return size;
+}
+
+int media2_get_metadata_configuration_options()
+{
+    if (check_fixed_configuration_request(METADATA_CONFIG_TOKEN) != 0)
+        return -1;
+
+    long size = cat(NULL, "media2_service_files/GetMetadataConfigurationOptions.xml", 0);
+
+    output_http_headers(size);
+
+    return cat("stdout", "media2_service_files/GetMetadataConfigurationOptions.xml", 0);
+}
+
+int media2_get_analytics_configurations()
+{
+    analytics_desc_t desc;
+    char dest_a[] = "stdout";
+    char *dest;
+    long size = 0;
+    int c;
+
+    if (check_fixed_configuration_request(ANALYTICS_CONFIG_TOKEN) != 0)
+        return -1;
+
+    analytics_desc_load(&desc, service_ctx.analytics_file);
+
+    // We need 1st step to evaluate content length
+    for (c = 0; c < 2; c++) {
+        if (c == 0) {
+            dest = NULL;
+        } else {
+            dest = dest_a;
+            output_http_headers(size);
+        }
+
+        size = cat(dest, "media2_service_files/Configurations_header.xml", 2,
+                "%METHOD%", "GetAnalyticsConfigurations");
+        size += analytics_render_configuration(dest, "tr2:Configurations", &desc);
+        size += cat(dest, "media2_service_files/Configurations_footer.xml", 2,
+                "%METHOD%", "GetAnalyticsConfigurations");
+    }
+
+    analytics_desc_free(&desc);
+
+    return size;
+}
+
+/* The profiles and their configurations are fixed */
+int media2_add_configuration()
+{
+    send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:ConfigModify", "Config modify", "The configuration parameters are not possible to set");
+    return -1;
+}
+
+int media2_remove_configuration()
+{
+    send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:ConfigModify", "Config modify", "The configuration parameters are not possible to set");
+    return -1;
+}
+
+int media2_set_metadata_configuration()
+{
+    const char *token = NULL;
+    ezxml_t node;
+
+    node = get_element_ptr(NULL, "Configuration", "Body");
+    if (node != NULL) {
+        token = get_attribute(node, "token");
+    }
+
+    if ((node == NULL) || (token == NULL)) {
+        send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The configuration does not exist");
+        return -1;
+    }
+
+    if (strcasecmp(METADATA_CONFIG_TOKEN, token) == 0) {
+        send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:ConfigModify", "Config modify", "The configuration parameters are not possible to set");
+        return -2;
+    } else {
+        send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig", "No config", "The configuration does not exist");
+        return -3;
+    }
 }
 
 int media2_unsupported(const char *method)

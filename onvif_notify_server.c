@@ -320,8 +320,8 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
             "%TOPIC%", service_ctx.events[alarm_index].topic,
             "%UTC_TIME%", utctime,
             "%PROPERTY%", property,
-            "%SOURCE_NAME%", service_ctx.events[alarm_index].source_name,
-            "%SOURCE_VALUE%", service_ctx.events[alarm_index].source_value,
+            "%SOURCE_NAME%", service_ctx.events[alarm_index].source_name != NULL ? service_ctx.events[alarm_index].source_name : "",
+            "%SOURCE_VALUE%", service_ctx.events[alarm_index].source_value != NULL ? service_ctx.events[alarm_index].source_value : "",
             "%VALUE%", value);
     snprintf(size_string, sizeof(size_string), "%d", size);
 
@@ -346,8 +346,8 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
             "%TOPIC%", service_ctx.events[alarm_index].topic,
             "%UTC_TIME%", utctime,
             "%PROPERTY%", property,
-            "%SOURCE_NAME%", service_ctx.events[alarm_index].source_name,
-            "%SOURCE_VALUE%", service_ctx.events[alarm_index].source_value,
+            "%SOURCE_NAME%", service_ctx.events[alarm_index].source_name != NULL ? service_ctx.events[alarm_index].source_name : "",
+            "%SOURCE_VALUE%", service_ctx.events[alarm_index].source_value != NULL ? service_ctx.events[alarm_index].source_value : "",
             "%VALUE%", value);
 
     if (send(sockfd, message, strlen(message), 0) < 0) {

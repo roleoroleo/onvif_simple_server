@@ -286,7 +286,6 @@ static void handle_probe(int s, struct sockaddr *dst, socklen_t dst_len,
 
     relates_to_uuid = get_element("MessageID", "Header");
     if (!relates_to_uuid) { log_error("Cannot find MessageID."); close_xml(); return; }
-    close_xml();
 
     log_info("Sending ProbeMatches message.");
     snprintf(template_file, sizeof(template_file), "%s/ProbeMatches.xml", template_dir);
@@ -295,11 +294,13 @@ static void handle_probe(int s, struct sockaddr *dst, socklen_t dst_len,
                "%MSG_NUMBER%", s_tmp, "%UUID%", uuid, "%SCOPES%", scopes_probe,
                "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr_str);
     message_loop = (char *) malloc((size + 1) * sizeof(char));
-    if (!message_loop) { log_error("Malloc error."); return; }
+    if (!message_loop) { log_error("Malloc error."); close_xml(); return; }
     cat_n(message_loop, size + 1, template_file, 16,
         "%MSG_UUID%", msg_uuid, "%REL_TO_UUID%", relates_to_uuid,
         "%MSG_NUMBER%", s_tmp, "%UUID%", uuid, "%SCOPES%", scopes_probe,
         "%HARDWARE%", hardware, "%NAME%", model, "%ADDRESS%", xaddr_str);
+    /* relates_to_uuid points into the parsed document */
+    close_xml();
 
     if (send_wsd_msg(s, message_loop, strlen(message_loop), dst, dst_len) < 0)
         log_error("Error sending ProbeMatches message.");
@@ -677,7 +678,7 @@ int main(int argc, char **argv)
         if (select(sock + 1, &rfds, NULL, NULL, NULL) <= 0) continue;
 
         memset(recv_buffer, 0, RECV_BUFFER_LEN);
-        if (recvfrom(sock, recv_buffer, RECV_BUFFER_LEN, 0,
+        if (recvfrom(sock, recv_buffer, RECV_BUFFER_LEN - 1, 0,
                      (struct sockaddr *)&sender, &slen) <= 0) continue;
 
         /* Native IPv4 (AF_INET socket) or IPv4-mapped IPv6 (dual-stack socket). */

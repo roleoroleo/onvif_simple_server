@@ -208,7 +208,7 @@ int deviceio_set_relay_output_settings()
     ezxml_t node;
     const char *token = NULL;
 
-    node = get_element_ptr(node, "RelayOutput", "Body");
+    node = get_element_ptr(NULL, "RelayOutput", "Body");
     if (node != NULL) {
         token = get_attribute(node, "token");
     }
@@ -241,7 +241,7 @@ int deviceio_set_relay_output_state()
 
     sys_command[0] = '\0';
 
-    if ((token != NULL) && (strlen(token) == 18) && (strncasecmp("RelayOutputToken_", token, 17) == 0)) {
+    if ((token != NULL) && (state != NULL) && (strlen(token) == 18) && (strncasecmp("RelayOutputToken_", token, 17) == 0)) {
         itoken = token[17] - 48;
 
         if ((itoken >= 0) && (itoken < service_ctx.relay_outputs_num)) {
