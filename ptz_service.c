@@ -621,9 +621,9 @@ int ptz_relative_move()
     double dy = 0;
     double dz = 0;
     char sys_command_tmp[MAX_LEN];
-    char sys_command[MAX_LEN];
+    char sys_command[MAX_LEN] = "";
     int ret = 0;
-    ezxml_t node, node_p, node_z;
+    ezxml_t node, node_p = NULL, node_z = NULL;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
     if (node == NULL) {
@@ -733,6 +733,10 @@ int ptz_relative_move()
         }
     }
 
+    // Nothing to move (e.g. only a Zoom, or an unknown PanTilt space)
+    if ((ret == 0) && (sys_command[0] == '\0'))
+        ret = -4;
+
     if (ret == 0) {
         if (run_command(sys_command) != 0) {
             send_action_failed_fault("ptz_service", -11);
@@ -760,7 +764,7 @@ int ptz_absolute_move()
     double dy = 0.0;
     double dz = 0.0;
     char sys_command_tmp[MAX_LEN];
-    char sys_command[MAX_LEN];
+    char sys_command[MAX_LEN] = "";
     int ret = 0;
     ezxml_t node, node_c;
 
@@ -823,6 +827,10 @@ int ptz_absolute_move()
             snprintf(sys_command, sizeof(sys_command), service_ctx.ptz_node.jump_to_abs, dx, dy, dz);
         }
     }
+
+    // Nothing to move (e.g. only a Zoom)
+    if ((ret == 0) && (sys_command[0] == '\0'))
+        ret = -4;
 
     if (ret == 0) {
         if (run_command(sys_command) != 0) {
