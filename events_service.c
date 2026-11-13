@@ -710,8 +710,7 @@ int events_get_event_properties()
     long size, total_size;
     char dest_a[] = "stdout";
     char *dest;
-    char data_name[32];
-    char data_type[32];
+    const char *source_type, *data_name, *data_type;
 
     // We need 1st step to evaluate content length
     for (c = 0; c < 2; c++) {
@@ -754,20 +753,14 @@ int events_get_event_properties()
                 return -1;
             }
 
-            if (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
-                snprintf(data_name, sizeof(data_name), "%s", "LogicalState");
-                snprintf(data_type, sizeof(data_type), "%s", "tt:RelayLogicalState");
-            } else {
-                snprintf(data_name, sizeof(data_name), "%s", "State");
-                snprintf(data_type, sizeof(data_type), "%s", "xsd:boolean");
-            }
+            get_event_description(&service_ctx.events[i], &source_type, &data_name, &data_type);
 
             size = cat(dest, "events_service_files/GetEventProperties_2.xml", 20,
                 "%TOPIC_L1_START%", topic_ls[0],
                 "%TOPIC_L2_START%", topic_ls[1],
                 "%TOPIC_L3_START%", topic_ls[2],
                 "%SOURCE_NAME%", service_ctx.events[i].source_name != NULL ? service_ctx.events[i].source_name : "",
-                "%SOURCE_TYPE%", service_ctx.events[i].source_type != NULL ? service_ctx.events[i].source_type : "tt:ReferenceToken",
+                "%SOURCE_TYPE%", source_type,
                 "%DATA_NAME%", data_name,
                 "%DATA_TYPE%", data_type,
                 "%TOPIC_L3_END%", topic_le[2],

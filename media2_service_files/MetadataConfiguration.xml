@@ -1,0 +1,15 @@
+                    <%ELEMENT% token="MetadataConfigToken">
+                        <tt:Name>MetadataConfig</tt:Name>
+                        <tt:UseCount>%USE_COUNT%</tt:UseCount>
+                        <tt:Analytics>true</tt:Analytics>
+                        <tt:Multicast>
+                            <tt:Address>
+                                <tt:Type>IPv4</tt:Type>
+                                <tt:IPv4Address>0.0.0.0</tt:IPv4Address>
+                            </tt:Address>
+                            <tt:Port>0</tt:Port>
+                            <tt:TTL>0</tt:TTL>
+                            <tt:AutoStart>false</tt:AutoStart>
+                        </tt:Multicast>
+                        <tt:SessionTimeout>PT60S</tt:SessionTimeout>
+                    </%ELEMENT%>

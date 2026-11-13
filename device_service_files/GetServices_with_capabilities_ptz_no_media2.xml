@@ -115,6 +115,7 @@
                 </tds:Version>
             </tds:Service>
             %IMAGING_SERVICE%
+            %ANALYTICS_SERVICE%
         </tds:GetServicesResponse>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
