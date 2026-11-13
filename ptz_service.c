@@ -1068,7 +1068,7 @@ int ptz_set_preset()
     } else {
 
         // Update existing preset
-        if ((preset_token == NULL) || (sscanf(preset_token, "PresetToken_%d", &preset_number) != 1)) {
+        if (sscanf(preset_token, "PresetToken_%d", &preset_number) != 1) {
             destroy_presets();
             send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
             return -5;
