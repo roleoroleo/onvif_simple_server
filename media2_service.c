@@ -413,7 +413,7 @@ int media2_get_video_source_modes()
     const char *token = get_element("VideoSourceToken", "Body");
     char stmp_w[16], stmp_h[16], video_enc[16];
 
-    if (strcasecmp("VideoSourceToken", token) == 0) {
+    if ((token != NULL) && (strcasecmp("VideoSourceToken", token) == 0)) {
 
         // Get data from the largest profile (the physical source)
         char stmp_fps[8];

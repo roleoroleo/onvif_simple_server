@@ -314,7 +314,7 @@ int ptz_get_node()
     snprintf(max_z, sizeof(max_z), "%.1f", service_ctx.ptz_node.max_step_z);
 
     const char *node_token = get_element("NodeToken", "Body");
-    if (strcmp("PTZNodeToken", node_token) != 0) {
+    if ((node_token == NULL) || (strcmp("PTZNodeToken", node_token) != 0)) {
         send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoEntity", "No entity", "No such node on the device");
         return -1;
     }
@@ -417,7 +417,7 @@ int ptz_goto_preset()
     }
 
     preset_token = get_element("PresetToken", "Body");
-    if (sscanf(preset_token, "PresetToken_%d", &preset_number) != 1) {
+    if ((preset_token == NULL) || (sscanf(preset_token, "PresetToken_%d", &preset_number) != 1)) {
         send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
         return -3;
     }
@@ -1202,7 +1202,7 @@ int ptz_remove_preset()
         return -2;
     }
     preset_token = get_element("PresetToken", "Body");
-    if (sscanf(preset_token, "PresetToken_%d", &preset_number) != 1) {
+    if ((preset_token == NULL) || (sscanf(preset_token, "PresetToken_%d", &preset_number) != 1)) {
         send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
         return -3;
     }

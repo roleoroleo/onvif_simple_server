@@ -1397,7 +1397,7 @@ int process_json_conf_file(char *file)
         log_debug("\tenable: %d", service_ctx.events_enable);
         log_debug("");
 
-        if (json_object_object_get_ex(json_file, "events", &value)) {
+        if ((service_ctx.events_enable != EVENTS_NONE) && json_object_object_get_ex(value, "events", &value)) {
             if (value && json_object_is_type(value, json_type_array)) {
                 size_t array_len = json_object_array_length(value);
                 for (size_t i = 0; i < array_len; i++) {
@@ -1435,6 +1435,18 @@ int process_json_conf_file(char *file)
                             goto oom;
                         if (get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].input_file), item, "input_file") != 0)
                             goto oom;
+
+                        if ((service_ctx.events[service_ctx.events_num - 1].topic == NULL) ||
+                                (service_ctx.events[service_ctx.events_num - 1].input_file == NULL)) {
+                            log_error("Ignore event %zu: topic and input_file are required", i);
+                            free(service_ctx.events[service_ctx.events_num - 1].topic);
+                            free(service_ctx.events[service_ctx.events_num - 1].source_name);
+                            free(service_ctx.events[service_ctx.events_num - 1].source_type);
+                            free(service_ctx.events[service_ctx.events_num - 1].source_value);
+                            free(service_ctx.events[service_ctx.events_num - 1].input_file);
+                            service_ctx.events_num--;
+                            continue;
+                        }
 
                         // Print debug
                         log_debug("Event: %d", service_ctx.events_num - 1);
