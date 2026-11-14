@@ -174,7 +174,7 @@ char *ezxml_decode(char *s, char **ent, char t)
         else if (t != 'c' && ! strncmp(s, "&#", 2)) { // character reference
             if (s[2] == 'x') c = strtol(s + 3, &e, 16); // base 16
             else c = strtol(s + 2, &e, 10); // base 10
-            if (! c || *e != ';') { s++; continue; } // not a character ref
+            if (c <= 0 || c > 0x10FFFF || *e != ';') { s++; continue; } // not a valid character ref
 
             if (c < 0x80) *(s++) = c; // US-ASCII subset
             else { // multi-byte UTF-8 sequence
@@ -476,6 +476,7 @@ ezxml_t ezxml_parse_str(char *s, size_t len)
     root->m = s;
     if (! len) return ezxml_err(root, NULL, "root tag missing");
     root->u = ezxml_str2utf8(&s, &len); // convert utf-16 to utf-8
+    if (! len) return ezxml_err(root, NULL, "root tag missing"); // e.g. only a UTF-16 BOM
     root->e = (root->s = s) + len; // record start and end of work area
     
     e = s[len - 1]; // save end char
@@ -567,13 +568,9 @@ ezxml_t ezxml_parse_str(char *s, size_t len)
             else return ezxml_err(root, d, "unclosed <![CDATA[");
         }
         else if (! strncmp(s, "!DOCTYPE", 8)) { // dtd
-            for (l = 0; *s && ((! l && *s != '>') || (l && (*s != ']' || 
-                 *(s + strspn(s + 1, EZXML_WS) + 1) != '>')));
-                 l = (*s == '[') ? 1 : l) s += strcspn(s + 1, "[]>") + 1;
-            if (! *s && e != '>')
-                return ezxml_err(root, d, "unclosed <!DOCTYPE");
-            d = (l) ? strchr(d, '[') + 1 : d;
-            if (l && ! ezxml_internal_dtd(root, d, s++ - d)) return &root->xml;
+            // SOAP forbids DTDs, and the parsed requests come from the network:
+            // entity expansion and the DTD parser are not safe for that.
+            return ezxml_err(root, d, "<!DOCTYPE not allowed");
         }
         else if (*s == '?') { // <?...?> processing instructions
             do { s = strchr(s, '?'); } while (s && *(++s) && *s != '>');

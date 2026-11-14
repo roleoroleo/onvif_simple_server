@@ -238,17 +238,17 @@ Note:
 
 ```
   move_left=/tmp/sd/yi-hack/bin/ipc_cmd -m left -s %f
-  %s is the velocity of the pan movement
+  %f is the velocity of the pan movement
   move_right=/tmp/sd/yi-hack/bin/ipc_cmd -m right -s %f
-  %s is the velocity of the pan movement
+  %f is the velocity of the pan movement
   move_up=/tmp/sd/yi-hack/bin/ipc_cmd -m up -s %f
-  %s is the velocity of the tilt movement
+  %f is the velocity of the tilt movement
   move_down=/tmp/sd/yi-hack/bin/ipc_cmd -m down -s %f
-  %s is the velocity of the tilt movement
+  %f is the velocity of the tilt movement
   move_in=/tmp/sd/yi-hack/bin/ipc_cmd -m in -s %f
-  %s is the velocity of the zoom movement
+  %f is the velocity of the zoom movement
   move_out=/tmp/sd/yi-hack/bin/ipc_cmd -m out -s %f
-  %s is the velocity of the zoom movement
+  %f is the velocity of the zoom movement
   move_stop=/tmp/sd/yi-hack/bin/ipc_cmd -m stop -t %s
   %s is what you want to stop: "pantilt", "zoom" or "all"
   move_preset=/tmp/sd/yi-hack/bin/ipc_cmd -p %d

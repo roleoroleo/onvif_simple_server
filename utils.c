@@ -36,6 +36,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <time.h>
+#include <errno.h>
 #include <pthread.h>
 
 #ifdef HAVE_WOLFSSL
@@ -1845,16 +1846,28 @@ ssize_t spawn_capture(const char *cmd, char *buf, size_t len, int timeout_sec)
     fcntl(pipefd[0], F_SETFL, O_NONBLOCK);
 
     ssize_t total = 0;
-    struct timeval tv = { .tv_sec = timeout_sec, .tv_usec = 0 };
-    fd_set rfds;
-    FD_ZERO(&rfds);
-    FD_SET(pipefd[0], &rfds);
+    time_t end = time(NULL) + timeout_sec;
 
-    if (select(pipefd[0] + 1, &rfds, NULL, NULL, &tv) > 0) {
+    /* Read until EOF, a full buffer or the timeout: the command may write
+     * its output in several parts. */
+    while (total < (ssize_t)(len - 1)) {
+        time_t left = end - time(NULL);
+        struct timeval tv;
+        fd_set rfds;
         ssize_t n;
-        while (total < (ssize_t)(len - 1) &&
-               (n = read(pipefd[0], buf + total, len - 1 - (size_t)total)) > 0)
+
+        if (left < 0) break;
+        tv.tv_sec = left;
+        tv.tv_usec = 0;
+        FD_ZERO(&rfds);
+        FD_SET(pipefd[0], &rfds);
+        if (select(pipefd[0] + 1, &rfds, NULL, NULL, &tv) <= 0) break;
+
+        n = read(pipefd[0], buf + total, len - 1 - (size_t)total);
+        if (n > 0)
             total += n;
+        else if ((n == 0) || ((errno != EAGAIN) && (errno != EINTR)))
+            break;
     }
 
     buf[total] = '\0';

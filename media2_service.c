@@ -460,7 +460,7 @@ int media2_get_video_source_configurations()
     }
 
     if ((strcasecmp(service_ctx.profiles[0].name, token) == 0) ||
-            (strcasecmp(service_ctx.profiles[1].name, token) == 0) ||
+            ((service_ctx.profiles_num == 2) && (strcasecmp(service_ctx.profiles[1].name, token) == 0)) ||
             (strcasecmp("VideoSourceConfigToken", token) == 0)) {
 
         int vsrc = get_video_source_index();
@@ -502,7 +502,7 @@ int media2_get_video_source_configuration_options()
     }
 
     if ((strcasecmp(service_ctx.profiles[0].name, token) == 0) ||
-            (strcasecmp(service_ctx.profiles[1].name, token) == 0) ||
+            ((service_ctx.profiles_num == 2) && (strcasecmp(service_ctx.profiles[1].name, token) == 0)) ||
             (strcasecmp("VideoSourceConfigToken", token) == 0)) {
 
         int vsrc = get_video_source_index();
@@ -738,7 +738,7 @@ int media2_get_audio_source_configurations()
     }
 
     if ((strcasecmp(service_ctx.profiles[0].name, token) == 0) ||
-            (strcasecmp(service_ctx.profiles[1].name, token) == 0) ||
+            ((service_ctx.profiles_num == 2) && (strcasecmp(service_ctx.profiles[1].name, token) == 0)) ||
             (strcasecmp("AudioSourceConfigToken", token) == 0)) {
 
         profiles_num = service_ctx.profiles_num;
@@ -1057,7 +1057,7 @@ int media2_get_audio_output_configurations()
     }
 
     if ((strcasecmp(service_ctx.profiles[0].name, token) == 0) ||
-            (strcasecmp(service_ctx.profiles[1].name, token) == 0) ||
+            ((service_ctx.profiles_num == 2) && (strcasecmp(service_ctx.profiles[1].name, token) == 0)) ||
             (strcasecmp("AudioOutputConfigToken", token) == 0)) {
 
         profiles_num = service_ctx.profiles_num;
