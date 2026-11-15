@@ -5,6 +5,7 @@
     <SOAP-ENV:Body>
         <tds:GetCapabilitiesResponse>
             <tds:Capabilities>
+                %ANALYTICS_CAPABILITY%
                 <tt:Device>
                     <tt:XAddr>%DEVICE_SERVICE_ADDRESS%</tt:XAddr>
                     <tt:Network>
