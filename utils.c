@@ -1846,22 +1846,41 @@ ssize_t spawn_capture(const char *cmd, char *buf, size_t len, int timeout_sec)
     fcntl(pipefd[0], F_SETFL, O_NONBLOCK);
 
     ssize_t total = 0;
-    time_t end = time(NULL) + timeout_sec;
+    struct timespec start, now;
+    int exited = 0;
+
+    clock_gettime(CLOCK_MONOTONIC, &start);
 
     /* Read until EOF, a full buffer or the timeout: the command may write
-     * its output in several parts. */
+     * its output in several parts. A background child of the command can
+     * keep the pipe open after the shell exits, so wait in short slices
+     * and stop once the shell has exited and the pipe is empty. */
     while (total < (ssize_t)(len - 1)) {
-        time_t left = end - time(NULL);
+        long left_ms;
         struct timeval tv;
         fd_set rfds;
         ssize_t n;
+        int ret;
 
-        if (left < 0) break;
-        tv.tv_sec = left;
-        tv.tv_usec = 0;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        left_ms = timeout_sec * 1000L - (now.tv_sec - start.tv_sec) * 1000L
+                  - (now.tv_nsec - start.tv_nsec) / 1000000L;
+        if (left_ms <= 0) break;
+        if (exited)
+            left_ms = 0;
+        else if (left_ms > 100)
+            left_ms = 100;
+        tv.tv_sec = 0;
+        tv.tv_usec = left_ms * 1000L;
         FD_ZERO(&rfds);
         FD_SET(pipefd[0], &rfds);
-        if (select(pipefd[0] + 1, &rfds, NULL, NULL, &tv) <= 0) break;
+        ret = select(pipefd[0] + 1, &rfds, NULL, NULL, &tv);
+        if (ret < 0) break;
+        if (ret == 0) {
+            if (exited) break;
+            exited = (waitpid(pid, NULL, WNOHANG) != 0);
+            continue;
+        }
 
         n = read(pipefd[0], buf + total, len - 1 - (size_t)total);
         if (n > 0)
@@ -1873,7 +1892,7 @@ ssize_t spawn_capture(const char *cmd, char *buf, size_t len, int timeout_sec)
     buf[total] = '\0';
     close(pipefd[0]);
 
-    if (waitpid(pid, NULL, WNOHANG) == 0) {
+    if (!exited && (waitpid(pid, NULL, WNOHANG) == 0)) {
         kill(pid, SIGKILL);
         waitpid(pid, NULL, 0);
     }
