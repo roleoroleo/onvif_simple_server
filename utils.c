@@ -985,23 +985,26 @@ int hashSHA1(char* input, unsigned long input_size, char *output, int output_siz
 /**
  * Decode a base64 string
  * @param output The decoded sequence pointer
- * @param output_size The size of the buffer/decoded sequence
+ * @param output_size The size of the buffer/decoded sequence, 0 on a decode error
  * @param input The input sequence pointer
  * @param input_size The size of the input sequence
  */
 void b64_decode(unsigned char *input, unsigned int input_size, unsigned char *output, unsigned long *output_size)
 {
 #ifdef HAVE_WOLFSSL
-    word32 olen;
-    Base64_Decode((const unsigned char*) input, input_size, output, &olen);
+    word32 olen = *output_size;
+    if (Base64_Decode((const unsigned char*) input, input_size, output, &olen) != 0)
+        olen = 0;
     *output_size = olen;
 #else
 #ifdef HAVE_MBEDTLS
     size_t olen;
-    mbedtls_base64_decode(output, *output_size, &olen, input, input_size);
+    if (mbedtls_base64_decode(output, *output_size, &olen, input, input_size) != 0)
+        olen = 0;
     *output_size = olen;
 #else
-    base64_decode(input, input_size, output, output_size);
+    if (base64_decode(input, input_size, output, output_size) != CRYPT_OK)
+        *output_size = 0;
 #endif
 #endif
 }
