@@ -1406,7 +1406,7 @@ int process_json_conf_file(char *file)
                         continue;
 
                     service_ctx.events_num++;
-                    if (service_ctx.events_num >= MAX_EVENTS) {
+                    if (service_ctx.events_num > MAX_EVENTS) {
                         log_error("Ignore event, too many events, max is: %d", MAX_EVENTS);
                         service_ctx.events_num--;
                     } else {
@@ -1469,7 +1469,8 @@ int process_json_conf_file(char *file)
             service_ctx.events_num++;
             if (service_ctx.events_num > MAX_EVENTS) {
                 log_error("Unable to add relay event, too many events, max is: %d", MAX_EVENTS);
-                return -2;
+                service_ctx.events_num--;
+                break;
             }
             log_debug("Adding event for relay output %d", i);
             grown = grow(service_ctx.events, service_ctx.events_num, sizeof(event_t));
