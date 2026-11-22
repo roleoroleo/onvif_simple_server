@@ -694,7 +694,7 @@ The server does not implement all of Profile M:
 - It is not tested with Milestone XProtect, the reference client. Its box timing and its reaction to the SetMetadataConfiguration fault are unknown.
 
 ### Metadata stream
-These rules apply to mediamtx (checked with v1.21.3) and a pipeline that publishes video and metadata to one path:
+These rules apply to mediamtx (checked with v1.21.4) and a pipeline that publishes video and metadata to one path:
 - The metadata rtpmap is exactly `VND.ONVIF.METADATA/90000`.
 - The spec spells it `vnd.onvif.metadata`. SDP encoding names are case-insensitive, so keep the mediamtx spelling.
 - Send one complete, closed `tt:MetadataStream` document per frame. Some clients, such as Milestone, parse whole documents only.
