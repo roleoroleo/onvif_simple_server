@@ -4,8 +4,8 @@
                    xmlns:tt="http://www.onvif.org/ver10/schema">
     <SOAP-ENV:Body>
         <tr2:GetVideoEncoderConfigurationsResponse>
-            <tr2:Configurations Profile="High" GovLength="40" token="Profile_0_VideoEncoderToken">
-                <tt:Name>Profile_0_VideoEncoder</tt:Name>
+            <tr2:Configurations Profile="High" GovLength="40" token="%PROFILE0%_VideoEncoderToken">
+                <tt:Name>%PROFILE0%_VideoEncoder</tt:Name>
                 <tt:UseCount>1</tt:UseCount>
                 <tt:Encoding>%VIDEO_ENCODING_HIGH%</tt:Encoding>
                 <tt:Resolution>
@@ -26,8 +26,8 @@
                     <tt:AutoStart>false</tt:AutoStart>
                 </tt:Multicast>
             </tr2:Configurations>
-            <tr2:Configurations Profile="Main" GovLength="40" token="Profile_1_VideoEncoderToken">
-                <tt:Name>Profile_1_VideoEncoder</tt:Name>
+            <tr2:Configurations Profile="Main" GovLength="40" token="%PROFILE1%_VideoEncoderToken">
+                <tt:Name>%PROFILE1%_VideoEncoder</tt:Name>
                 <tt:UseCount>1</tt:UseCount>
                 <tt:Encoding>%VIDEO_ENCODING_LOW%</tt:Encoding>
                 <tt:Resolution>
