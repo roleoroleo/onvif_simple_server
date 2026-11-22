@@ -26,61 +26,7 @@
 
 extern service_context_t service_ctx;
 
-/* Limits keep every substituted template line below MAX_CAT_LEN and every
- * escaped value below MAX_LEN. */
-#define MAX_DESC_NAME  256
-#define MAX_DESC_VALUE 160
 #define MAX_DESC_FILE  (256 * 1024)
-
-/* Text for an attribute or element: cat() rescans substituted text for
- * placeholders, so no '%'; no markup and no whitespace either. */
-static int is_plain(const char *s, size_t max)
-{
-    size_t n;
-
-    if ((s == NULL) || !is_xml_chars(s))
-        return 0;
-    n = strlen(s);
-    if ((n == 0) || (n > max))
-        return 0;
-    for (; *s != '\0'; s++) {
-        unsigned char c = (unsigned char) *s;
-        if ((c <= ' ') || (c == 0x7f) || (strchr("%<>&\"'", c) != NULL))
-            return 0;
-    }
-    return 1;
-}
-
-/* Like is_plain(), but spaces and markup are allowed; xml_text() escapes it. */
-static int is_value(const char *s, size_t max)
-{
-    size_t n;
-
-    if ((s == NULL) || !is_xml_chars(s))
-        return 0;
-    n = strlen(s);
-    if (n > max)
-        return 0;
-    for (; *s != '\0'; s++) {
-        unsigned char c = (unsigned char) *s;
-        if ((c < ' ') || (c == 0x7f) || (c == '%'))
-            return 0;
-    }
-    return 1;
-}
-
-/* Returns 1 if qname is "prefix:local" with both parts NCNames and the given prefix. */
-static int is_qname_in(const char *qname, const char *prefix)
-{
-    const char *c;
-
-    if ((qname == NULL) || !is_plain(qname, MAX_DESC_NAME))
-        return 0;
-    c = strchr(qname, ':');
-    if ((c == NULL) || !is_ncname(qname, c - qname) || !is_ncname(c + 1, strlen(c + 1)))
-        return 0;
-    return ((size_t) (c - qname) == strlen(prefix)) && (strncmp(qname, prefix, c - qname) == 0);
-}
 
 static const char *get_string(json_object *o, const char *key)
 {
@@ -194,10 +140,11 @@ static int find_event(const char *topic, const char *prefix)
         return -1;
     }
 
+    /* conf checks described events with event_check() */
     get_event_description(&service_ctx.events[i], &source_type, &data_name, &data_type);
-    if (!is_plain(service_ctx.events[i].source_name, MAX_DESC_NAME) ||
+    if (!EVENT_IS_DESCRIBED(&service_ctx.events[i]) && (!is_plain(service_ctx.events[i].source_name, MAX_DESC_NAME) ||
             (strcmp(service_ctx.events[i].source_name, data_name) == 0) ||
-            !(is_qname_in(source_type, "xsd") || is_qname_in(source_type, "tt"))) {
+            !(is_qname_in(source_type, "xsd") || is_qname_in(source_type, "tt")))) {
         log_error("Event %s has no usable source name or type for an analytics message", topic);
         return -1;
     }

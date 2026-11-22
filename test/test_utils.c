@@ -210,6 +210,170 @@ static void test_event_description(void)
 }
 
 /* -------------------------------------------------------------------------
+ * Test: described events
+ * ---------------------------------------------------------------------- */
+static int value_of(const char *content, size_t n, char *value, size_t size)
+{
+    char path[] = "/tmp/test_utils_value_XXXXXX";
+    int fd = mkstemp(path);
+    int ret;
+
+    if (fd < 0)
+        return -99;
+    if (write(fd, content, n) != (ssize_t) n) {
+        close(fd);
+        unlink(path);
+        return -99;
+    }
+    close(fd);
+    ret = read_event_value(path, value, size);
+    unlink(path);
+    return ret;
+}
+
+static void test_event_value(void)
+{
+    char value[MAX_EVENT_VALUE], text[MAX_EVENT_VALUE + 8];
+    int ret;
+
+    ret = value_of("Human Vehicle\n", 14, value, sizeof(value));
+    CHECK("event value: trailing newline", ret == 0 && strcmp(value, "Human Vehicle") == 0);
+    ret = value_of("  Human \t\r\n  Vehicle  ", 22, value, sizeof(value));
+    CHECK("event value: whitespace runs", ret == 0 && strcmp(value, "Human Vehicle") == 0);
+    ret = value_of("", 0, value, sizeof(value));
+    CHECK("event value: empty file", ret == 0 && value[0] == '\0');
+    ret = value_of(" \n", 2, value, sizeof(value));
+    CHECK("event value: only whitespace", ret == 0 && value[0] == '\0');
+    snprintf(value, sizeof(value), "%s", "old");
+    ret = read_event_value("/nonexistent_dir/x", value, sizeof(value));
+    CHECK("event value: missing file is empty", ret == 0 && value[0] == '\0');
+    ret = value_of("A&B <\"x\">", 9, value, sizeof(value));
+    CHECK("event value: markup kept for escaping", ret == 0 && strcmp(value, "A&B <\"x\">") == 0);
+
+    memset(text, 'a', MAX_EVENT_VALUE - 1);
+    text[MAX_EVENT_VALUE - 1] = '\n';
+    ret = value_of(text, MAX_EVENT_VALUE, value, sizeof(value));
+    CHECK("event value: longest value", ret == 0 && strlen(value) == MAX_EVENT_VALUE - 1);
+    text[MAX_EVENT_VALUE - 1] = 'a';
+    snprintf(value, sizeof(value), "%s", "old");
+    ret = value_of(text, MAX_EVENT_VALUE, value, sizeof(value));
+    CHECK("event value: too long, value kept", ret == -1 && strcmp(value, "old") == 0);
+
+    {
+        char big[1100];
+        memset(big, ' ', sizeof(big));
+        memcpy(big + 400, "Human", 5);
+        ret = value_of(big, 1000, value, sizeof(value));
+        CHECK("event value: fits after collapsing whitespace", ret == 0 && strcmp(value, "Human") == 0);
+        ret = value_of(big, sizeof(big), value, sizeof(value));
+        CHECK("event value: file over 1024 bytes", ret == -1);
+    }
+    CHECK("event value: control character", value_of("Hu\001man", 6, value, sizeof(value)) == -1);
+    CHECK("event value: percent sign", value_of("50%", 3, value, sizeof(value)) == -1);
+    CHECK("event value: NUL byte", value_of("Hu\0man", 6, value, sizeof(value)) == -1);
+    CHECK("event value: invalid UTF-8", value_of("Hu\377man", 6, value, sizeof(value)) == -1);
+    CHECK("event value: directory", read_event_value("/tmp", value, sizeof(value)) == -1);
+}
+
+static void test_event_check(void)
+{
+    const char *st, *dn, *dt;
+    char token[MAX_TOKEN_LEN + 2];
+    event_t d = {
+        .topic = "tns1:RuleEngine/ObjectDetection/Object",
+        .source_name = "VideoSource", .source_type = "tt:ReferenceToken", .source_value = "VideoSourceToken",
+        .input_file = "/tmp/object",
+        .extra_sources = {
+            { "AnalyticsConfiguration", "tt:ReferenceToken", "AnalyticsConfigToken" },
+            { "Rule", "xsd:string", "Object Rule & <1>" },
+        },
+        .extra_sources_num = 2,
+        .data_name = "ClassTypes", .data_type = "tt:StringList",
+        .non_property = 1,
+    };
+    event_t e;
+
+    CHECK("event check: legacy", event_check(&test_events[0]) == 0);
+    CHECK("event check: legacy without source", event_check(&test_events[5]) == 0);
+    e = test_events[0];
+    e.extra_sources_num = 1;
+    CHECK("event check: legacy with two sources", event_check(&e) == -1);
+    e = test_events[0];
+    e.non_property = 1;
+    CHECK("event check: legacy non-property", event_check(&e) == -1);
+    e = test_events[0];
+    e.data_type = "xsd:int";
+    CHECK("event check: data_type without data_name", event_check(&e) == -1);
+
+    CHECK("event check: described", event_check(&d) == 0);
+    CHECK("event check: described is no property", EVENT_IS_DESCRIBED(&d) && !EVENT_IS_PROPERTY(&d));
+    get_event_description(&d, &st, &dn, &dt);
+    CHECK("event check: described description",
+          strcmp(st, "tt:ReferenceToken") == 0 && strcmp(dn, "ClassTypes") == 0 && strcmp(dt, "tt:StringList") == 0);
+    e = d;
+    e.data_type = NULL;
+    CHECK("event check: data_name without data_type", event_check(&e) == -1);
+    e = d;
+    e.input_file = NULL;
+    CHECK("event check: described without input_file", event_check(&e) == -1);
+    e = d;
+    e.non_property = 0;
+    CHECK("event check: described property event", event_check(&e) == 0 && EVENT_IS_PROPERTY(&e));
+    e = d;
+    e.topic = NULL;
+    CHECK("event check: described without topic", event_check(&e) == -1);
+    e = d;
+    e.data_type = "ai:List";
+    CHECK("event check: data type prefix", event_check(&e) == -1);
+    e = d;
+    e.extra_sources[1].name = "ClassTypes";
+    CHECK("event check: item name used twice", event_check(&e) == -1);
+    e = d;
+    e.extra_sources[1].name = "VideoSource";
+    CHECK("event check: two sources with one name", event_check(&e) == -1);
+    e = d;
+    e.too_many_sources = 1;
+    CHECK("event check: more than 4 sources", event_check(&e) == -1);
+    e = d;
+    e.extra_sources[0].type = "ai:Token";
+    CHECK("event check: source type prefix", event_check(&e) == -1);
+    e = d;
+    e.source_type = NULL;
+    CHECK("event check: source without type", event_check(&e) == -1);
+    e = d;
+    e.extra_sources[1].value = NULL;
+    CHECK("event check: source without value", event_check(&e) == -1);
+    e = d;
+    e.extra_sources[1].value = "50%";
+    CHECK("event check: percent in source value", event_check(&e) == -1);
+    e = d;
+    e.data_name = "Class Types";
+    CHECK("event check: data name with space", event_check(&e) == -1);
+
+    memset(token, 'a', MAX_TOKEN_LEN);
+    token[MAX_TOKEN_LEN] = '\0';
+    e = d;
+    e.source_value = token;
+    CHECK("event check: token of 64", event_check(&e) == 0);
+    token[MAX_TOKEN_LEN] = 'a';
+    token[MAX_TOKEN_LEN + 1] = '\0';
+    CHECK("event check: token of 65", event_check(&e) == -1);
+    e.extra_sources[1].value = token;
+    e.source_value = "VideoSourceToken";
+    CHECK("event check: string of 65", event_check(&e) == 0);
+    {
+        char s[MAX_DESC_VALUE + 2];
+        memset(s, 'a', MAX_DESC_VALUE);
+        s[MAX_DESC_VALUE] = '\0';
+        e.extra_sources[1].value = s;
+        CHECK("event check: string of 160", event_check(&e) == 0);
+        s[MAX_DESC_VALUE] = 'a';
+        s[MAX_DESC_VALUE + 1] = '\0';
+        CHECK("event check: string of 161", event_check(&e) == -1);
+    }
+}
+
+/* -------------------------------------------------------------------------
  * Test: XML character and name checks
  * ---------------------------------------------------------------------- */
 static void test_xml_checks(void)
@@ -444,6 +608,8 @@ int main(void)
     test_xml_checks();
     test_read_file();
     test_event_description();
+    test_event_value();
+    test_event_check();
     test_analytics_desc();
     printf("---\n%d/%d passed", g_pass, g_tests);
     if (g_fail)

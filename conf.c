@@ -68,6 +68,43 @@ static int dup_str(char **dst, const char *src)
     return 0;
 }
 
+static void free_event(event_t *e)
+{
+    int i;
+
+    free(e->topic);
+    free(e->source_name);
+    free(e->source_type);
+    free(e->source_value);
+    free(e->input_file);
+    for (i = 0; i < e->extra_sources_num; i++) {
+        free(e->extra_sources[i].name);
+        free(e->extra_sources[i].type);
+        free(e->extra_sources[i].value);
+    }
+    free(e->data_name);
+    free(e->data_type);
+    memset(e, 0, sizeof(*e));
+}
+
+/* Drop the last event if it is not usable */
+static void check_last_event()
+{
+    if ((service_ctx.events_num > 0) && (event_check(&service_ctx.events[service_ctx.events_num - 1]) != 0)) {
+        log_error("Ignore event %d", service_ctx.events_num - 1);
+        free_event(&service_ctx.events[service_ctx.events_num - 1]);
+        service_ctx.events_num--;
+    }
+}
+
+/* The event that the event keys of a key=value file belong to, or NULL */
+static event_t *last_event()
+{
+    if ((service_ctx.events_enable == EVENTS_NONE) || (service_ctx.events_num <= 0))
+        return NULL;
+    return &service_ctx.events[service_ctx.events_num - 1];
+}
+
 /* Profile M needs Media2, and a metadata track needs Profile M. */
 static void check_analytics_conf()
 {
@@ -664,6 +701,7 @@ int process_conf_file(char *file)
             }
         } else if (strcasecmp(param, "topic") == 0) {
             if (service_ctx.events_enable != EVENTS_NONE) {
+                check_last_event();
                 service_ctx.events_num++;
                 if (service_ctx.events_num > MAX_EVENTS) {
                     log_error("Too many events, max is: %d", MAX_EVENTS);
@@ -684,20 +722,42 @@ int process_conf_file(char *file)
                     return -2;
             }
         } else if (strcasecmp(param, "source_name") == 0) {
-            if (service_ctx.events_enable != EVENTS_NONE) {
-                if (dup_str(&service_ctx.events[service_ctx.events_num - 1].source_name, value) != 0)
+            // The first source_name names source 0, each further one starts another source
+            event_t *e = last_event();
+            if ((e != NULL) && (e->source_name == NULL)) {
+                if (dup_str(&e->source_name, value) != 0)
                     return -2;
+            } else if ((e != NULL) && (e->extra_sources_num == MAX_EVENT_SOURCES - 1)) {
+                e->too_many_sources = 1;
+            } else if (e != NULL) {
+                if (dup_str(&e->extra_sources[e->extra_sources_num].name, value) != 0)
+                    return -2;
+                e->extra_sources_num++;
             }
         } else if (strcasecmp(param, "source_type") == 0) {
-            if (service_ctx.events_enable != EVENTS_NONE) {
-                if (dup_str(&service_ctx.events[service_ctx.events_num - 1].source_type, value) != 0)
+            event_t *e = last_event();
+            if (e != NULL) {
+                if (dup_str((e->extra_sources_num > 0) ? &e->extra_sources[e->extra_sources_num - 1].type : &e->source_type, value) != 0)
                     return -2;
             }
         } else if (strcasecmp(param, "source_value") == 0) {
-            if (service_ctx.events_enable != EVENTS_NONE) {
-                if (dup_str(&service_ctx.events[service_ctx.events_num - 1].source_value, value) != 0)
+            event_t *e = last_event();
+            if (e != NULL) {
+                if (dup_str((e->extra_sources_num > 0) ? &e->extra_sources[e->extra_sources_num - 1].value : &e->source_value, value) != 0)
                     return -2;
             }
+        } else if (strcasecmp(param, "data_name") == 0) {
+            event_t *e = last_event();
+            if ((e != NULL) && (dup_str(&e->data_name, value) != 0))
+                return -2;
+        } else if (strcasecmp(param, "data_type") == 0) {
+            event_t *e = last_event();
+            if ((e != NULL) && (dup_str(&e->data_type, value) != 0))
+                return -2;
+        } else if (strcasecmp(param, "is_property") == 0) {
+            event_t *e = last_event();
+            if (e != NULL)
+                e->non_property = (strcasecmp(value, "0") == 0);
         } else if (strcasecmp(param, "input_file") == 0) {
             if (service_ctx.events_enable != EVENTS_NONE) {
                 if (dup_str(&service_ctx.events[service_ctx.events_num - 1].input_file, value) != 0)
@@ -737,6 +797,7 @@ int process_conf_file(char *file)
             log_warn("Unrecognized option: %s", line);
         }
     }
+    check_last_event();
 
     if (service_ctx.relay_outputs != NULL) {
         if (service_ctx.events_enable == EVENTS_NONE) service_ctx.events_enable = EVENTS_PULLPOINT;
@@ -912,6 +973,52 @@ static void get_number_from_json_opt(double* var, json_object* j, char* name)
     if (json_object_object_get_ex(j, name, &d) &&
             (json_object_is_type(d, json_type_double) || json_object_is_type(d, json_type_int)))
         *var = json_object_get_double(d);
+}
+
+/* The keys of a described event. Returns 0, 1 if the event is not usable, or -1 if out of memory. */
+static int get_described_event_from_json(event_t *e, json_object *item)
+{
+    json_object *sources, *s, *b;
+    event_source_t *x;
+    size_t k, n;
+
+    if ((get_string_from_json(&e->data_name, item, "data_name") != 0) ||
+            (get_string_from_json(&e->data_type, item, "data_type") != 0))
+        return -1;
+    if (json_object_object_get_ex(item, "is_property", &b)) {
+        if (!json_object_is_type(b, json_type_boolean)) {
+            log_error("Event %s: is_property must be true or false", e->topic);
+            return 1;
+        }
+        e->non_property = !json_object_get_boolean(b);
+    }
+
+    if (!json_object_object_get_ex(item, "sources", &sources))
+        return 0;
+    n = json_object_is_type(sources, json_type_array) ? json_object_array_length(sources) : 0;
+    if ((e->source_name != NULL) || (e->source_type != NULL) || (e->source_value != NULL) ||
+            (n == 0) || (n > MAX_EVENT_SOURCES)) {
+        log_error("Event %s: use either source_name, source_type and source_value or 1 to %d sources",
+                e->topic, MAX_EVENT_SOURCES);
+        return 1;
+    }
+    for (k = 0; k < n; k++) {
+        s = json_object_array_get_idx(sources, k);
+        if (k == 0) {
+            if ((get_string_from_json(&e->source_name, s, "name") != 0) ||
+                    (get_string_from_json(&e->source_type, s, "type") != 0) ||
+                    (get_string_from_json(&e->source_value, s, "value") != 0))
+                return -1;
+        } else {
+            e->extra_sources_num = k;
+            x = &e->extra_sources[k - 1];
+            if ((get_string_from_json(&x->name, s, "name") != 0) ||
+                    (get_string_from_json(&x->type, s, "type") != 0) ||
+                    (get_string_from_json(&x->value, s, "value") != 0))
+                return -1;
+        }
+    }
+    return 0;
 }
 
 int process_json_conf_file(char *file)
@@ -1478,11 +1585,17 @@ int process_json_conf_file(char *file)
                         if ((service_ctx.events[service_ctx.events_num - 1].topic == NULL) ||
                                 (service_ctx.events[service_ctx.events_num - 1].input_file == NULL)) {
                             log_error("Ignore event %zu: topic and input_file are required", i);
-                            free(service_ctx.events[service_ctx.events_num - 1].topic);
-                            free(service_ctx.events[service_ctx.events_num - 1].source_name);
-                            free(service_ctx.events[service_ctx.events_num - 1].source_type);
-                            free(service_ctx.events[service_ctx.events_num - 1].source_value);
-                            free(service_ctx.events[service_ctx.events_num - 1].input_file);
+                            free_event(&service_ctx.events[service_ctx.events_num - 1]);
+                            service_ctx.events_num--;
+                            continue;
+                        }
+
+                        int r = get_described_event_from_json(&service_ctx.events[service_ctx.events_num - 1], item);
+                        if (r < 0)
+                            goto oom;
+                        if ((r > 0) || (event_check(&service_ctx.events[service_ctx.events_num - 1]) != 0)) {
+                            log_error("Ignore event %zu", i);
+                            free_event(&service_ctx.events[service_ctx.events_num - 1]);
                             service_ctx.events_num--;
                             continue;
                         }
@@ -1494,6 +1607,12 @@ int process_json_conf_file(char *file)
                         log_debug("\tsource_type: %s", service_ctx.events[service_ctx.events_num - 1].source_type);
                         log_debug("\tsource_value: %s", service_ctx.events[service_ctx.events_num - 1].source_value);
                         log_debug("\tinput_file: %s", service_ctx.events[service_ctx.events_num - 1].input_file);
+                        if (EVENT_IS_DESCRIBED(&service_ctx.events[service_ctx.events_num - 1])) {
+                            log_debug("\tsources: %d", service_ctx.events[service_ctx.events_num - 1].extra_sources_num + 1);
+                            log_debug("\tdata_name: %s", service_ctx.events[service_ctx.events_num - 1].data_name);
+                            log_debug("\tdata_type: %s", service_ctx.events[service_ctx.events_num - 1].data_type);
+                            log_debug("\tis_property: %d", !service_ctx.events[service_ctx.events_num - 1].non_property);
+                        }
                         log_debug("");
                     }
                 }
@@ -1587,13 +1706,8 @@ void free_conf_file()
     int i;
 
     if (service_ctx.events_enable == 1) {
-        for (i = service_ctx.events_num - 1; i >= 0; i--) {
-            if (service_ctx.events[i].input_file != NULL) free(service_ctx.events[i].input_file);
-            if (service_ctx.events[i].source_value != NULL) free(service_ctx.events[i].source_value);
-            if (service_ctx.events[i].source_type != NULL) free(service_ctx.events[i].source_type);
-            if (service_ctx.events[i].source_name != NULL) free(service_ctx.events[i].source_name);
-            if (service_ctx.events[i].topic != NULL) free(service_ctx.events[i].topic);
-        }
+        for (i = service_ctx.events_num - 1; i >= 0; i--)
+            free_event(&service_ctx.events[i]);
     }
 
     if (service_ctx.ptz_node.enable == 1) {

@@ -305,12 +305,58 @@ Brief explanation of some parameters:
 | open | the binary command that opens the relay, onvif_simple_server will run it with a system call |
 | events | set to 1 to enable PullPoint, 2 to enable Base Subscription or 3 to enable both |
 | topic | the topic of the event |
-| source_name | the source name inside the Notify message |
-| source_name | the source type inside the Notify message |
+| source_name | the source name inside the Notify message; each further source_name adds a source item (described events only) |
+| source_type | the source type inside the Notify message |
 | source_value | the source value inside the Notify message |
+| data_name | the name of the data item; makes the event a described event, see below |
+| data_type | the type of the data item, e.g. tt:StringList (described events only) |
+| is_property | set to 0 for an event that is not a property (described events only, default 1) |
 | input_file | the file created when the event is fired |
 
 Check the code for information.
+
+#### Described events
+An event with `data_name` and `data_type` is a described event.
+Its data value is the content of `input_file`, not the existence of the file.
+Example, the standard object detection event (ONVIF Analytics, Annex A):
+```
+topic=tns1:RuleEngine/ObjectDetection/Object
+is_property=0
+source_name=VideoSource
+source_type=tt:ReferenceToken
+source_value=VideoSourceToken
+source_name=AnalyticsConfiguration
+source_type=tt:ReferenceToken
+source_value=AnalyticsConfigToken
+source_name=Rule
+source_type=xsd:string
+source_value=ObjectRule
+data_name=ClassTypes
+data_type=tt:StringList
+input_file=/tmp/onvif_notify_server/object_detection
+```
+In a JSON file, `"sources": [ { "name": ..., "type": ..., "value": ... } ]` replaces the three source keys.
+There `is_property` is a JSON boolean (`true` or `false`).
+- `source_type` and `source_value` belong to the `source_name` before them.
+- A described event has 1 to 4 source items. Each needs a name, a type and a value.
+- Names have at most 256 characters and no spaces, control characters, `%`, `<`, `>`, `&` or quotes.
+- Names are unique within the event, the data name included.
+- Types use the prefix `xsd` or `tt`.
+- A `tt:ReferenceToken` value has at most 64 characters, other source values 160. They have no `%` and no control characters.
+- An event that breaks one of these rules is ignored with an error in the log.
+- So is an event with only one of `data_name` and `data_type`.
+- So is a plain event with a second `source_name` or with `is_property=0`.
+- The file holds the value, e.g. `Human Vehicle` for a tt:StringList. A missing file is an empty value.
+- Whitespace runs count as one space. The value has at most 127 bytes, no control characters and no `%`.
+- The file has at most 1024 bytes. A file with an invalid value is ignored.
+- The server sends a message when the value changes. Writing the same value again sends nothing.
+- Write the file to a temporary name in the same folder and rename it. A file written in place can be read half written.
+- A property event (`is_property=1`) sends its current value to new subscriptions and on SetSynchronizationPoint.
+- A non-property event (`is_property=0`) sends only changes, without `PropertyOperation`.
+- A pull point keeps the last 8 changes of each non-property event.
+- Restart onvif_notify_server after an update: it shares memory with the CGI.
+- Update the template folders together with the binaries. All events use new templates.
+- A vendor namespace for an extension topic also goes into `notify_files/Notify_start.xml`.
 
 ### wsd_simple_server
 wsd_simple server supports the following options
@@ -380,6 +426,7 @@ onvif_notify_server checks the files related to the events and sends the notify 
 - When the file is created a new notify message with state "true" is sent to all subscribers.
 - When the file is deleted a new notify message with state "false" is sent to all subscribers.
 - When a Synchronization Point is requested from an onvif client, a new Notify message with the current state is sent to all subscribers.
+- A [described event](#described-events) sends a message when the content of its file changes.
 
 The process can use inotify interface if supported from the device, otherwise it can use the standard "access" function.
 
@@ -648,6 +695,7 @@ SetSynchronizationPoint runs `sync_point_command` (see Media2 above).
 - Each message `topic` must match a configured event. Source and data items come from the first event with that topic.
 - That event needs a `source_name` other than its data item name (`State`, `LogicalState` for relays).
 - Its `source_type`, if set, uses the prefix `xsd` or `tt`.
+- A [described event](#described-events) brings all its source items and its data item.
 - Topics start in `tns1` and have at most 3 levels, like all events of the server.
 - One child topic level may use the namespace prefix, e.g. `tns1:RuleEngine/ai:Violation` (an extension topic, WS-Topics 6.1).
 - Such a topic needs the namespace declared in `events_service_files/GetEventProperties_1.xml`, `events_service_files/PullMessages_1.xml` and `notify_files/Notify.xml`.
@@ -720,7 +768,7 @@ These rules apply to mediamtx (checked with v1.21.4) and a pipeline that publish
 
 ## Testing
 Run `make test` to build and run the unit tests in `test/`. They use the native host compiler and stub mbedtls headers, so no crypto library is required. They need json-c.
-The tests currently cover the helpers in `utils.c` and the analytics description file loader. The SOAP handlers are not covered yet, so test changes to them against a real client (see [Compatibility](#compatibility)).
+The tests currently cover the helpers in `utils.c` (including the checks and values of described events) and the analytics description file loader. The SOAP handlers are not covered yet, so test changes to them against a real client (see [Compatibility](#compatibility)).
 
 ## Credits
 Thanks to:

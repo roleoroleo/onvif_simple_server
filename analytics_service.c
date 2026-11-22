@@ -153,11 +153,35 @@ int analytics_get_service_capabilities()
             "%CAPABILITIES%", capabilities);
 }
 
+/* tt:Messages: the description of the messages of a conf event */
+static long render_messages(char *dest, const event_t *e)
+{
+    const char *source_type, *data_name, *data_type;
+    long size;
+    int i;
+
+    get_event_description(e, &source_type, &data_name, &data_type);
+    size = cat(dest, "analytics_service_files/Messages_start.xml", 2,
+            "%IS_PROPERTY%", EVENT_IS_PROPERTY(e) ? " IsProperty=\"true\"" : "");
+    size += cat(dest, "analytics_service_files/ModuleDescription_parameter.xml", 4,
+            "%NAME%", e->source_name,
+            "%TYPE%", source_type);
+    for (i = 0; i < e->extra_sources_num; i++) {
+        size += cat(dest, "analytics_service_files/ModuleDescription_parameter.xml", 4,
+                "%NAME%", e->extra_sources[i].name,
+                "%TYPE%", e->extra_sources[i].type);
+    }
+    size += cat(dest, "analytics_service_files/Messages_end.xml", 6,
+            "%DATA_NAME%", data_name,
+            "%DATA_TYPE%", data_type,
+            "%TOPIC%", e->topic);
+
+    return size;
+}
+
 static long render_module_description(char *dest, const analytics_desc_t *desc, int i)
 {
     const analytics_module_t *m = &desc->modules[i];
-    const event_t *e;
-    const char *source_type, *data_name, *data_type;
     char max_instances[16];
     long size;
     int j, n = 0;
@@ -177,16 +201,8 @@ static long render_module_description(char *dest, const analytics_desc_t *desc, 
                 "%TYPE%", m->config.params[j].type);
     }
     size += cat(dest, "analytics_service_files/ModuleDescription_parameters_end.xml", 0);
-    for (j = 0; j < m->messages_num; j++) {
-        e = &service_ctx.events[m->messages[j]];
-        get_event_description(e, &source_type, &data_name, &data_type);
-        size += cat(dest, "analytics_service_files/ModuleDescription_message.xml", 10,
-                "%SOURCE_NAME%", e->source_name,
-                "%SOURCE_TYPE%", source_type,
-                "%DATA_NAME%", data_name,
-                "%DATA_TYPE%", data_type,
-                "%TOPIC%", e->topic);
-    }
+    for (j = 0; j < m->messages_num; j++)
+        size += render_messages(dest, &service_ctx.events[m->messages[j]]);
     size += cat(dest, "analytics_service_files/ModuleDescription_end.xml", 0);
 
     return size;

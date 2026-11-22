@@ -1,9 +1,3 @@
-                %TOPIC_L1_START%
-                    %TOPIC_L2_START%
-                        %TOPIC_L3_START%
-                            <tt:MessageDescription IsProperty="true">
-                                <tt:Source>
-                                    <tt:SimpleItemDescription Name="%SOURCE_NAME%" Type="%SOURCE_TYPE%"/>
                                 </tt:Source>
                                 <tt:Data>
                                     <tt:SimpleItemDescription Name="%DATA_NAME%" Type="%DATA_TYPE%"/>

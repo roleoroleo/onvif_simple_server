@@ -1040,6 +1040,96 @@ int is_ncname(const char *s, size_t len)
     return 1;
 }
 
+int is_plain(const char *s, size_t max)
+{
+    size_t n;
+
+    if ((s == NULL) || !is_xml_chars(s))
+        return 0;
+    n = strlen(s);
+    if ((n == 0) || (n > max))
+        return 0;
+    for (; *s != '\0'; s++) {
+        unsigned char c = (unsigned char) *s;
+        if ((c <= ' ') || (c == 0x7f) || (strchr("%<>&\"'", c) != NULL))
+            return 0;
+    }
+    return 1;
+}
+
+int is_value(const char *s, size_t max)
+{
+    size_t n;
+
+    if ((s == NULL) || !is_xml_chars(s))
+        return 0;
+    n = strlen(s);
+    if (n > max)
+        return 0;
+    for (; *s != '\0'; s++) {
+        unsigned char c = (unsigned char) *s;
+        if ((c < ' ') || (c == 0x7f) || (c == '%'))
+            return 0;
+    }
+    return 1;
+}
+
+int is_qname_in(const char *qname, const char *prefix)
+{
+    const char *c;
+
+    if ((qname == NULL) || !is_plain(qname, MAX_DESC_NAME))
+        return 0;
+    c = strchr(qname, ':');
+    if ((c == NULL) || !is_ncname(qname, c - qname) || !is_ncname(c + 1, strlen(c + 1)))
+        return 0;
+    return ((size_t) (c - qname) == strlen(prefix)) && (strncmp(qname, prefix, c - qname) == 0);
+}
+
+/* Bigger than a value, so a value with a trailing newline or padding still fits */
+#define MAX_EVENT_FILE 1024
+
+int read_event_value(const char *path, char *value, size_t size)
+{
+    char *buf, *s, *d;
+    size_t len;
+
+    errno = 0;
+    buf = read_file(path, MAX_EVENT_FILE, &len);
+    if (buf == NULL) {
+        if (errno == ENOENT) {
+            value[0] = '\0';
+            return 0;
+        }
+        return -1;
+    }
+    if ((strlen(buf) != len) || !is_xml_chars(buf)) {
+        free(buf);
+        return -1;
+    }
+
+    // Collapse every run of whitespace into one space and trim both ends
+    for (s = buf, d = buf; *s != '\0'; s++) {
+        if ((*s == ' ') || (*s == '\t') || (*s == '\n') || (*s == '\r')) {
+            if ((d != buf) && (d[-1] != ' '))
+                *d++ = ' ';
+        } else {
+            *d++ = *s;
+        }
+    }
+    if ((d != buf) && (d[-1] == ' '))
+        d--;
+    *d = '\0';
+
+    if (!is_value(buf, size - 1)) {
+        free(buf);
+        return -1;
+    }
+    snprintf(value, size, "%s", buf);
+    free(buf);
+    return 0;
+}
+
 /* Copy a configured string into buf with XML special characters escaped. */
 const char *xml_text(char *buf, size_t size, const char *s)
 {
@@ -1050,11 +1140,74 @@ const char *xml_text(char *buf, size_t size, const char *s)
     return buf;
 }
 
+static int is_item_type(const char *type)
+{
+    return is_qname_in(type, "xsd") || is_qname_in(type, "tt");
+}
+
+static int check_source(const event_t *e, const char *name, const char *type, const char *value)
+{
+    size_t max = ((type != NULL) && (strcmp(type, "tt:ReferenceToken") == 0)) ? MAX_TOKEN_LEN : MAX_DESC_VALUE;
+
+    if (!is_plain(name, MAX_DESC_NAME) || !is_item_type(type) || !is_value(value, max)) {
+        log_error("Event %s: invalid source item %s", e->topic, name != NULL ? name : "(no name)");
+        return -1;
+    }
+    return 0;
+}
+
+int event_check(const event_t *e)
+{
+    const char *names[MAX_EVENT_SOURCES + 1];
+    int i, j, n = 0;
+
+    if (e->too_many_sources) {
+        log_error("Event %s: more than %d sources", e->topic != NULL ? e->topic : "(no topic)", MAX_EVENT_SOURCES);
+        return -1;
+    }
+    if (!EVENT_IS_DESCRIBED(e)) {
+        if ((e->data_type != NULL) || (e->extra_sources_num > 0) || e->non_property) {
+            log_error("Event %s: data_type, is_property=0 and more than one source need data_name and data_type",
+                    e->topic != NULL ? e->topic : "(no topic)");
+            return -1;
+        }
+        return 0;
+    }
+
+    if ((e->topic == NULL) || (e->input_file == NULL) || !is_plain(e->data_name, MAX_DESC_NAME) ||
+            !is_item_type(e->data_type)) {
+        log_error("Event %s: needs topic, input_file and a valid data_name and data_type",
+                e->topic != NULL ? e->topic : "(no topic)");
+        return -1;
+    }
+    if (check_source(e, e->source_name, e->source_type, e->source_value) != 0)
+        return -1;
+    names[n++] = e->source_name;
+    for (i = 0; i < e->extra_sources_num; i++) {
+        if (check_source(e, e->extra_sources[i].name, e->extra_sources[i].type, e->extra_sources[i].value) != 0)
+            return -1;
+        names[n++] = e->extra_sources[i].name;
+    }
+    names[n++] = e->data_name;
+    for (i = 0; i < n; i++) {
+        for (j = i + 1; j < n; j++) {
+            if (strcmp(names[i], names[j]) == 0) {
+                log_error("Event %s: item name %s is used twice", e->topic, names[i]);
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
 void get_event_description(const event_t *e, const char **source_type,
         const char **data_name, const char **data_type)
 {
     *source_type = (e->source_type != NULL) ? e->source_type : "tt:ReferenceToken";
-    if ((e->topic != NULL) && (strcmp("tns1:Device/Trigger/Relay", e->topic) == 0)) {
+    if (EVENT_IS_DESCRIBED(e)) {
+        *data_name = e->data_name;
+        *data_type = e->data_type;
+    } else if ((e->topic != NULL) && (strcmp("tns1:Device/Trigger/Relay", e->topic) == 0)) {
         *data_name = "LogicalState";
         *data_type = "tt:RelayLogicalState";
     } else {

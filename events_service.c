@@ -157,7 +157,12 @@ int events_create_pull_point_subscription()
     // Force notification with Property "Initialized"
     sem_memory_wait();
     for (i = 0; (i < service_ctx.events_num) && (i < MAX_EVENTS); i++) {
-        if ((service_ctx.events[i].topic != NULL) &&
+        if (!EVENT_IS_PROPERTY(&service_ctx.events[i])) {
+            // No initial state: the subscription gets the changes from now on
+            subs_evts->events[i].pull_send_initialized &= ~(1 << sub_index);
+            subs_evts->events[i].pull_notify &= ~(1 << sub_index);
+            subs_evts->values[i].pull_seq[sub_index] = subs_evts->values[i].seq;
+        } else if ((service_ctx.events[i].topic != NULL) &&
                 (is_topic_in_expression(subs_evts->subscriptions[sub_index].topic_expression, service_ctx.events[i].topic))) {
 
             subs_evts->events[i].pull_send_initialized |= (1 << sub_index);
@@ -188,6 +193,121 @@ int events_create_pull_point_subscription()
         "%TERMINATION_TIME%", iso_str_2);
 }
 
+typedef struct {
+    int event;
+    const char *property;   // PropertyOperation, NULL for a non-property event
+    time_t time;
+    char value[MAX_EVENT_VALUE];
+} pull_message_t;
+
+static long render_pull_message(char *dest, const pull_message_t *m)
+{
+    const event_t *e = &service_ctx.events[m->event];
+    const char *source_type, *data_name, *data_type;
+    char utc_time[21];
+    char property[48];
+    char source_value[6 * MAX_DESC_VALUE + 1];
+    char value[6 * MAX_EVENT_VALUE];
+    long size;
+    int i;
+
+    to_iso_date(utc_time, sizeof(utc_time), m->time);
+    property[0] = '\0';
+    if (m->property != NULL)
+        snprintf(property, sizeof(property), " PropertyOperation=\"%s\"", m->property);
+    get_event_description(e, &source_type, &data_name, &data_type);
+
+    size = cat(dest, "events_service_files/PullMessages_message_start.xml", 6,
+        "%TOPIC%", e->topic,
+        "%UTC_TIME%", utc_time,
+        "%PROPERTY_OPERATION%", property);
+    if (EVENT_IS_DESCRIBED(e)) {
+        size += cat(dest, "events_service_files/SimpleItem.xml", 4,
+            "%NAME%", e->source_name,
+            "%VALUE%", xml_text(source_value, sizeof(source_value), e->source_value));
+        for (i = 0; i < e->extra_sources_num; i++) {
+            size += cat(dest, "events_service_files/SimpleItem.xml", 4,
+                "%NAME%", e->extra_sources[i].name,
+                "%VALUE%", xml_text(source_value, sizeof(source_value), e->extra_sources[i].value));
+        }
+        xml_text(value, sizeof(value), m->value);
+    } else {
+        size += cat(dest, "events_service_files/SimpleItem.xml", 4,
+            "%NAME%", e->source_name != NULL ? e->source_name : "",
+            "%VALUE%", e->source_value != NULL ? e->source_value : "");
+        snprintf(value, sizeof(value), "%s", m->value);
+    }
+    size += cat(dest, "events_service_files/PullMessages_message_end.xml", 4,
+        "%DATA_NAME%", data_name,
+        "%DATA_VALUE%", value);
+
+    return size;
+}
+
+/* Collect up to limit pending messages of a pull subscription and mark them sent.
+ * The semaphore must be held. */
+static int collect_pull_messages(shm_t *subs_evts, int sub_index, int limit, time_t now, pull_message_t *msgs)
+{
+    const event_t *e;
+    event_value_shm_t *v;
+    event_entry_shm_t *q;
+    uint32_t bit = 1 << sub_index;
+    uint32_t seq;
+    int i, n = 0;
+
+    for (i = 0; (i < service_ctx.events_num) && (i < MAX_EVENTS) && (n < limit); i++) {
+        if (!(subs_evts->events[i].pull_notify & bit))
+            continue;
+        e = &service_ctx.events[i];
+
+        if (!EVENT_IS_PROPERTY(e)) {
+            // Every change is a message of its own
+            v = &subs_evts->values[i];
+            seq = v->seq;
+            // The daemon writes an entry before it counts it in seq
+            __sync_synchronize();
+            if (seq - v->pull_seq[sub_index] > EVENT_QUEUE_LEN) {
+                log_warn("Pull subscription %d lost %u changes of event %d", sub_index,
+                        seq - v->pull_seq[sub_index] - EVENT_QUEUE_LEN, i);
+                v->pull_seq[sub_index] = seq - EVENT_QUEUE_LEN;
+            }
+            while ((n < limit) && (v->pull_seq[sub_index] != seq)) {
+                v->pull_seq[sub_index]++;
+                q = &v->queue[v->pull_seq[sub_index] % EVENT_QUEUE_LEN];
+                msgs[n].event = i;
+                msgs[n].property = NULL;
+                msgs[n].time = q->e_time;
+                snprintf(msgs[n].value, sizeof(msgs[n].value), "%s", q->value);
+                n++;
+            }
+            if (v->pull_seq[sub_index] == v->seq)
+                subs_evts->events[i].pull_notify &= ~bit;
+            continue;
+        }
+
+        msgs[n].event = i;
+        if (subs_evts->events[i].pull_send_initialized & bit) {
+            msgs[n].property = "Initialized";
+            msgs[n].time = now;
+        } else {
+            msgs[n].property = "Changed";
+            msgs[n].time = subs_evts->events[i].e_time;
+        }
+        if (EVENT_IS_DESCRIBED(e)) {
+            snprintf(msgs[n].value, sizeof(msgs[n].value), "%s", subs_evts->values[i].value);
+        } else if ((e->topic != NULL) && (strcmp("tns1:Device/Trigger/Relay", e->topic) == 0)) {
+            snprintf(msgs[n].value, sizeof(msgs[n].value), "%s", subs_evts->events[i].is_on ? "active" : "inactive");
+        } else {
+            snprintf(msgs[n].value, sizeof(msgs[n].value), "%s", subs_evts->events[i].is_on ? "true" : "false");
+        }
+        subs_evts->events[i].pull_send_initialized &= ~bit;
+        subs_evts->events[i].pull_notify &= ~bit;
+        n++;
+    }
+
+    return n;
+}
+
 int events_pull_messages()
 {
     const char *timeout;
@@ -196,7 +316,6 @@ int events_pull_messages()
     time_t now, now_p_timeout, previous_expire_time, expire_time;
     char iso_str[21];
     char iso_str_2[21];
-    char iso_str_3[21];
 
     int qs_size;
     char *qs_string;
@@ -206,9 +325,7 @@ int events_pull_messages()
     int at_least_one_message;
     int i, c;
     char *endptr;
-    char property[32];
-    char data_name[32];
-    char data_value[32];
+    pull_message_t msgs[MAX_EVENTS];
     char dest_a[] = "stdout";
     char *dest;
     long size, total_size;
@@ -346,8 +463,12 @@ int events_pull_messages()
     to_iso_date(iso_str, sizeof(iso_str), now);
     to_iso_date(iso_str_2, sizeof(iso_str_2), expire_time);
 
-    // We need 1st step to evaluate content length
     sem_memory_wait();
+    count = collect_pull_messages(subs_evts, sub_index, limit, now, msgs);
+    sem_memory_post();
+    destroy_shared_memory((void *) subs_evts, 0);
+
+    // We need 1st step to evaluate content length
     for (c = 0; c < 2; c++) {
         if (c == 0) {
             dest = NULL;
@@ -361,60 +482,14 @@ int events_pull_messages()
                     "%TERMINATION_TIME%", iso_str_2);
         if (c == 0) total_size = size;
 
-        count = 0;
-        for (i = 0; (i < service_ctx.events_num) && (i < MAX_EVENTS); i++) {
-            if (count >= limit)
-                break;
-            if ((subs_evts->events[i].pull_notify & (1 << sub_index))) {
-                if ((subs_evts->events[i].pull_send_initialized & (1 << sub_index))) {
-                    snprintf(property, sizeof(property), "%s", "Initialized");
-                    to_iso_date(iso_str_3, sizeof(iso_str_3), now);
-                } else {
-                    snprintf(property, sizeof(property), "%s", "Changed");
-                    to_iso_date(iso_str_3, sizeof(iso_str_3), subs_evts->events[i].e_time);
-                }
-                if (subs_evts->events[i].is_on) {
-                    if ((service_ctx.events[i].topic != NULL) && (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0)) {
-                        snprintf(data_value, sizeof(data_value), "%s", "active");
-                    } else {
-                        snprintf(data_value, sizeof(data_value), "%s", "true");
-                    }
-                } else {
-                    if ((service_ctx.events[i].topic != NULL) && (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0)) {
-                        snprintf(data_value, sizeof(data_value), "%s", "inactive");
-                    } else {
-                        snprintf(data_value, sizeof(data_value), "%s", "false");
-                    }
-                }
-                if ((service_ctx.events[i].topic != NULL) && (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0)) {
-                    snprintf(data_name, sizeof(data_name), "%s", "LogicalState");
-                } else {
-                    snprintf(data_name, sizeof(data_name), "%s", "State");
-                }
-                size = cat(dest, "events_service_files/PullMessages_2.xml", 14,
-                    "%TOPIC%", service_ctx.events[i].topic,
-                    "%UTC_TIME%", iso_str_3,
-                    "%PROPERTY%", property,
-                    "%SOURCE_NAME%", service_ctx.events[i].source_name != NULL ? service_ctx.events[i].source_name : "",
-                    "%SOURCE_VALUE%", service_ctx.events[i].source_value != NULL ? service_ctx.events[i].source_value : "",
-                    "%DATA_NAME%", data_name,
-                    "%DATA_VALUE%", data_value);
-                if (c == 0) total_size += size;
-
-                if (c == 1) {
-                    subs_evts->events[i].pull_send_initialized &= ~(1 << sub_index);
-                    subs_evts->events[i].pull_notify &= ~(1 << sub_index);
-                }
-
-                count++;
-            }
+        for (i = 0; i < count; i++) {
+            size = render_pull_message(dest, &msgs[i]);
+            if (c == 0) total_size += size;
         }
 
         size = cat(dest, "events_service_files/PullMessages_3.xml", 0);
         if (c == 0) total_size += size;
     }
-    sem_memory_post();
-    destroy_shared_memory((void *) subs_evts, 0);
 
     return total_size;
 }
@@ -710,6 +785,7 @@ int events_get_event_properties()
     long size, total_size;
     char dest_a[] = "stdout";
     char *dest;
+    const event_t *e;
     const char *source_type, *data_name, *data_type;
 
     // We need 1st step to evaluate content length
@@ -753,14 +829,23 @@ int events_get_event_properties()
                 return -1;
             }
 
-            get_event_description(&service_ctx.events[i], &source_type, &data_name, &data_type);
+            e = &service_ctx.events[i];
+            get_event_description(e, &source_type, &data_name, &data_type);
 
-            size = cat(dest, "events_service_files/GetEventProperties_2.xml", 20,
+            size = cat(dest, "events_service_files/GetEventProperties_topic_start.xml", 8,
                 "%TOPIC_L1_START%", topic_ls[0],
                 "%TOPIC_L2_START%", topic_ls[1],
                 "%TOPIC_L3_START%", topic_ls[2],
-                "%SOURCE_NAME%", service_ctx.events[i].source_name != NULL ? service_ctx.events[i].source_name : "",
-                "%SOURCE_TYPE%", source_type,
+                "%IS_PROPERTY%", EVENT_IS_PROPERTY(e) ? " IsProperty=\"true\"" : "");
+            size += cat(dest, "events_service_files/SimpleItemDescription.xml", 4,
+                "%NAME%", e->source_name != NULL ? e->source_name : "",
+                "%TYPE%", source_type);
+            for (j = 0; j < e->extra_sources_num; j++) {
+                size += cat(dest, "events_service_files/SimpleItemDescription.xml", 4,
+                    "%NAME%", e->extra_sources[j].name,
+                    "%TYPE%", e->extra_sources[j].type);
+            }
+            size += cat(dest, "events_service_files/GetEventProperties_topic_end.xml", 10,
                 "%DATA_NAME%", data_name,
                 "%DATA_TYPE%", data_type,
                 "%TOPIC_L3_END%", topic_le[2],
@@ -906,7 +991,8 @@ int events_set_synchronization_point()
     subs_evts->subscriptions[sub_index].push_need_sync = 1;
 
     for (i = 0; i < service_ctx.events_num && i < MAX_EVENTS; i++) {
-        if ((service_ctx.events[i].topic != NULL) &&
+        // A sync point repeats properties only
+        if (EVENT_IS_PROPERTY(&service_ctx.events[i]) && (service_ctx.events[i].topic != NULL) &&
                 (is_topic_in_expression(subs_evts->subscriptions[sub_index].topic_expression, service_ctx.events[i].topic))) {
 
             subs_evts->events[i].pull_send_initialized |= (1 << sub_index);
