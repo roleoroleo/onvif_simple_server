@@ -700,9 +700,10 @@ These rules apply to mediamtx (checked with v1.21.3) and a pipeline that publish
 - Send one complete, closed `tt:MetadataStream` document per frame. Some clients, such as Milestone, parse whole documents only.
 - Set the RTP marker bit on the packet that closes a document.
 - Start a new document on each sync point, and at least every second.
-- A metadata RTP packet has at most 1472 bytes, RTP header included (1462 with RTSPS). Publish over TCP.
+- A metadata RTP packet has at most 1452 bytes, RTP header included (1442 with RTSPS). mediamtx drops larger ones. Publish over TCP.
+- The limit follows `udpMaxPayloadSize` (default 1452, at most 1472).
 - Set `useAbsoluteTimestamp: true` on the path, and send RTCP sender reports on both tracks. Else boxes arrive late, or packets are dropped.
-- Set `alwaysAvailable: false` on the path. Its offline tracks cannot carry the metadata track.
+- Set `alwaysAvailable: false` on the path. mediamtx rejects `alwaysAvailable: true` together with `useAbsoluteTimestamp`. Its offline tracks also cannot carry the metadata track.
 - Sync the device clock with NTP. Some clients hide boxes when the clocks differ.
 - For RTSP Digest, set `rtspAuthMethods: [basic, digest]`. This needs the `internal` auth method and plain passwords.
 - RTP over UDP or TCP, RTSP over HTTP and RTSP over WebSocket work on the RTSP listener without extra settings.
