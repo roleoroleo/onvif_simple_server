@@ -36,12 +36,17 @@ extern service_context_t service_ctx;
 #define MAX_FRAME_TAGS 2048
 #define MAX_FRAME_ATTRS 64
 
+int analytics_rule_support()
+{
+    return analytics_desc_has_rules(service_ctx.analytics_file);
+}
+
 void analytics_capabilities(char *buf, size_t size)
 {
     snprintf(buf, size,
             "RuleSupport=\"%s\" AnalyticsModuleSupport=\"true\" CellBasedSceneDescriptionSupported=\"false\" "
             "RuleOptionsSupported=\"false\" AnalyticsModuleOptionsSupported=\"false\" SupportedMetadata=\"true\"",
-            ANALYTICS_RULE_SUPPORT ? "true" : "false");
+            analytics_rule_support() ? "true" : "false");
 }
 
 int analytics_use_count()
@@ -55,13 +60,13 @@ int analytics_use_count()
     return n;
 }
 
-/* The module namespace declaration, or "" without modules */
+/* The namespace declaration of the description file, or "" without modules and rules */
 static void ns_decl(char *buf, size_t size, const analytics_desc_t *desc)
 {
     char uri[MAX_LEN];
 
     buf[0] = '\0';
-    if ((desc->modules_num > 0) && (desc->ns_prefix != NULL)) {
+    if ((desc->modules_num + desc->rules_num > 0) && (desc->ns_prefix != NULL)) {
         xml_text(uri, sizeof(uri), desc->ns_uri);
         snprintf(buf, size, " xmlns:%s=\"%s\"", desc->ns_prefix, uri);
     }
@@ -108,20 +113,20 @@ long analytics_render_configuration(char *dest, const char *element, const analy
         size += render_config(dest, "tt:AnalyticsModule", &desc->modules[i].config);
     size += cat(dest, "analytics_service_files/VideoAnalyticsConfiguration_middle.xml", 0);
     for (i = 0; i < desc->rules_num; i++)
-        size += render_config(dest, "tt:Rule", &desc->rules[i]);
+        size += render_config(dest, "tt:Rule", &desc->rules[i].config);
     size += cat(dest, "analytics_service_files/VideoAnalyticsConfiguration_end.xml", 2,
             "%ELEMENT%", element);
 
     return size;
 }
 
-/* Index of the first module with the type of module i */
-static int first_of_type(const analytics_desc_t *desc, int i)
+/* Index of the first module or rule in list with the type of list[i] */
+static int first_of_type(const analytics_module_t *list, int i)
 {
     int j;
 
     for (j = 0; j < i; j++) {
-        if (strcmp(desc->modules[j].config.type, desc->modules[i].config.type) == 0)
+        if (strcmp(list[j].config.type, list[i].config.type) == 0)
             break;
     }
     return j;
@@ -179,20 +184,22 @@ static long render_messages(char *dest, const event_t *e)
     return size;
 }
 
-static long render_module_description(char *dest, const analytics_desc_t *desc, int i)
+/* The description (element) of the type of list[i], a module or a rule */
+static long render_description(char *dest, const char *element, const analytics_module_t *list, int num, int i)
 {
-    const analytics_module_t *m = &desc->modules[i];
+    const analytics_module_t *m = &list[i];
     char max_instances[16];
     long size;
     int j, n = 0;
 
-    for (j = i; j < desc->modules_num; j++) {
-        if (strcmp(desc->modules[j].config.type, m->config.type) == 0)
+    for (j = i; j < num; j++) {
+        if (strcmp(list[j].config.type, m->config.type) == 0)
             n++;
     }
     snprintf(max_instances, sizeof(max_instances), "%d", n);
 
-    size = cat(dest, "analytics_service_files/ModuleDescription_start.xml", 4,
+    size = cat(dest, "analytics_service_files/ModuleDescription_start.xml", 6,
+            "%ELEMENT%", element,
             "%TYPE%", m->config.type,
             "%MAX_INSTANCES%", max_instances);
     for (j = 0; j < m->config.params_num; j++) {
@@ -203,7 +210,8 @@ static long render_module_description(char *dest, const analytics_desc_t *desc, 
     size += cat(dest, "analytics_service_files/ModuleDescription_parameters_end.xml", 0);
     for (j = 0; j < m->messages_num; j++)
         size += render_messages(dest, &service_ctx.events[m->messages[j]]);
-    size += cat(dest, "analytics_service_files/ModuleDescription_end.xml", 0);
+    size += cat(dest, "analytics_service_files/ModuleDescription_end.xml", 2,
+            "%ELEMENT%", element);
 
     return size;
 }
@@ -237,8 +245,8 @@ int analytics_get_supported_analytics_modules()
                 "%NS_DECL%", nsd);
         size += cat(dest, "analytics_service_files/SupportedAnalyticsModules_start.xml", 0);
         for (i = 0; i < desc.modules_num; i++) {
-            if (first_of_type(&desc, i) == i)
-                size += render_module_description(dest, &desc, i);
+            if (first_of_type(desc.modules, i) == i)
+                size += render_description(dest, "tt:AnalyticsModuleDescription", desc.modules, desc.modules_num, i);
         }
         size += cat(dest, "analytics_service_files/SupportedAnalyticsModules_end.xml", 0);
         size += cat(dest, "analytics_service_files/Response_footer.xml", 2,
@@ -562,7 +570,7 @@ int analytics_get_supported_metadata()
     analytics_desc_load(&desc, service_ctx.analytics_file);
     for (i = 0; i < desc.modules_num; i++) {
         frames[i] = NULL;
-        if (first_of_type(&desc, i) != i)
+        if (first_of_type(desc.modules, i) != i)
             continue;
         if ((type != NULL) && !type_matches(type, type_node, &desc, desc.modules[i].config.type))
             continue;
@@ -630,6 +638,139 @@ int analytics_delete_analytics_modules()
     return send_fixed_modules_fault();
 }
 
+/* Load the description file for a rule method and check the configuration token.
+ * Without rules the method is unknown. Returns 0 if the method goes on; free desc then. */
+static int load_rules(analytics_desc_t *desc, const char *method)
+{
+    analytics_desc_load(desc, service_ctx.analytics_file);
+    if (desc->rules_num == 0) {
+        analytics_desc_free(desc);
+        analytics_unknown(method);
+        return -1;
+    }
+    if (check_configuration_token() != 0) {
+        analytics_desc_free(desc);
+        return -1;
+    }
+    return 0;
+}
+
+int analytics_get_supported_rules(const char *method)
+{
+    analytics_desc_t desc;
+    char nsd[MAX_LEN + 64];
+    char dest_a[] = "stdout";
+    char *dest;
+    long size = 0;
+    int c, i;
+
+    if (load_rules(&desc, method) != 0)
+        return -1;
+    ns_decl(nsd, sizeof(nsd), &desc);
+
+    // We need 1st step to evaluate content length
+    for (c = 0; c < 2; c++) {
+        if (c == 0) {
+            dest = NULL;
+        } else {
+            dest = dest_a;
+            output_http_headers(size);
+        }
+
+        size = cat(dest, "analytics_service_files/Response_header.xml", 4,
+                "%METHOD%", "GetSupportedRules",
+                "%NS_DECL%", nsd);
+        size += cat(dest, "analytics_service_files/SupportedRules_start.xml", 0);
+        for (i = 0; i < desc.rules_num; i++) {
+            if (first_of_type(desc.rules, i) == i)
+                size += render_description(dest, "tt:RuleDescription", desc.rules, desc.rules_num, i);
+        }
+        size += cat(dest, "analytics_service_files/SupportedRules_end.xml", 0);
+        size += cat(dest, "analytics_service_files/Response_footer.xml", 2,
+                "%METHOD%", "GetSupportedRules");
+    }
+
+    analytics_desc_free(&desc);
+
+    return size;
+}
+
+int analytics_get_rules(const char *method)
+{
+    analytics_desc_t desc;
+    char nsd[MAX_LEN + 64];
+    char dest_a[] = "stdout";
+    char *dest;
+    long size = 0;
+    int c, i;
+
+    if (load_rules(&desc, method) != 0)
+        return -1;
+    ns_decl(nsd, sizeof(nsd), &desc);
+
+    // We need 1st step to evaluate content length
+    for (c = 0; c < 2; c++) {
+        if (c == 0) {
+            dest = NULL;
+        } else {
+            dest = dest_a;
+            output_http_headers(size);
+        }
+
+        size = cat(dest, "analytics_service_files/Response_header.xml", 4,
+                "%METHOD%", "GetRules",
+                "%NS_DECL%", nsd);
+        for (i = 0; i < desc.rules_num; i++)
+            size += render_config(dest, "tan:Rule", &desc.rules[i].config);
+        size += cat(dest, "analytics_service_files/Response_footer.xml", 2,
+                "%METHOD%", "GetRules");
+    }
+
+    analytics_desc_free(&desc);
+
+    return size;
+}
+
+static void send_fixed_rules_fault()
+{
+    send_fault("analytics_service", "Sender", "ter:Action", "ter:FixedRules", "Fixed rules", "The rules are fixed and cannot be created or deleted");
+}
+
+int analytics_create_rules(const char *method)
+{
+    analytics_desc_t desc;
+
+    if (load_rules(&desc, method) != 0)
+        return -1;
+    analytics_desc_free(&desc);
+    send_fixed_rules_fault();
+    return -2;
+}
+
+int analytics_delete_rules(const char *method)
+{
+    analytics_desc_t desc;
+    ezxml_t name;
+    int i;
+
+    if (load_rules(&desc, method) != 0)
+        return -1;
+    for (name = get_element_ptr(NULL, "RuleName", "Body"); name != NULL; name = name->next) {
+        for (i = 0; i < desc.rules_num; i++) {
+            if ((name->txt != NULL) && (strcmp(name->txt, desc.rules[i].config.name) == 0))
+                break;
+        }
+        if (i == desc.rules_num) {
+            analytics_desc_free(&desc);
+            send_fault("analytics_service", "Sender", "ter:InvalidArgVal", "ter:RuleNotExistent", "Rule not existent", "The rule name or names do not exist");
+            return -2;
+        }
+    }
+    analytics_desc_free(&desc);
+    send_fixed_rules_fault();
+    return -3;
+}
+
 int analytics_unsupported(const char *method)
 {
     (void) method;
@@ -650,4 +791,11 @@ int analytics_empty_response(const char *method)
 
     return cat("stdout", "analytics_service_files/Empty.xml", 2,
             "%METHOD%", method);
+}
+
+int analytics_unknown(const char *method)
+{
+    if (service_ctx.adv_empty_if_unknown == 1)
+        return analytics_empty_response(method);
+    return analytics_unsupported(method);
 }

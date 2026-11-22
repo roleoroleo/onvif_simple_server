@@ -34,14 +34,15 @@ typedef struct {
 /* A module or rule instance (tt:Config) */
 typedef struct {
     const char *name;
-    const char *type;       /* QName in the description file namespace */
+    const char *type;       /* QName in the description file namespace, for a rule also in tt */
     int params_num;
     analytics_param_t params[MAX_ANALYTICS_PARAMS];
 } analytics_config_t;
 
+/* A module or rule */
 typedef struct {
     analytics_config_t config;
-    const char *sample_frame_file;
+    const char *sample_frame_file;  /* modules only */
     int messages_num;
     int messages[MAX_EVENTS];   /* indexes into service_ctx.events */
 } analytics_module_t;
@@ -54,13 +55,15 @@ typedef struct {
     int modules_num;
     analytics_module_t modules[MAX_ANALYTICS_MODULES];
     int rules_num;
-    analytics_config_t rules[MAX_ANALYTICS_RULES];
+    analytics_module_t rules[MAX_ANALYTICS_RULES];
 } analytics_desc_t;
 
 /* Load the description file. Invalid entries are skipped with an error in the log.
- * Returns 0, or -1 if the file is unusable (desc then holds no modules).
+ * Returns 0, or -1 if the file is unusable (desc then holds no modules and rules).
  * Call analytics_desc_free() in both cases. */
 int analytics_desc_load(analytics_desc_t *desc, const char *file);
 void analytics_desc_free(analytics_desc_t *desc);
+/* 1 if the description file has a usable rule */
+int analytics_desc_has_rules(const char *file);
 
 #endif //ANALYTICS_DESC_H

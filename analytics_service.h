@@ -21,9 +21,6 @@
 
 #include "analytics_desc.h"
 
-/* Every RuleSupport capability reads this flag. */
-#define ANALYTICS_RULE_SUPPORT 0
-
 #define METADATA_CONFIG_TOKEN "MetadataConfigToken"
 #define ANALYTICS_CONFIG_TOKEN "AnalyticsConfigToken"
 
@@ -33,9 +30,18 @@ int analytics_get_analytics_modules();
 int analytics_get_supported_metadata();
 int analytics_create_analytics_modules();
 int analytics_delete_analytics_modules();
+int analytics_get_supported_rules(const char *method);
+int analytics_get_rules(const char *method);
+int analytics_create_rules(const char *method);
+int analytics_delete_rules(const char *method);
 
 int analytics_unsupported(const char *method);
 int analytics_empty_response(const char *method);
+/* The answer to a method the device does not implement */
+int analytics_unknown(const char *method);
+
+/* Every RuleSupport capability reads this: 1 if the description file has rules */
+int analytics_rule_support();
 
 /* Attributes of tan:Capabilities */
 void analytics_capabilities(char *buf, size_t size);

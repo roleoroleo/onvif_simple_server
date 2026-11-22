@@ -70,8 +70,8 @@ static void build_analytics_service(char *buf, size_t size, const char *address,
         buf[0] = '\0';
         return;
     }
-    analytics_capabilities(capabilities, sizeof(capabilities));
     if (with_capabilities) {
+        analytics_capabilities(capabilities, sizeof(capabilities));
         snprintf(buf, size,
                 "<tds:Service>"
                 "<tds:Namespace>http://www.onvif.org/ver20/analytics/wsdl</tds:Namespace>"
@@ -102,7 +102,7 @@ static void build_analytics_capability(char *buf, size_t size, const char *addre
             "<tt:Analytics><tt:XAddr>%s</tt:XAddr>"
             "<tt:RuleSupport>%s</tt:RuleSupport>"
             "<tt:AnalyticsModuleSupport>true</tt:AnalyticsModuleSupport></tt:Analytics>",
-            address, ANALYTICS_RULE_SUPPORT ? "true" : "false");
+            address, analytics_rule_support() ? "true" : "false");
 }
 
 /* Media2 ConfigurationsSupported in GetServices */
@@ -700,7 +700,10 @@ int device_get_capabilities()
     snprintf(relay_outputs, sizeof(relay_outputs), "%d", service_ctx.relay_outputs_num);
 
     build_imaging_capability(imaging_capability, sizeof(imaging_capability), imaging_service_address);
-    build_analytics_capability(analytics_capability, sizeof(analytics_capability), analytics_service_address);
+    // Only these categories list it, and it reads the analytics file
+    analytics_capability[0] = '\0';
+    if ((icategory == 15) || (icategory == 32))
+        build_analytics_capability(analytics_capability, sizeof(analytics_capability), analytics_service_address);
 
     if (icategory == 1) {
         long size = cat(NULL, "device_service_files/GetDeviceCapabilities.xml", 2,

@@ -1,2 +1,2 @@
-                <tt:AnalyticsModuleDescription Name="%TYPE%" fixed="true" maxInstances="%MAX_INSTANCES%">
+                <%ELEMENT% Name="%TYPE%" fixed="true" maxInstances="%MAX_INSTANCES%">
                     <tt:Parameters>

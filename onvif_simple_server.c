@@ -789,12 +789,16 @@ int main(int argc, char ** argv)
                 analytics_create_analytics_modules();
             } else if (strcasecmp(method, "DeleteAnalyticsModules") == 0) {
                 analytics_delete_analytics_modules();
+            } else if (strcasecmp(method, "GetSupportedRules") == 0) {
+                analytics_get_supported_rules(method);
+            } else if (strcasecmp(method, "GetRules") == 0) {
+                analytics_get_rules(method);
+            } else if (strcasecmp(method, "CreateRules") == 0) {
+                analytics_create_rules(method);
+            } else if (strcasecmp(method, "DeleteRules") == 0) {
+                analytics_delete_rules(method);
             } else {
-                if (service_ctx.adv_empty_if_unknown == 1) {
-                    analytics_empty_response(method);
-                } else {
-                    analytics_unsupported(method);
-                }
+                analytics_unknown(method);
             }
         } else {
             send_action_not_supported_fault(prog_name);

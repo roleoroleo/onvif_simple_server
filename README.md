@@ -474,7 +474,7 @@ Services at a glance (details of each function below):
 | PTZ | `ptz=1` and the PTZ commands | Each action runs the configured shell command |
 | DeviceIO | relay outputs | Relay state is changed by the configured `open` and `close` commands |
 | Events | event entries | Pull-point and basic notification subscriptions |
-| Analytics | `adv_enable_analytics=1` and `analytics_file` | Fixed analytics modules, read-only, see [Profile M](#profile-m) |
+| Analytics | `adv_enable_analytics=1` and `analytics_file` | Fixed analytics modules and rules, read-only, see [Profile M](#profile-m) |
 
 Below a list of the implemented functions, all other functions return a generic soap fault.
 
@@ -502,11 +502,15 @@ SystemReboot
 **Analytics**
 ```
 CreateAnalyticsModules
+CreateRules
 DeleteAnalyticsModules
+DeleteRules
 GetAnalyticsModules
+GetRules
 GetServiceCapabilities
 GetSupportedAnalyticsModules
 GetSupportedMetadata
+GetSupportedRules
 ```
 
 **Imaging**
@@ -677,18 +681,33 @@ SetSynchronizationPoint runs `sync_point_command` (see Media2 above).
       "messages": [ { "topic": "tns1:RuleEngine/MyRuleDetector/PeopleDetect" } ],
       "sample_frame_file": "/tmp/onvif_simple_server/object_detector.xml"
     }
+  ],
+  "rules": [
+    {
+      "type": "tt:ObjectDetection",
+      "name": "ObjectRule",
+      "parameters": [ { "name": "ClassFilter", "type": "tt:StringList", "value": "Human Vehicle" } ],
+      "messages": [ { "topic": "tns1:RuleEngine/ObjectDetection/Object" } ]
+    }
   ]
 }
 ```
-- The server reads the file on each Profile M request, so the pipeline can rewrite it at any time.
+- The server reads the file on each Profile M request and for the capabilities, so the pipeline can rewrite it at any time.
+- Write it to a temporary name in the same folder and rename it, so no request reads it half written.
 - It is a regular file of at most 256 KiB.
 - `namespace` is required. Without a valid one the file is ignored.
 - The `uri` has at most 160 characters, no spaces, no control characters and no `%`. The `prefix` has at most 32 characters.
 - The `uri` is not the `xml` or `xmlns` namespace URI.
 - The prefixes `tt`, `tr2`, `tan`, `tds`, `xsd`, `tns1` and `xml...` are reserved.
-- Each `type` is a QName with the namespace prefix.
+- Each `type` is a QName with the namespace prefix. A rule type may also be an ONVIF type like `tt:ObjectDetection`.
 - Each module is a fixed instance with a unique `name`.
 - Modules of the same type share the description, messages and sample frame of the first one.
+- `rules` are optional. Each rule is a fixed instance with a unique `name`.
+- Rules of the same type need the same parameter names and types. They share the description and messages of the first one.
+- With at least one usable rule, `RuleSupport` is true and GetSupportedRules, GetRules, CreateRules and DeleteRules answer. Without rules they answer like unknown methods.
+- A rule lists the events it sends as messages, e.g. `tns1:RuleEngine/ObjectDetection/Object` for `tt:ObjectDetection`.
+- Configure such an event with the source items `VideoSource` (`VideoSourceToken`), `AnalyticsConfiguration` (`AnalyticsConfigToken`) and `Rule` (the rule `name`). The server does not check them.
+- ONVIF defines the parameter `ClassFilter` (`tt:StringList`) for a `tt:ObjectDetection` rule. Class names have no spaces. The server does not check the parameters.
 - `parameters` are optional. Each needs `name`, `type` and `value`.
 - A parameter `type` uses the prefix `xsd`, `tt` or the namespace prefix.
 - A `value` is a JSON string of at most 160 characters, without `%` or control characters.
@@ -698,11 +717,11 @@ SetSynchronizationPoint runs `sync_point_command` (see Media2 above).
 - A [described event](#described-events) brings all its source items and its data item.
 - Topics start in `tns1` and have at most 3 levels, like all events of the server.
 - One child topic level may use the namespace prefix, e.g. `tns1:RuleEngine/ai:Violation` (an extension topic, WS-Topics 6.1).
-- Such a topic needs the namespace declared in `events_service_files/GetEventProperties_1.xml`, `events_service_files/PullMessages_1.xml` and `notify_files/Notify.xml`.
+- Such a topic needs the namespace declared in `events_service_files/GetEventProperties_1.xml`, `events_service_files/PullMessages_1.xml`, `notify_files/Notify.xml` and `notify_files/Notify_start.xml`.
 - Without it, GetEventProperties is not well-formed.
 - Names, types and topics have at most 256 characters.
 - They must not contain spaces, control characters, `%`, `<`, `>`, `&` or quotes.
-- At most 16 modules, 16 parameters and 8 messages per module are used.
+- At most 16 modules, 16 rules, 16 parameters and 8 messages per module or rule are used.
 - Invalid entries are skipped with an error in the log. Unknown keys are ignored.
 
 The sample frame file holds one `tt:Frame` with `UtcTime`.
@@ -740,7 +759,9 @@ The server does not implement all of Profile M:
 - The analytics modules are fixed. CreateAnalyticsModules and DeleteAnalyticsModules answer `ter:FixedModules`. Profile M wants them to work.
 - GetAnalyticsModuleOptions and ModifyAnalyticsModules are not supported (`AnalyticsModuleOptionsSupported=false`). Profile M allows that.
 - There are no `tns1:Media/ProfileChanged` and `tns1:Media/ConfigurationChanged` events. Nothing ever changes here.
-- There are no rules (`RuleSupport=false`). Profile M allows that.
+- Without `rules` there are no rules (`RuleSupport=false`). Profile M allows that.
+- Rules are fixed. CreateRules answers `ter:FixedRules`, DeleteRules too for an existing rule. Profile M wants them to work.
+- GetRuleOptions and ModifyRules are not supported (`RuleOptionsSupported=false`). With `adv_empty_if_unknown=1` they answer with an empty response.
 - HTTP Digest is not supported, only WS-UsernameToken. RTSP Digest is the job of the RTSP server.
 - GetStreamUri ignores the requested protocol (see Media2 above).
 - Media has no metadata. Its GetProfiles does not list it. Use Media2.

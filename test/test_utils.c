@@ -497,6 +497,26 @@ static const char *desc_full =
     "    \"not an object\""
     "  ] }";
 
+static const char *desc_rules =
+    "{ \"namespace\": { \"prefix\": \"ai\", \"uri\": \"urn:a\" },"
+    "  \"modules\": ["
+    "    { \"type\": \"ai:ObjectDetector\", \"name\": \"Detector1\" },"
+    "    { \"type\": \"tt:CellMotionEngine\", \"name\": \"Cell\" }"
+    "  ],"
+    "  \"rules\": ["
+    "    { \"type\": \"tt:ObjectDetection\", \"name\": \"ObjectRule\","
+    "      \"parameters\": [ { \"name\": \"ClassFilter\", \"type\": \"tt:StringList\", \"value\": \"Human Vehicle\" } ],"
+    "      \"messages\": [ { \"topic\": \"tns1:RuleEngine/MyRuleDetector/PeopleDetect\" } ] },"
+    "    { \"type\": \"tt:ObjectDetection\", \"name\": \"ObjectRule2\","
+    "      \"parameters\": [ { \"name\": \"ClassFilter\", \"type\": \"tt:StringList\", \"value\": \"Human\" } ] },"
+    "    { \"type\": \"tt:ObjectDetection\", \"name\": \"ObjectRule3\","
+    "      \"parameters\": [ { \"name\": \"Other\", \"type\": \"xsd:int\", \"value\": \"1\" } ] },"
+    "    { \"type\": \"ai:Line\", \"name\": \"Line1\" },"
+    "    { \"type\": \"xx:Line\", \"name\": \"Bad\" },"
+    "    { \"type\": \"ai:Line\", \"name\": \"ObjectRule\" },"
+    "    { \"type\": \"ai:Line\", \"name\": \"Detector1\" }"
+    "  ] }";
+
 static void test_analytics_desc(void)
 {
     analytics_desc_t d;
@@ -537,7 +557,7 @@ static void test_analytics_desc(void)
               strcmp(d.modules[3].config.name, "Face2") == 0 && d.modules[3].config.params_num == 1 &&
               strcmp(d.modules[3].config.params[0].name, "Q") == 0);
     }
-    CHECK("analytics desc: no rules yet", d.rules_num == 0);
+    CHECK("analytics desc: no rules key, no rules", d.rules_num == 0);
     analytics_desc_free(&d);
     CHECK("analytics desc: free resets", d.root == NULL && d.modules_num == 0);
 
@@ -588,6 +608,104 @@ static void test_analytics_desc(void)
     ret = load_desc(&d, json);
     CHECK("analytics desc: module limit", ret == 0 && d.modules_num == MAX_ANALYTICS_MODULES);
     analytics_desc_free(&d);
+
+    ret = load_desc(&d, desc_rules);
+    CHECK("analytics rules: loaded", ret == 0 && d.modules_num == 1 && d.rules_num == 4);
+    CHECK("analytics rules: tt type for a rule",
+          strcmp(d.rules[0].config.type, "tt:ObjectDetection") == 0 && strcmp(d.rules[0].config.name, "ObjectRule") == 0);
+    CHECK("analytics rules: parameter",
+          d.rules[0].config.params_num == 1 && strcmp(d.rules[0].config.params[0].value, "Human Vehicle") == 0);
+    CHECK("analytics rules: message", d.rules[0].messages_num == 1 && d.rules[0].messages[0] == 0);
+    CHECK("analytics rules: same type, same parameters kept", strcmp(d.rules[1].config.name, "ObjectRule2") == 0);
+    CHECK("analytics rules: namespace type", strcmp(d.rules[2].config.name, "Line1") == 0);
+    CHECK("analytics rules: name of a module allowed", strcmp(d.rules[3].config.name, "Detector1") == 0);
+    analytics_desc_free(&d);
+    CHECK("analytics rules: free resets", d.rules_num == 0);
+
+    snprintf(json, sizeof(json), "{ \"namespace\": { \"prefix\": \"ai\", \"uri\": \"urn:a\" }, \"rules\": [");
+    for (i = 0; i < MAX_ANALYTICS_RULES + 2; i++) {
+        snprintf(json + strlen(json), sizeof(json) - strlen(json),
+                 "%s{ \"type\": \"ai:T\", \"name\": \"R%d\" }", i ? "," : "", i);
+    }
+    snprintf(json + strlen(json), sizeof(json) - strlen(json), "] }");
+    ret = load_desc(&d, json);
+    CHECK("analytics rules: limit", ret == 0 && d.rules_num == MAX_ANALYTICS_RULES && d.modules_num == 0);
+    analytics_desc_free(&d);
+    ret = load_desc(&d, "{ \"rules\": [ { \"type\": \"tt:ObjectDetection\", \"name\": \"R\" } ] }");
+    CHECK("analytics rules: none without namespace", ret == -1 && d.rules_num == 0);
+    analytics_desc_free(&d);
+
+    snprintf(json, sizeof(json), "%s",
+             "{ \"namespace\": { \"prefix\": \"ai\", \"uri\": \"urn:a\" }, \"rules\": ["
+             "  { \"type\": \"ai:A\", \"name\": \"A\", \"parameters\": ["
+             "    { \"name\": \"P\", \"type\": \"xsd:int\", \"value\": \"1\" }, { \"name\": \"Q\", \"type\": \"xsd:int\", \"value\": \"2\" } ] },"
+             "  { \"type\": \"ai:A\", \"name\": \"B\", \"parameters\": ["
+             "    { \"name\": \"Q\", \"type\": \"xsd:int\", \"value\": \"3\" }, { \"name\": \"P\", \"type\": \"xsd:int\", \"value\": \"4\" } ] },"
+             "  { \"type\": \"ai:A\", \"name\": \"C\", \"parameters\": ["
+             "    { \"name\": \"P\", \"type\": \"xsd:float\", \"value\": \"1\" }, { \"name\": \"Q\", \"type\": \"xsd:int\", \"value\": \"2\" } ] },"
+             "  { \"type\": \"ai:A\", \"name\": \"D\", \"parameters\": ["
+             "    { \"name\": \"P\", \"type\": \"xsd:int\", \"value\": \"1\" } ] } ] }");
+    ret = load_desc(&d, json);
+    CHECK("analytics rules: same parameters in another order kept, other type or count skipped",
+          ret == 0 && d.rules_num == 2 && strcmp(d.rules[1].config.name, "B") == 0);
+    analytics_desc_free(&d);
+
+    CHECK("analytics rules: has_rules without file", analytics_desc_has_rules("/nonexistent/a.json") == 0);
+    {
+        const char *files[] = {
+            desc_rules,
+            desc_full,
+            "{ \"namespace\": { \"prefix\": \"ai\", \"uri\": \"urn:a\" }, \"rules\": [ { \"type\": \"xx:Line\", \"name\": \"Bad\" } ] }",
+        };
+        const char *names[] = { "has_rules", "has_rules: no rules key", "has_rules: only invalid rules" };
+        int expect[] = { 1, 0, 0 };
+        unsigned int k;
+
+        for (k = 0; k < sizeof(files) / sizeof(files[0]); k++) {
+            char path[] = "/tmp/test_utils_rules_XXXXXX";
+            int fd = mkstemp(path);
+            char desc[64];
+
+            snprintf(desc, sizeof(desc), "analytics rules: %s", names[k]);
+            if ((fd >= 0) && (write(fd, files[k], strlen(files[k])) == (ssize_t) strlen(files[k]))) {
+                close(fd);
+                CHECK(desc, analytics_desc_has_rules(path) == expect[k]);
+            } else {
+                if (fd >= 0)
+                    close(fd);
+                CHECK(desc, 0);
+            }
+            unlink(path);
+        }
+    }
+
+    {
+        /* A rule message resolves to a described event */
+        event_t events[2];
+        event_t *saved = service_ctx.events;
+        int saved_num = service_ctx.events_num;
+
+        memset(events, 0, sizeof(events));
+        events[0] = test_events[0];
+        events[1].topic = "tns1:RuleEngine/ObjectDetection/Object";
+        events[1].source_name = "VideoSource";
+        events[1].source_type = "tt:ReferenceToken";
+        events[1].source_value = "VideoSourceToken";
+        events[1].input_file = "/tmp/object";
+        events[1].data_name = "ClassTypes";
+        events[1].data_type = "tt:StringList";
+        events[1].non_property = 1;
+        service_ctx.events = events;
+        service_ctx.events_num = 2;
+        ret = load_desc(&d, "{ \"namespace\": { \"prefix\": \"ai\", \"uri\": \"urn:a\" }, \"rules\": ["
+                            "  { \"type\": \"tt:ObjectDetection\", \"name\": \"R\","
+                            "    \"messages\": [ { \"topic\": \"tns1:RuleEngine/ObjectDetection/Object\" } ] } ] }");
+        CHECK("analytics rules: message of a described event",
+              ret == 0 && d.rules_num == 1 && d.rules[0].messages_num == 1 && d.rules[0].messages[0] == 1);
+        analytics_desc_free(&d);
+        service_ctx.events = saved;
+        service_ctx.events_num = saved_num;
+    }
 
     service_ctx.events = NULL;
     service_ctx.events_num = 0;

@@ -46,8 +46,9 @@ static json_object *get_array(json_object *o, const char *key)
     return v;
 }
 
-/* Name, type and parameters of a module. Returns 0, or -1 if it is unusable. */
-static int load_config(analytics_config_t *c, json_object *o, const char *prefix)
+/* Name, type and parameters of a module or rule (kind). A rule type may also be an
+ * ONVIF type (tt). Returns 0, or -1 if it is unusable. */
+static int load_config(analytics_config_t *c, json_object *o, const char *prefix, int allow_tt, const char *kind)
 {
     json_object *params, *p;
     const char *name, *type, *value;
@@ -56,8 +57,9 @@ static int load_config(analytics_config_t *c, json_object *o, const char *prefix
     c->name = get_string(o, "name");
     c->type = get_string(o, "type");
     c->params_num = 0;
-    if (!is_plain(c->name, MAX_DESC_NAME) || !is_qname_in(c->type, prefix)) {
-        log_error("Analytics module with invalid name or type skipped");
+    if (!is_plain(c->name, MAX_DESC_NAME) ||
+            !(is_qname_in(c->type, prefix) || (allow_tt && is_qname_in(c->type, "tt")))) {
+        log_error("Analytics %s with invalid name or type skipped", kind);
         return -1;
     }
 
@@ -70,7 +72,7 @@ static int load_config(analytics_config_t *c, json_object *o, const char *prefix
         value = get_string(p, "value");
         if (!is_plain(name, MAX_DESC_NAME) || !is_value(value, MAX_DESC_VALUE) ||
                 !(is_qname_in(type, "xsd") || is_qname_in(type, "tt") || is_qname_in(type, prefix))) {
-            log_error("Invalid parameter of analytics module %s skipped", c->name);
+            log_error("Invalid parameter of analytics %s %s skipped", kind, c->name);
             continue;
         }
         for (j = 0; j < (size_t) c->params_num; j++) {
@@ -78,11 +80,11 @@ static int load_config(analytics_config_t *c, json_object *o, const char *prefix
                 break;
         }
         if (j < (size_t) c->params_num) {
-            log_error("Duplicate parameter %s of analytics module %s skipped", name, c->name);
+            log_error("Duplicate parameter %s of analytics %s %s skipped", name, kind, c->name);
             continue;
         }
         if (c->params_num == MAX_ANALYTICS_PARAMS) {
-            log_error("Too many parameters in analytics module %s", c->name);
+            log_error("Too many parameters in analytics %s %s", kind, c->name);
             break;
         }
         c->params[c->params_num].name = name;
@@ -174,13 +176,91 @@ static void load_messages(analytics_module_t *m, json_object *o, const char *pre
     }
 }
 
+/* 1 if both configs have the same parameter names and types */
+static int same_params(const analytics_config_t *a, const analytics_config_t *b)
+{
+    int i, j;
+
+    if (a->params_num != b->params_num)
+        return 0;
+    for (i = 0; i < a->params_num; i++) {
+        for (j = 0; j < b->params_num; j++) {
+            if (strcmp(a->params[i].name, b->params[j].name) == 0)
+                break;
+        }
+        if ((j == b->params_num) || (strcmp(a->params[i].type, b->params[j].type) != 0))
+            return 0;
+    }
+    return 1;
+}
+
+/* Load the modules or rules from the array key into list. Returns their number. */
+static int load_list(analytics_module_t *list, int max, const char *key, int is_rule,
+        const analytics_desc_t *desc, const char *file)
+{
+    const char *kind = is_rule ? "rule" : "module";
+    json_object *a, *o;
+    analytics_module_t *m;
+    size_t i, n;
+    int j, num = 0;
+
+    a = get_array(desc->root, key);
+    n = (a != NULL) ? json_object_array_length(a) : 0;
+    for (i = 0; i < n; i++) {
+        if (num == max) {
+            log_error("Too many analytics %ss in %s", kind, file);
+            break;
+        }
+        o = json_object_array_get_idx(a, i);
+        m = &list[num];
+        memset(m, 0, sizeof(*m));
+        if (load_config(&m->config, o, desc->ns_prefix, is_rule, kind) != 0)
+            continue;
+        for (j = 0; j < num; j++) {
+            if (strcmp(list[j].config.name, m->config.name) == 0)
+                break;
+        }
+        if (j < num) {
+            log_error("Duplicate analytics %s name %s skipped", kind, m->config.name);
+            continue;
+        }
+        if (is_rule) {
+            // GetSupportedRules describes a rule type once
+            for (j = 0; j < num; j++) {
+                if (strcmp(list[j].config.type, m->config.type) == 0)
+                    break;
+            }
+            if ((j < num) && !same_params(&list[j].config, &m->config)) {
+                log_error("Analytics rule %s skipped: its parameters differ from rule %s of the same type",
+                        m->config.name, list[j].config.name);
+                continue;
+            }
+        } else {
+            m->sample_frame_file = get_string(o, "sample_frame_file");
+        }
+        load_messages(m, o, desc->ns_prefix);
+        num++;
+    }
+
+    return num;
+}
+
+int analytics_desc_has_rules(const char *file)
+{
+    analytics_desc_t desc;
+    int ret;
+
+    analytics_desc_load(&desc, file);
+    ret = (desc.rules_num > 0);
+    analytics_desc_free(&desc);
+
+    return ret;
+}
+
 int analytics_desc_load(analytics_desc_t *desc, const char *file)
 {
-    json_object *ns, *modules, *o;
-    analytics_module_t *m;
+    json_object *ns;
     char *buf;
-    size_t i, n;
-    int j;
 
     memset(desc, 0, sizeof(*desc));
     if (file == NULL) {
@@ -217,30 +297,8 @@ int analytics_desc_load(analytics_desc_t *desc, const char *file)
         return -1;
     }
 
-    modules = get_array(desc->root, "modules");
-    n = (modules != NULL) ? json_object_array_length(modules) : 0;
-    for (i = 0; i < n; i++) {
-        if (desc->modules_num == MAX_ANALYTICS_MODULES) {
-            log_error("Too many analytics modules in %s", file);
-            break;
-        }
-        o = json_object_array_get_idx(modules, i);
-        m = &desc->modules[desc->modules_num];
-        memset(m, 0, sizeof(*m));
-        if (load_config(&m->config, o, desc->ns_prefix) != 0)
-            continue;
-        for (j = 0; j < desc->modules_num; j++) {
-            if (strcmp(desc->modules[j].config.name, m->config.name) == 0)
-                break;
-        }
-        if (j < desc->modules_num) {
-            log_error("Duplicate analytics module name %s skipped", m->config.name);
-            continue;
-        }
-        m->sample_frame_file = get_string(o, "sample_frame_file");
-        load_messages(m, o, desc->ns_prefix);
-        desc->modules_num++;
-    }
+    desc->modules_num = load_list(desc->modules, MAX_ANALYTICS_MODULES, "modules", 0, desc, file);
+    desc->rules_num = load_list(desc->rules, MAX_ANALYTICS_RULES, "rules", 1, desc, file);
 
     return 0;
 }
