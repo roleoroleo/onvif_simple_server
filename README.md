@@ -610,7 +610,7 @@ An analytics pipeline produces the metadata stream, the events and a description
 - Set `adv_enable_media2=1` and `adv_enable_analytics=1`.
 - Set `metadata=1` in every profile whose stream carries a metadata track.
 - Set `analytics_file` to the description file the pipeline writes.
-- Add `scope=onvif://www.onvif.org/Profile/M` to the configuration file.
+- Add `scope=onvif://www.onvif.org/Profile/M` to the configuration file. In a JSON file, add it to `scopes`.
 - Add the same scope to the `-s` option of wsd_simple_server. WS-Discovery does not read the configuration file.
 - Configure the analytics events as usual (`topic`, `source_name`, `source_type`, `input_file`).
 
@@ -636,7 +636,7 @@ SetSynchronizationPoint runs `sync_point_command` (see Media2 above).
 - The server reads the file on each Profile M request, so the pipeline can rewrite it at any time.
 - It is a regular file of at most 256 KiB.
 - `namespace` is required. Without a valid one the file is ignored.
-- The `uri` has at most 160 characters, no spaces and no `%`. The `prefix` has at most 32 characters.
+- The `uri` has at most 160 characters, no spaces, no control characters and no `%`. The `prefix` has at most 32 characters.
 - The `uri` is not the `xml` or `xmlns` namespace URI.
 - The prefixes `tt`, `tr2`, `tan`, `tds`, `xsd`, `tns1` and `xml...` are reserved.
 - Each `type` is a QName with the namespace prefix.
@@ -644,8 +644,8 @@ SetSynchronizationPoint runs `sync_point_command` (see Media2 above).
 - Modules of the same type share the description, messages and sample frame of the first one.
 - `parameters` are optional. Each needs `name`, `type` and `value`.
 - A parameter `type` uses the prefix `xsd`, `tt` or the namespace prefix.
-- A `value` is a JSON string of at most 160 characters, without `%`.
-- Each message `topic` must match a configured event. Source and data items come from that event.
+- A `value` is a JSON string of at most 160 characters, without `%` or control characters.
+- Each message `topic` must match a configured event. Source and data items come from the first event with that topic.
 - That event needs a `source_name` other than its data item name (`State`, `LogicalState` for relays).
 - Its `source_type`, if set, uses the prefix `xsd` or `tt`.
 - Topics use `tns1` and at most 3 levels, like all events of the server.
@@ -660,9 +660,12 @@ It shows every element the metadata stream emits.
 Its shapes sit in the top left quarter of the image: x from -1 to 0, y from 0 to 1.
 It declares every namespace prefix it uses. Its root does not declare `tan`.
 It does not declare the `xml` or `xmlns` namespace URI.
+At most 32 prefix declarations are in scope at any element. No prefix starts with `xml`.
+Element and attribute names use only ASCII letters, digits, `_`, `-` and `.`.
 It is a regular file with at most 64 KiB, 2048 tags, 64 attributes per element and 32 levels below the root.
 It has no DOCTYPE and no processing instruction other than the XML declaration.
 It uses only the predefined entities (`&lt;` etc.) and character references to valid characters.
+Comments and CDATA sections contain no `&` and no `<?`.
 A module with a missing or invalid sample frame is left out of GetSupportedMetadata only.
 ```
 <tt:Frame xmlns:tt="http://www.onvif.org/ver10/schema" UtcTime="2026-01-01T00:00:00Z">
@@ -682,21 +685,22 @@ A module with a missing or invalid sample frame is left out of GetSupportedMetad
 The server does not implement all of Profile M:
 - AddConfiguration, RemoveConfiguration and SetMetadataConfiguration answer like the other `Set*` calls. Profile M makes them mandatory.
 - With `adv_fault_if_set=1` they answer `ter:ConfigModify`, else like an unknown method.
-- The spec defines `ter:ConfigModify` only for `Set*` calls, not for AddConfiguration and RemoveConfiguration.
+- The spec does not define `ter:ConfigModify` for AddConfiguration and RemoveConfiguration.
 - The analytics modules are fixed. CreateAnalyticsModules and DeleteAnalyticsModules answer `ter:FixedModules`. Profile M wants them to work.
-- GetAnalyticsModuleOptions and ModifyAnalyticsModules are not supported (`AnalyticsModuleOptionsSupported=false`).
+- GetAnalyticsModuleOptions and ModifyAnalyticsModules are not supported (`AnalyticsModuleOptionsSupported=false`). Profile M allows that.
 - There are no `tns1:Media/ProfileChanged` and `tns1:Media/ConfigurationChanged` events. Nothing ever changes here.
-- There are no rules (`RuleSupport=false`).
+- There are no rules (`RuleSupport=false`). Profile M allows that.
 - HTTP Digest is not supported, only WS-UsernameToken. RTSP Digest is the job of the RTSP server.
 - GetStreamUri ignores the requested protocol (see Media2 above).
 - Media has no metadata. Its GetProfiles does not list it. Use Media2.
 - It is not certified. The ONVIF Device Test Tool is for ONVIF members only.
-- It is not tested with Milestone XProtect, the reference client. Its box timing and its reaction to the SetMetadataConfiguration fault are unknown.
+- It is not tested with Milestone XProtect. Its box timing and its reaction to the SetMetadataConfiguration fault are unknown.
 
 ### Metadata stream
 These rules apply to mediamtx (checked with v1.21.4) and a pipeline that publishes video and metadata to one path:
-- The metadata rtpmap is exactly `VND.ONVIF.METADATA/90000`.
-- The spec spells it `vnd.onvif.metadata`. SDP encoding names are case-insensitive, so keep the mediamtx spelling.
+- The metadata rtpmap is `vnd.onvif.metadata/90000`, as the spec spells it.
+- SDP encoding names are case-insensitive. `rtponvifmetadatapay` writes `VND.ONVIF.METADATA/90000`, which is fine too.
+- mediamtx passes the rtpmap on unchanged.
 - Send one complete, closed `tt:MetadataStream` document per frame. Some clients, such as Milestone, parse whole documents only.
 - Set the RTP marker bit on the packet that closes a document.
 - Start a new document on each sync point, and at least every second.
