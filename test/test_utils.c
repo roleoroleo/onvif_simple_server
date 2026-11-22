@@ -182,6 +182,14 @@ static event_t test_events[] = {
     { "tns1:RuleEngine/MyRuleDetector/BadType", "Source", "ai:Token", "VideoSourceToken", "/tmp/e" },
     { "tns1:RuleEngine/MyRuleDetector/NoSource", NULL, NULL, "VideoSourceToken", "/tmp/f" },
     { "tns1:RuleEngine/MyRuleDetector/SameName", "State", "xsd:string", "VideoSourceToken", "/tmp/g" },
+    { "tns1:RuleEngine/ai:Violation", "Source", "xsd:string", "VideoSourceToken", "/tmp/h" },
+    { "tns1:RuleEngine/xx:Violation", "Source", "xsd:string", "VideoSourceToken", "/tmp/i" },
+    { "tns1:ai:Violation", "Source", "xsd:string", "VideoSourceToken", "/tmp/j" },
+    { "tns1:RuleEngine/9Violation", "Source", "xsd:string", "VideoSourceToken", "/tmp/k" },
+    { "tns1:RuleEngine/ai:Violation/Zone1", "Source", "xsd:string", "VideoSourceToken", "/tmp/l" },
+    { "tns1:RuleEngine/ai:Violation/ai:Zone1", "Source", "xsd:string", "VideoSourceToken", "/tmp/m" },
+    { "tns1:RuleEngine/aii:Violation", "Source", "xsd:string", "VideoSourceToken", "/tmp/n" },
+    { "tns1:RuleEngine/ai:Violation/", "Source", "xsd:string", "VideoSourceToken", "/tmp/o" },
 };
 
 static void test_event_description(void)
@@ -300,6 +308,14 @@ static const char *desc_full =
     "        { \"topic\": \"tns1:RuleEngine/MyRuleDetector/BadType\" },"
     "        { \"topic\": \"tns1:RuleEngine/MyRuleDetector/NoSource\" },"
     "        { \"topic\": \"tns1:RuleEngine/MyRuleDetector/SameName\" },"
+    "        { \"topic\": \"tns1:RuleEngine/ai:Violation\" },"
+    "        { \"topic\": \"tns1:RuleEngine/xx:Violation\" },"
+    "        { \"topic\": \"tns1:ai:Violation\" },"
+    "        { \"topic\": \"tns1:RuleEngine/9Violation\" },"
+    "        { \"topic\": \"tns1:RuleEngine/ai:Violation/Zone1\" },"
+    "        { \"topic\": \"tns1:RuleEngine/ai:Violation/ai:Zone1\" },"
+    "        { \"topic\": \"tns1:RuleEngine/aii:Violation\" },"
+    "        { \"topic\": \"tns1:RuleEngine/ai:Violation/\" },"
     "        { \"topic\": \"ai:Other/Topic\" },"
     "        { \"no_topic\": 1 }"
     "      ],"
@@ -343,7 +359,9 @@ static void test_analytics_desc(void)
               strcmp(m->config.params[1].name, "Mode") == 0 &&
               strcmp(m->config.params[1].value, "fast & <safe>") == 0);
         CHECK("analytics desc: messages match the first conf event of a topic",
-              m->messages_num == 3 && m->messages[0] == 0 && m->messages[1] == 2 && m->messages[2] == 3);
+              m->messages_num == 5 && m->messages[0] == 0 && m->messages[1] == 2 && m->messages[2] == 3);
+        CHECK("analytics desc: one child topic level in the description namespace",
+              m->messages_num == 5 && m->messages[3] == 7 && m->messages[4] == 11);
         CHECK("analytics desc: sample frame file",
               m->sample_frame_file != NULL && strcmp(m->sample_frame_file, "/tmp/frame.xml") == 0);
         CHECK("analytics desc: second instance of a type",

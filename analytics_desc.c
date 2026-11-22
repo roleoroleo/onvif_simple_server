@@ -148,15 +148,40 @@ static int load_config(analytics_config_t *c, json_object *o, const char *prefix
     return 0;
 }
 
+/* Returns 1 if topic is a tns1 topic. One child topic may be an extension topic
+ * in the description namespace (WS-Topics 6.1), like tns1:RuleEngine/ai:Event.
+ * A namespace appears only once in a topic path. */
+static int is_topic(const char *topic, const char *prefix)
+{
+    const char *s, *end, *c;
+    int ext = 0;
+
+    if (!is_plain(topic, MAX_DESC_NAME) || (strncmp(topic, "tns1:", 5) != 0))
+        return 0;
+    for (s = topic + 5; ; s = end + 1) {
+        end = s + strcspn(s, "/");
+        c = memchr(s, ':', end - s);
+        if (c != NULL) {
+            if ((s == topic + 5) || ext || ((size_t) (c - s) != strlen(prefix)) ||
+                    (strncmp(s, prefix, c - s) != 0))
+                return 0;
+            ext = 1;
+            s = c + 1;
+        }
+        if (!is_ncname(s, end - s))
+            return 0;
+        if (*end == '\0')
+            return 1;
+    }
+}
+
 /* Index of the first conf event with a usable description for topic, or -1. */
-static int find_event(const char *topic)
+static int find_event(const char *topic, const char *prefix)
 {
     const char *source_type, *data_name, *data_type;
     int i;
 
-    /* The event service declares only tns1 and splits topics at '/' */
-    if (!is_plain(topic, MAX_DESC_NAME) || (strncmp(topic, "tns1:", 5) != 0) ||
-            (strchr(topic + 5, ':') != NULL)) {
+    if (!is_topic(topic, prefix)) {
         log_error("Invalid analytics message topic %s", topic != NULL ? topic : "(none)");
         return -1;
     }
@@ -180,7 +205,7 @@ static int find_event(const char *topic)
     return i;
 }
 
-static void load_messages(analytics_module_t *m, json_object *o)
+static void load_messages(analytics_module_t *m, json_object *o, const char *prefix)
 {
     json_object *messages;
     size_t i, n;
@@ -189,7 +214,7 @@ static void load_messages(analytics_module_t *m, json_object *o)
     messages = get_array(o, "messages");
     n = (messages != NULL) ? json_object_array_length(messages) : 0;
     for (i = 0; i < n; i++) {
-        e = find_event(get_string(json_object_array_get_idx(messages, i), "topic"));
+        e = find_event(get_string(json_object_array_get_idx(messages, i), "topic"), prefix);
         if (e < 0)
             continue;
         for (j = 0; j < m->messages_num; j++) {
@@ -266,7 +291,7 @@ int analytics_desc_load(analytics_desc_t *desc, const char *file)
             continue;
         }
         m->sample_frame_file = get_string(o, "sample_frame_file");
-        load_messages(m, o);
+        load_messages(m, o, desc->ns_prefix);
         desc->modules_num++;
     }
 

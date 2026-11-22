@@ -648,7 +648,10 @@ SetSynchronizationPoint runs `sync_point_command` (see Media2 above).
 - Each message `topic` must match a configured event. Source and data items come from the first event with that topic.
 - That event needs a `source_name` other than its data item name (`State`, `LogicalState` for relays).
 - Its `source_type`, if set, uses the prefix `xsd` or `tt`.
-- Topics use `tns1` and at most 3 levels, like all events of the server.
+- Topics start in `tns1` and have at most 3 levels, like all events of the server.
+- One child topic level may use the namespace prefix, e.g. `tns1:RuleEngine/ai:Violation` (an extension topic, WS-Topics 6.1).
+- Such a topic needs the namespace declared in `events_service_files/GetEventProperties_1.xml`, `events_service_files/PullMessages_1.xml` and `notify_files/Notify.xml`.
+- Without it, GetEventProperties is not well-formed.
 - Names, types and topics have at most 256 characters.
 - They must not contain spaces, control characters, `%`, `<`, `>`, `&` or quotes.
 - At most 16 modules, 16 parameters and 8 messages per module are used.
