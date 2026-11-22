@@ -199,6 +199,8 @@ void print_subscriptions()
         fprintf(stderr, "\t\ttopic:       %s\n", service_ctx.events[i].topic);
         fprintf(stderr, "\t\te_time:      %s\n", iso_str);
         fprintf(stderr, "\t\tis_on:       %d\n", subs_evts->events[i].is_on);
+        if (EVENT_IS_DESCRIBED(&service_ctx.events[i]))
+            fprintf(stderr, "\t\tvalue:       %s\n", subs_evts->values[i].value);
         fprintf(stderr, "\t\tpull_notify: %08x\n", subs_evts->events[i].pull_notify);
     }
 }
@@ -211,6 +213,52 @@ void signal_handler(int signal)
         // Exit from main loop
         exit_main = 1;
     }
+}
+
+/* Notify message of a described event into out, or only its size with out NULL.
+ * property is NULL for a non-property event. */
+static long render_described_notify(char *out, size_t cap, int alarm_index, const char *utctime,
+        const char *property, const char *value)
+{
+    const event_t *e = &service_ctx.events[alarm_index];
+    char template_file[sizeof(template_dir) + 32];
+    char property_operation[48];
+    char source_value[6 * MAX_DESC_VALUE + 1];
+    char data_value[6 * MAX_EVENT_VALUE];
+    long size, n;
+    int i;
+
+    property_operation[0] = '\0';
+    if (property != NULL)
+        snprintf(property_operation, sizeof(property_operation), " PropertyOperation=\"%s\"", property);
+
+    snprintf(template_file, sizeof(template_file), "%s/Notify_start.xml", template_dir);
+    size = cat_n(out, cap, template_file, 6,
+            "%TOPIC%", e->topic,
+            "%UTC_TIME%", utctime,
+            "%PROPERTY_OPERATION%", property_operation);
+    if (size < 0)
+        return -1;
+
+    snprintf(template_file, sizeof(template_file), "%s/SimpleItem.xml", template_dir);
+    for (i = -1; i < e->extra_sources_num; i++) {
+        n = cat_n((out != NULL) ? out + size : NULL, (out != NULL) ? cap - size : 0, template_file, 4,
+                "%NAME%", (i < 0) ? e->source_name : e->extra_sources[i].name,
+                "%VALUE%", xml_text(source_value, sizeof(source_value),
+                        (i < 0) ? e->source_value : e->extra_sources[i].value));
+        if (n < 0)
+            return -1;
+        size += n;
+    }
+
+    snprintf(template_file, sizeof(template_file), "%s/Notify_end.xml", template_dir);
+    n = cat_n((out != NULL) ? out + size : NULL, (out != NULL) ? cap - size : 0, template_file, 4,
+            "%DATA_NAME%", e->data_name,
+            "%DATA_VALUE%", xml_text(data_value, sizeof(data_value), value));
+    if (n < 0)
+        return -1;
+
+    return size + n;
 }
 
 int send_notify(char *reference, int alarm_index, time_t e_time, char *property, char *value)
@@ -316,13 +364,22 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
 
     log_info("Sending Notify message.");
     snprintf(template_file, sizeof(template_file), "%s/Notify.xml", template_dir);
-    size = cat(NULL, template_file, 12,
-            "%TOPIC%", service_ctx.events[alarm_index].topic,
-            "%UTC_TIME%", utctime,
-            "%PROPERTY%", property,
-            "%SOURCE_NAME%", service_ctx.events[alarm_index].source_name != NULL ? service_ctx.events[alarm_index].source_name : "",
-            "%SOURCE_VALUE%", service_ctx.events[alarm_index].source_value != NULL ? service_ctx.events[alarm_index].source_value : "",
-            "%VALUE%", value);
+    if (EVENT_IS_DESCRIBED(&service_ctx.events[alarm_index])) {
+        size = render_described_notify(NULL, 0, alarm_index, utctime, property, value);
+        if (size < 0) {
+            log_error("Unable to render the Notify message.");
+            close(sockfd);
+            return -3;
+        }
+    } else {
+        size = cat(NULL, template_file, 12,
+                "%TOPIC%", service_ctx.events[alarm_index].topic,
+                "%UTC_TIME%", utctime,
+                "%PROPERTY%", property,
+                "%SOURCE_NAME%", service_ctx.events[alarm_index].source_name != NULL ? service_ctx.events[alarm_index].source_name : "",
+                "%SOURCE_VALUE%", service_ctx.events[alarm_index].source_value != NULL ? service_ctx.events[alarm_index].source_value : "",
+                "%VALUE%", value);
+    }
     snprintf(size_string, sizeof(size_string), "%d", size);
 
     header = (char *) malloc((strlen(header_fmt) + strlen(page) + strlen(host_hdr) + strlen(size_string) + 4) * sizeof(char));
@@ -342,13 +399,17 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
     }
 
     snprintf(message, size + strlen(header) + 1, "%s", header);
-    cat_n(&message[strlen(header)], size + 1, template_file, 12,
-            "%TOPIC%", service_ctx.events[alarm_index].topic,
-            "%UTC_TIME%", utctime,
-            "%PROPERTY%", property,
-            "%SOURCE_NAME%", service_ctx.events[alarm_index].source_name != NULL ? service_ctx.events[alarm_index].source_name : "",
-            "%SOURCE_VALUE%", service_ctx.events[alarm_index].source_value != NULL ? service_ctx.events[alarm_index].source_value : "",
-            "%VALUE%", value);
+    if (EVENT_IS_DESCRIBED(&service_ctx.events[alarm_index])) {
+        render_described_notify(&message[strlen(header)], size + 1, alarm_index, utctime, property, value);
+    } else {
+        cat_n(&message[strlen(header)], size + 1, template_file, 12,
+                "%TOPIC%", service_ctx.events[alarm_index].topic,
+                "%UTC_TIME%", utctime,
+                "%PROPERTY%", property,
+                "%SOURCE_NAME%", service_ctx.events[alarm_index].source_name != NULL ? service_ctx.events[alarm_index].source_name : "",
+                "%SOURCE_VALUE%", service_ctx.events[alarm_index].source_value != NULL ? service_ctx.events[alarm_index].source_value : "",
+                "%VALUE%", value);
+    }
 
     if (send(sockfd, message, strlen(message), 0) < 0) {
         log_error("Error sending Notify message.");
@@ -378,7 +439,9 @@ void sync_events(int sub_index)
 
     for (i = 0; i < service_ctx.events_num; i++) {
 
-        if (is_topic_in_expression(subs_evts->subscriptions[sub_index].topic_expression, service_ctx.events[i].topic)) {
+        // Only properties have an initial state
+        if (EVENT_IS_PROPERTY(&service_ctx.events[i]) &&
+                is_topic_in_expression(subs_evts->subscriptions[sub_index].topic_expression, service_ctx.events[i].topic)) {
 
             if (access(service_ctx.events[i].input_file, F_OK) == 0)
                 snprintf(value, sizeof(value), "%s", "true");
@@ -391,7 +454,8 @@ void sync_events(int sub_index)
                 now = time(NULL);
                 if (now > subs_evts->subscriptions[sub_index].expire) continue;
 
-                send_notify(subs_evts->subscriptions[sub_index].reference, i, now, "Initialized", value);
+                send_notify(subs_evts->subscriptions[sub_index].reference, i, now, "Initialized",
+                        EVENT_IS_DESCRIBED(&service_ctx.events[i]) ? subs_evts->values[i].value : value);
             }
             log_debug("Event %d matches topic expression %s", i, subs_evts->subscriptions[sub_index].topic_expression);
         }
@@ -465,6 +529,58 @@ void *sync_events_thread(void *arg)
     }
 }
 
+/* Read the value of described event i again. On a change store it and notify
+ * the subscriptions whose topic expression matches. */
+void described_event_update(int i)
+{
+    static int invalid[MAX_EVENTS];   // log an invalid file once, not on every poll
+    const event_t *e = &service_ctx.events[i];
+    event_value_shm_t *v = &subs_evts->values[i];
+    event_entry_shm_t *q;
+    char value[MAX_EVENT_VALUE];
+    time_t now;
+    int j, sub_count = 0;
+
+    if (read_event_value(e->input_file, value, sizeof(value)) != 0) {
+        if (!invalid[i])
+            log_error("Ignoring invalid content of %s", e->input_file);
+        invalid[i] = 1;
+        return;
+    }
+    invalid[i] = 0;
+
+    sem_memory_wait();
+    if (strcmp(v->value, value) == 0) {
+        sem_memory_post();
+        return;
+    }
+    now = time(NULL);
+    log_debug("Value of %s changed to \"%s\"", e->input_file, value);
+    snprintf(v->value, sizeof(v->value), "%s", value);
+    subs_evts->events[i].e_time = now;
+    if (e->non_property) {
+        // Write the entry before seq makes it visible to PullMessages
+        q = &v->queue[(v->seq + 1) % EVENT_QUEUE_LEN];
+        q->e_time = now;
+        snprintf(q->value, sizeof(q->value), "%s", value);
+        __sync_synchronize();
+        v->seq++;
+    }
+
+    for (j = 0; j < MAX_SUBSCRIPTIONS; j++) {
+        if ((subs_evts->subscriptions[j].used == SUB_UNUSED) || (now > subs_evts->subscriptions[j].expire) ||
+                !is_topic_in_expression(subs_evts->subscriptions[j].topic_expression, e->topic))
+            continue;
+        sub_count++;
+        if (subs_evts->subscriptions[j].used == SUB_PULL)
+            subs_evts->events[i].pull_notify |= (1 << j);
+        else
+            send_notify(subs_evts->subscriptions[j].reference, i, now, e->non_property ? NULL : "Changed", value);
+    }
+    sem_memory_post();
+    log_debug("%d notification subscriptions for %s file", sub_count, e->input_file);
+}
+
 int handle_inotify_events(int fd, char *dir)
 {
     /* Some systems cannot read integer variables if they are not
@@ -504,6 +620,15 @@ int handle_inotify_events(int fd, char *dir)
 
             event = (const struct inotify_event *) ptr;
 
+            // Described events read their file again on every change of it
+            if (((event->mask & IN_ISDIR) == 0) && (event->len)) {
+                snprintf(input_file, sizeof(input_file), "%s/%s", dir, event->name);
+                for (i = 0; i < service_ctx.events_num; i++) {
+                    if (EVENT_IS_DESCRIBED(&service_ctx.events[i]) && (strcmp(service_ctx.events[i].input_file, input_file) == 0))
+                        described_event_update(i);
+                }
+            }
+
             /* Print event type. */
             if (((event->mask & IN_CREATE) || (event->mask & IN_DELETE)) && ((event->mask & IN_ISDIR) == 0) && (event->len)) {
                 snprintf(input_file, sizeof(input_file), "%s/%s", dir, event->name);
@@ -516,7 +641,7 @@ int handle_inotify_events(int fd, char *dir)
                 }
 
                 for (i = 0; i < service_ctx.events_num; i++) {
-                    if (strcmp(service_ctx.events[i].input_file, input_file) == 0) {
+                    if (!EVENT_IS_DESCRIBED(&service_ctx.events[i]) && (strcmp(service_ctx.events[i].input_file, input_file) == 0)) {
                         now = time(NULL);
                         sub_count = 0;
                         sem_memory_wait();
@@ -824,7 +949,8 @@ int main(int argc, char **argv)  {
         // Mark directory for events
         // - file was created
         // - file was deleted
-        wd = inotify_add_watch(fd, INOTIFY_DIR, IN_CREATE | IN_DELETE);
+        // - file was written or renamed (described events)
+        wd = inotify_add_watch(fd, INOTIFY_DIR, IN_CREATE | IN_DELETE | IN_CLOSE_WRITE | IN_MOVED_TO | IN_MOVED_FROM);
         if (wd == -1) {
             log_fatal("Cannot watch '%s': %s\n", INOTIFY_DIR, strerror(errno));
             close(fd);
@@ -839,6 +965,16 @@ int main(int argc, char **argv)  {
         fds[0].fd = fd; // Inotify input
         fds[0].events = POLLIN;
     }
+
+    // Current values of the described events, without messages. After the
+    // watch starts, so that no change gets lost.
+    sem_memory_wait();
+    for (i = 0; i < service_ctx.events_num; i++) {
+        if (EVENT_IS_DESCRIBED(&service_ctx.events[i]) &&
+                (read_event_value(service_ctx.events[i].input_file, subs_evts->values[i].value, MAX_EVENT_VALUE) != 0))
+            log_error("Ignoring invalid content of %s", service_ctx.events[i].input_file);
+    }
+    sem_memory_post();
 
     // Create thread to monitor subscriptions->push_need_sync
     pthread_t sync_events_pthread;
@@ -868,6 +1004,10 @@ int main(int argc, char **argv)  {
             }
         } else { // Inotify interface is not available
             for (i = 0; i < service_ctx.events_num; i++) {
+                if (EVENT_IS_DESCRIBED(&service_ctx.events[i])) {
+                    described_event_update(i);
+                    continue;
+                }
                 acc = access(service_ctx.events[i].input_file, F_OK);
 
                 if ((subs_evts->events[i].is_on != ALARM_ON) && (acc == 0)) {

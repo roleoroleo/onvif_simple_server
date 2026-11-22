@@ -66,6 +66,7 @@ ln -s ./onvif_simple_server $INSTALL_DIR/www/onvif/media2_service
 ln -s ./onvif_simple_server $INSTALL_DIR/www/onvif/ptz_service
 ln -s ./onvif_simple_server $INSTALL_DIR/www/onvif/deviceio_service
 ln -s ./onvif_simple_server $INSTALL_DIR/www/onvif/imaging_service
+ln -s ./onvif_simple_server $INSTALL_DIR/www/onvif/analytics_service
 cp -R ../device_service_files $INSTALL_DIR/www/onvif
 cp -R ../events_service_files $INSTALL_DIR/www/onvif
 cp -R ../generic_files $INSTALL_DIR/www/onvif
@@ -74,6 +75,7 @@ cp -R ../media2_service_files $INSTALL_DIR/www/onvif
 cp -R ../ptz_service_files $INSTALL_DIR/www/onvif
 cp -R ../deviceio_service_files $INSTALL_DIR/www/onvif
 cp -R ../imaging_service_files $INSTALL_DIR/www/onvif
+cp -R ../analytics_service_files $INSTALL_DIR/www/onvif
 
 cp ../onvif_notify_server $INSTALL_DIR/bin || exit 1
 cp -R ../notify_files/* $INSTALL_DIR/etc/onvif_notify_server

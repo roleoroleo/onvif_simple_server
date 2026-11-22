@@ -1,0 +1,10 @@
+                        </tt:Source>
+                        <tt:Data>
+                            <tt:SimpleItem Name="%DATA_NAME%" Value="%DATA_VALUE%"/>
+                        </tt:Data>
+                    </tt:Message>
+                </wsnt:Message>
+            </wsnt:NotificationMessage>
+        </wsnt:Notify>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>

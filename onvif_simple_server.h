@@ -63,6 +63,7 @@ typedef struct {
     int  framerate;     /* fps, 0 = unknown */
     int  audio_encoder;
     int  audio_decoder;
+    int  metadata;      /* carries a metadata track (Profile M) */
 } stream_profile_t;
 
 typedef struct {
@@ -99,13 +100,37 @@ typedef struct {
     char *get_presets;
 } ptz_node_t;
 
+#define MAX_EVENT_SOURCES 4
+
+typedef struct {
+    char *name;
+    char *type;
+    char *value;
+} event_source_t;
+
 typedef struct {
     char *topic;
     char *source_name;
     char *source_type;
     char *source_value;
     char *input_file;
+    // Described event: data_name and data_type set, the value is the content of input_file
+    event_source_t extra_sources[MAX_EVENT_SOURCES - 1];
+    int extra_sources_num;
+    char *data_name;
+    char *data_type;
+    int non_property;   // only for described events
+    int too_many_sources;
 } event_t;
+
+#define EVENT_IS_DESCRIBED(e) ((e)->data_name != NULL)
+#define EVENT_IS_PROPERTY(e) (!EVENT_IS_DESCRIBED(e) || !(e)->non_property)
+
+// Item names and types of an event message; NULL source_type means tt:ReferenceToken
+void get_event_description(const event_t *e, const char **source_type,
+        const char **data_name, const char **data_type);
+// Returns 0 if the event is usable, else logs why and returns -1
+int event_check(const event_t *e);
 
 typedef struct {
     int   port;
@@ -128,6 +153,8 @@ typedef struct {
     // Advanced options
     int adv_enable_media2;
     int adv_enable_imaging;          /* advertise the Imaging service */
+    int adv_enable_analytics;        /* Profile M: metadata and Analytics service, needs Media2 */
+    char *analytics_file;            /* analytics description file written by the pipeline */
     int adv_empty_if_unknown;
     int adv_fault_if_unknown;
     int adv_fault_if_set;

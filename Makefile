@@ -1,7 +1,7 @@
 # Set HAVE_WOLFSSL or HAVE_MBEDTLS variable if you want to use WOLFSSL or
 # MBEDTLS instead of LIBTOMCRYPT
 
-OBJECTS_O = onvif_simple_server.o device_service.o media_service.o media2_service.o ptz_service.o events_service.o deviceio_service.o imaging_service.o fault.o conf.o utils_zlib.o log.o ezxml_wrapper.o ezxml/ezxml.o
+OBJECTS_O = onvif_simple_server.o device_service.o media_service.o media2_service.o ptz_service.o events_service.o deviceio_service.o imaging_service.o analytics_service.o analytics_desc.o fault.o conf.o utils_zlib.o log.o ezxml_wrapper.o ezxml/ezxml.o
 OBJECTS_N = onvif_notify_server.o conf.o utils.o log.o ezxml_wrapper.o ezxml/ezxml.o
 OBJECTS_W = wsd_simple_server.o utils.o log.o ezxml_wrapper.o ezxml/ezxml.o
 ifdef HAVE_WOLFSSL
@@ -56,13 +56,14 @@ wsd_simple_server: $(OBJECTS_W)
 
 # Build and run unit tests using the native host compiler.
 # Uses stub mbedTLS headers from test/ so no crypto library is required.
+# The analytics description file tests need json-c.
 test: test/test_utils
 	./test/test_utils
 
-test/test_utils: test/test_utils.c test/stubs.c utils.c log.c
+test/test_utils: test/test_utils.c test/stubs.c utils.c log.c analytics_desc.c
 	cc -I. -Itest -DHAVE_MBEDTLS -D_GNU_SOURCE -std=c99 \
-		test/test_utils.c test/stubs.c utils.c log.c \
-		-lz -lpthread -lrt -o test/test_utils
+		test/test_utils.c test/stubs.c utils.c log.c analytics_desc.c \
+		-ljson-c -lz -lpthread -lrt -o test/test_utils
 
 clean:
 	rm -f onvif_simple_server

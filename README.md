@@ -21,6 +21,7 @@ But usually is enough to work with an onvif client.
 - [Httpd](#httpd)
 - [Configuration](#configuration)
 - [Compatibility](#compatibility)
+- [Profile M](#profile-m)
 - [Testing](#testing)
 - [Credits](#credits)
 - [License](#license)
@@ -32,7 +33,7 @@ But usually is enough to work with an onvif client.
 - Export HAVE_WOLFSSL if you want to use wolfssl or HAVE_MBEDTLS if you want to use mbedtls (default libtomcrypt).
 - Export USE_ZLIB if you want to use compressed template files. In this case, all xml files will be compressed to use less disk space but the server will be slower.
 - Run `make`
-- Run `make test` to build and run the unit tests (requires a native C compiler; no crypto library needed)
+- Run `make test` to build and run the unit tests (requires a native C compiler and json-c; no crypto library needed)
 
 ## Httpd
 ### Create a working example with lighttpd
@@ -106,9 +107,12 @@ password=
 #Advanced options
 adv_enable_media2=0
 adv_enable_imaging=0
+adv_enable_analytics=0
 adv_fault_if_unknown=0
 adv_fault_if_set=0
 adv_synology_nvr=0
+#Profile M (optional)
+analytics_file=/tmp/onvif_simple_server/analytics.json
 #Imaging service (optional)
 imaging_set_command=/usr/local/bin/set_imaging
 imaging_focus_command=/usr/local/bin/set_focus
@@ -136,6 +140,7 @@ bitrate=0
 framerate=30
 audio_encoder=AAC
 audio_decoder=G711
+metadata=0
 
 #Profile 1
 name=Profile_1
@@ -278,6 +283,8 @@ Brief explanation of some parameters:
 | user | the user you want to set for WS-UsernameToken authentication, if blank security is disabled |
 | adv_enable_media2 | enable media2 methods for Profile T |
 | adv_enable_imaging | set to 1 to advertise the Imaging service |
+| adv_enable_analytics | set to 1 to enable Profile M: metadata and the Analytics service (needs adv_enable_media2=1), see [Profile M](#profile-m) |
+| analytics_file | the analytics description file, written by the analytics pipeline |
 | adv_fault_if_unknown | try to set to 1 if your ONVIF client is not able to connect to the device |
 | adv_fault_if_set | try to set to 1 if your ONVIF client is not able to connect to the device |
 | adv_synology_nvr | try to set to 1 to improve compatibility, if you are using a Synology NVR |
@@ -289,6 +296,7 @@ Brief explanation of some parameters:
 | url | the url of your streaming service (it is not provided by onvif server) |
 | snapurl | the url of your snapshot service (tipically an http url that provides a jpg image) |
 | audio_decoder | set to G711 or AAC if your device support an audio back channel |
+| metadata | set to 1 if the stream of the profile carries a metadata track (needs adv_enable_analytics=1) |
 | ptz | 1 if onvif_simple_server can control PTZ, 0 otherwise |
 | max_step_* | max values of x and y movements reported by the cam (min = 0) |
 | move_* | the binary command that moves the PTZ controls, onvif_simple_server will run it with a system call |
@@ -297,12 +305,58 @@ Brief explanation of some parameters:
 | open | the binary command that opens the relay, onvif_simple_server will run it with a system call |
 | events | set to 1 to enable PullPoint, 2 to enable Base Subscription or 3 to enable both |
 | topic | the topic of the event |
-| source_name | the source name inside the Notify message |
-| source_name | the source type inside the Notify message |
+| source_name | the source name inside the Notify message; each further source_name adds a source item (described events only) |
+| source_type | the source type inside the Notify message |
 | source_value | the source value inside the Notify message |
+| data_name | the name of the data item; makes the event a described event, see below |
+| data_type | the type of the data item, e.g. tt:StringList (described events only) |
+| is_property | set to 0 for an event that is not a property (described events only, default 1) |
 | input_file | the file created when the event is fired |
 
 Check the code for information.
+
+#### Described events
+An event with `data_name` and `data_type` is a described event.
+Its data value is the content of `input_file`, not the existence of the file.
+Example, the standard object detection event (ONVIF Analytics, Annex A):
+```
+topic=tns1:RuleEngine/ObjectDetection/Object
+is_property=0
+source_name=VideoSource
+source_type=tt:ReferenceToken
+source_value=VideoSourceToken
+source_name=AnalyticsConfiguration
+source_type=tt:ReferenceToken
+source_value=AnalyticsConfigToken
+source_name=Rule
+source_type=xsd:string
+source_value=ObjectRule
+data_name=ClassTypes
+data_type=tt:StringList
+input_file=/tmp/onvif_notify_server/object_detection
+```
+In a JSON file, `"sources": [ { "name": ..., "type": ..., "value": ... } ]` replaces the three source keys.
+There `is_property` is a JSON boolean (`true` or `false`).
+- `source_type` and `source_value` belong to the `source_name` before them.
+- A described event has 1 to 4 source items. Each needs a name, a type and a value.
+- Names have at most 256 characters and no spaces, control characters, `%`, `<`, `>`, `&` or quotes.
+- Names are unique within the event, the data name included.
+- Types use the prefix `xsd` or `tt`.
+- A `tt:ReferenceToken` value has at most 64 characters, other source values 160. They have no `%` and no control characters.
+- An event that breaks one of these rules is ignored with an error in the log.
+- So is an event with only one of `data_name` and `data_type`.
+- So is a plain event with a second `source_name` or with `is_property=0`.
+- The file holds the value, e.g. `Human Vehicle` for a tt:StringList. A missing file is an empty value.
+- Whitespace runs count as one space. The value has at most 127 bytes, no control characters and no `%`.
+- The file has at most 1024 bytes. A file with an invalid value is ignored.
+- The server sends a message when the value changes. Writing the same value again sends nothing.
+- Write the file to a temporary name in the same folder and rename it. A file written in place can be read half written.
+- A property event (`is_property=1`) sends its current value to new subscriptions and on SetSynchronizationPoint.
+- A non-property event (`is_property=0`) sends only changes, without `PropertyOperation`.
+- A pull point keeps the last 8 changes of each non-property event.
+- Restart onvif_notify_server after an update: it shares memory with the CGI.
+- Update the template folders together with the binaries. All events use new templates.
+- A vendor namespace for an extension topic also goes into `notify_files/Notify_start.xml`.
 
 ### wsd_simple_server
 wsd_simple server supports the following options
@@ -372,6 +426,7 @@ onvif_notify_server checks the files related to the events and sends the notify 
 - When the file is created a new notify message with state "true" is sent to all subscribers.
 - When the file is deleted a new notify message with state "false" is sent to all subscribers.
 - When a Synchronization Point is requested from an onvif client, a new Notify message with the current state is sent to all subscribers.
+- A [described event](#described-events) sends a message when the content of its file changes.
 
 The process can use inotify interface if supported from the device, otherwise it can use the standard "access" function.
 
@@ -419,6 +474,7 @@ Services at a glance (details of each function below):
 | PTZ | `ptz=1` and the PTZ commands | Each action runs the configured shell command |
 | DeviceIO | relay outputs | Relay state is changed by the configured `open` and `close` commands |
 | Events | event entries | Pull-point and basic notification subscriptions |
+| Analytics | `adv_enable_analytics=1` and `analytics_file` | Fixed analytics modules and rules, read-only, see [Profile M](#profile-m) |
 
 Below a list of the implemented functions, all other functions return a generic soap fault.
 
@@ -441,6 +497,20 @@ GetHostname
 GetDNS
 GetNTP
 SystemReboot
+```
+
+**Analytics**
+```
+CreateAnalyticsModules
+CreateRules
+DeleteAnalyticsModules
+DeleteRules
+GetAnalyticsModules
+GetRules
+GetServiceCapabilities
+GetSupportedAnalyticsModules
+GetSupportedMetadata
+GetSupportedRules
 ```
 
 **Imaging**
@@ -529,6 +599,7 @@ SetSynchronizationPoint
 
 **Media2**
 ```
+GetAnalyticsConfigurations
 GetAudioDecoderConfigurationOptions
 GetAudioDecoderConfigurations
 GetAudioEncoderConfigurationOptions
@@ -537,6 +608,8 @@ GetAudioOutputConfigurationOptions
 GetAudioOutputConfigurations
 GetAudioSourceConfigurationOptions
 GetAudioSourceConfigurations
+GetMetadataConfigurationOptions
+GetMetadataConfigurations
 GetProfiles
 GetServiceCapabilities
 GetSnapshotUri
@@ -579,9 +652,144 @@ SetPreset
 Stop
 ```
 
+## Profile M
+Profile M support is opt-in and read-only, like the rest of the server.
+The server describes the metadata and the analytics. It does not produce them.
+An analytics pipeline produces the metadata stream, the events and a description file.
+
+### Setup
+- Set `adv_enable_media2=1` and `adv_enable_analytics=1`.
+- Set `metadata=1` in every profile whose stream carries a metadata track.
+- Set `analytics_file` to the description file the pipeline writes.
+- Add `scope=onvif://www.onvif.org/Profile/M` to the configuration file. In a JSON file, add it to `scopes`.
+- Add the same scope to the `-s` option of wsd_simple_server. WS-Discovery does not read the configuration file.
+- Configure the analytics events as usual (`topic`, `source_name`, `source_type`, `input_file`).
+
+Each profile with `metadata=1` has the video source, the metadata configuration and the analytics configuration.
+Both configurations are fixed: `MetadataConfigToken` (Analytics=true) and `AnalyticsConfigToken`.
+SetSynchronizationPoint runs `sync_point_command` (see Media2 above).
+
+### Description file
+```
+{
+  "namespace": { "prefix": "ai", "uri": "http://example.com/analytics" },
+  "modules": [
+    {
+      "type": "ai:ObjectDetector",
+      "name": "Detector1",
+      "parameters": [ { "name": "Sensitivity", "type": "xsd:int", "value": "50" } ],
+      "messages": [ { "topic": "tns1:RuleEngine/MyRuleDetector/PeopleDetect" } ],
+      "sample_frame_file": "/tmp/onvif_simple_server/object_detector.xml"
+    }
+  ],
+  "rules": [
+    {
+      "type": "tt:ObjectDetection",
+      "name": "ObjectRule",
+      "parameters": [ { "name": "ClassFilter", "type": "tt:StringList", "value": "Human Vehicle" } ],
+      "messages": [ { "topic": "tns1:RuleEngine/ObjectDetection/Object" } ]
+    }
+  ]
+}
+```
+- The server reads the file on each Profile M request and for the capabilities, so the pipeline can rewrite it at any time.
+- Write it to a temporary name in the same folder and rename it, so no request reads it half written.
+- It is a regular file of at most 256 KiB.
+- `namespace` is required. Without a valid one the file is ignored.
+- The `uri` has at most 160 characters, no spaces, no control characters and no `%`. The `prefix` has at most 32 characters.
+- The `uri` is not the `xml` or `xmlns` namespace URI.
+- The prefixes `tt`, `tr2`, `tan`, `tds`, `xsd`, `tns1` and `xml...` are reserved.
+- Each `type` is a QName with the namespace prefix. A rule type may also be an ONVIF type like `tt:ObjectDetection`.
+- Each module is a fixed instance with a unique `name`.
+- Modules of the same type share the description, messages and sample frame of the first one.
+- `rules` are optional. Each rule is a fixed instance with a unique `name`.
+- Rules of the same type need the same parameter names and types. They share the description and messages of the first one.
+- With at least one usable rule, `RuleSupport` is true and GetSupportedRules, GetRules, CreateRules and DeleteRules answer. Without rules they answer like unknown methods.
+- A rule lists the events it sends as messages, e.g. `tns1:RuleEngine/ObjectDetection/Object` for `tt:ObjectDetection`.
+- Configure such an event with the source items `VideoSource` (`VideoSourceToken`), `AnalyticsConfiguration` (`AnalyticsConfigToken`) and `Rule` (the rule `name`). The server does not check them.
+- ONVIF defines the parameter `ClassFilter` (`tt:StringList`) for a `tt:ObjectDetection` rule. Class names have no spaces. The server does not check the parameters.
+- `parameters` are optional. Each needs `name`, `type` and `value`.
+- A parameter `type` uses the prefix `xsd`, `tt` or the namespace prefix.
+- A `value` is a JSON string of at most 160 characters, without `%` or control characters.
+- Each message `topic` must match a configured event. Source and data items come from the first event with that topic.
+- That event needs a `source_name` other than its data item name (`State`, `LogicalState` for relays).
+- Its `source_type`, if set, uses the prefix `xsd` or `tt`.
+- A [described event](#described-events) brings all its source items and its data item.
+- Topics start in `tns1` and have at most 3 levels, like all events of the server.
+- One child topic level may use the namespace prefix, e.g. `tns1:RuleEngine/ai:Violation` (an extension topic, WS-Topics 6.1).
+- Such a topic needs the namespace declared in `events_service_files/GetEventProperties_1.xml`, `events_service_files/PullMessages_1.xml`, `notify_files/Notify.xml` and `notify_files/Notify_start.xml`.
+- Without it, GetEventProperties is not well-formed.
+- Names, types and topics have at most 256 characters.
+- They must not contain spaces, control characters, `%`, `<`, `>`, `&` or quotes.
+- At most 16 modules, 16 rules, 16 parameters and 8 messages per module or rule are used.
+- Invalid entries are skipped with an error in the log. Unknown keys are ignored.
+
+The sample frame file holds one `tt:Frame` with `UtcTime`.
+The root has a prefix and declares it itself, as in the example (no default namespace).
+It shows every element the metadata stream emits.
+Its shapes sit in the top left quarter of the image: x from -1 to 0, y from 0 to 1.
+It declares every namespace prefix it uses. Its root does not declare `tan`.
+It does not declare the `xml` or `xmlns` namespace URI.
+At most 32 prefix declarations are in scope at any element. No prefix starts with `xml`.
+Element and attribute names use only ASCII letters, digits, `_`, `-` and `.`.
+It is a regular file with at most 64 KiB, 2048 tags, 64 attributes per element and 32 levels below the root.
+It has no DOCTYPE and no processing instruction other than the XML declaration.
+It uses only the predefined entities (`&lt;` etc.) and character references to valid characters.
+Comments and CDATA sections contain no `&` and no `<?`.
+A module with a missing or invalid sample frame is left out of GetSupportedMetadata only.
+```
+<tt:Frame xmlns:tt="http://www.onvif.org/ver10/schema" UtcTime="2026-01-01T00:00:00Z">
+  <tt:Object ObjectId="1">
+    <tt:Appearance>
+      <tt:Shape>
+        <tt:BoundingBox left="-0.8" top="0.8" right="-0.2" bottom="0.2"/>
+        <tt:CenterOfGravity x="-0.5" y="0.5"/>
+      </tt:Shape>
+      <tt:Class><tt:Type Likelihood="0.9">Human</tt:Type></tt:Class>
+    </tt:Appearance>
+  </tt:Object>
+</tt:Frame>
+```
+
+### Profile M compliance
+The server does not implement all of Profile M:
+- AddConfiguration, RemoveConfiguration and SetMetadataConfiguration answer like the other `Set*` calls. Profile M makes them mandatory.
+- With `adv_fault_if_set=1` they answer `ter:ConfigModify`, else like an unknown method.
+- The spec does not define `ter:ConfigModify` for AddConfiguration and RemoveConfiguration.
+- The analytics modules are fixed. CreateAnalyticsModules and DeleteAnalyticsModules answer `ter:FixedModules`. Profile M wants them to work.
+- GetAnalyticsModuleOptions and ModifyAnalyticsModules are not supported (`AnalyticsModuleOptionsSupported=false`). Profile M allows that.
+- There are no `tns1:Media/ProfileChanged` and `tns1:Media/ConfigurationChanged` events. Nothing ever changes here.
+- Without `rules` there are no rules (`RuleSupport=false`). Profile M allows that.
+- Rules are fixed. CreateRules answers `ter:FixedRules`, DeleteRules too for an existing rule. Profile M wants them to work.
+- GetRuleOptions and ModifyRules are not supported (`RuleOptionsSupported=false`). With `adv_empty_if_unknown=1` they answer with an empty response.
+- HTTP Digest is not supported, only WS-UsernameToken. RTSP Digest is the job of the RTSP server.
+- GetStreamUri ignores the requested protocol (see Media2 above).
+- Media has no metadata. Its GetProfiles does not list it. Use Media2.
+- It is not certified. The ONVIF Device Test Tool is for ONVIF members only.
+- It is not tested with Milestone XProtect. Its box timing and its reaction to the SetMetadataConfiguration fault are unknown.
+
+### Metadata stream
+These rules apply to mediamtx (checked with v1.21.4) and a pipeline that publishes video and metadata to one path:
+- The metadata rtpmap is `vnd.onvif.metadata/90000`, as the spec spells it.
+- SDP encoding names are case-insensitive. `rtponvifmetadatapay` writes `VND.ONVIF.METADATA/90000`, which is fine too.
+- mediamtx passes the rtpmap on unchanged.
+- Send one complete, closed `tt:MetadataStream` document per frame. Some clients, such as Milestone, parse whole documents only.
+- Set the RTP marker bit on the packet that closes a document.
+- Start a new document on each sync point, and at least every second.
+- A metadata RTP packet has at most 1452 bytes, RTP header included (1442 with RTSPS). mediamtx drops larger ones. Publish over TCP.
+- The limit follows `udpMaxPayloadSize` (default 1452, at most 1472).
+- Set `useAbsoluteTimestamp: true` on the path, and send RTCP sender reports on both tracks. Else boxes arrive late, or packets are dropped.
+- Set `alwaysAvailable: false` on the path. mediamtx rejects `alwaysAvailable: true` together with `useAbsoluteTimestamp`. Its offline tracks also cannot carry the metadata track.
+- Sync the device clock with NTP. Some clients hide boxes when the clocks differ.
+- For RTSP Digest, set `rtspAuthMethods: [basic, digest]`. This needs the `internal` auth method and plain passwords.
+- RTP over UDP or TCP, RTSP over HTTP and RTSP over WebSocket work on the RTSP listener without extra settings.
+- RTSPS (port 8322) needs `rtspEncryption`.
+- mediamtx forwards the metadata track over RTSP only. HLS, WebRTC, recording, RTMP and SRT skip it.
+- The GStreamer ONVIF metadata elements (`rtponvifmetadatapay`) are part of gst-plugins-rs. Most distributions do not package them. Alpine edge does (`gst-plugins-rs-rsonvif`).
+
 ## Testing
-Run `make test` to build and run the unit tests in `test/`. They use the native host compiler and stub mbedtls headers, so no crypto library is required.
-The tests currently cover the helpers in `utils.c`. The SOAP handlers are not covered yet, so test changes to them against a real client (see [Compatibility](#compatibility)).
+Run `make test` to build and run the unit tests in `test/`. They use the native host compiler and stub mbedtls headers, so no crypto library is required. They need json-c.
+The tests currently cover the helpers in `utils.c` (including the checks and values of described events) and the analytics description file loader. The SOAP handlers are not covered yet, so test changes to them against a real client (see [Compatibility](#compatibility)).
 
 ## Credits
 Thanks to:

@@ -935,6 +935,287 @@ int html_escape(char *url, int max_len)
     return 0;
 }
 
+/* 1 if s is valid UTF-8 and has only characters that XML 1.0 allows */
+int is_xml_chars(const char *s)
+{
+    const unsigned char *p = (const unsigned char *) s;
+    unsigned int c;
+    int i, n;
+
+    while (*p != '\0') {
+        if (*p < 0x80) {
+            if ((*p < 0x20) && (*p != '\t') && (*p != '\n') && (*p != '\r'))
+                return 0;
+            p++;
+            continue;
+        }
+        if ((*p & 0xe0) == 0xc0) {
+            n = 1;
+            c = *p & 0x1f;
+        } else if ((*p & 0xf0) == 0xe0) {
+            n = 2;
+            c = *p & 0x0f;
+        } else if ((*p & 0xf8) == 0xf0) {
+            n = 3;
+            c = *p & 0x07;
+        } else {
+            return 0;
+        }
+        for (i = 1; i <= n; i++) {
+            if ((p[i] & 0xc0) != 0x80)
+                return 0;
+            c = (c << 6) | (p[i] & 0x3f);
+        }
+        if (((n == 1) && (c < 0x80)) || ((n == 2) && (c < 0x800)) || ((n == 3) && (c < 0x10000)) ||
+                (c > 0x10ffff) || ((c >= 0xd800) && (c <= 0xdfff)) || (c == 0xfffe) || (c == 0xffff))
+            return 0;
+        p += n + 1;
+    }
+    return 1;
+}
+
+/* Read a regular file of at most max bytes into a new NUL-terminated buffer.
+ * O_NONBLOCK keeps FIFOs and files like /proc/kmsg from blocking the request.
+ * Returns NULL on error; *len gets the byte count. */
+char *read_file(const char *path, size_t max, size_t *len)
+{
+    struct stat st;
+    char *buf;
+    size_t n = 0;
+    ssize_t r;
+    int fd;
+
+    fd = open(path, O_RDONLY | O_NONBLOCK);
+    if (fd < 0)
+        return NULL;
+    if ((fstat(fd, &st) != 0) || !S_ISREG(st.st_mode) || (st.st_size > (off_t) max)) {
+        close(fd);
+        return NULL;
+    }
+    buf = (char *) malloc(max + 1);
+    if (buf == NULL) {
+        close(fd);
+        return NULL;
+    }
+    while (n <= max) {
+        r = read(fd, buf + n, max + 1 - n);
+        if (r < 0) {
+            free(buf);
+            close(fd);
+            return NULL;
+        }
+        if (r == 0)
+            break;
+        n += r;
+    }
+    close(fd);
+    if (n > max) {
+        free(buf);
+        return NULL;
+    }
+    buf[n] = '\0';
+    if (len != NULL)
+        *len = n;
+    return buf;
+}
+
+/* 1 if uri is one of the namespace names no prefix may be bound to */
+int is_reserved_namespace(const char *uri)
+{
+    return (strcmp(uri, "http://www.w3.org/XML/1998/namespace") == 0) ||
+            (strcmp(uri, "http://www.w3.org/2000/xmlns/") == 0);
+}
+
+/* 1 if the first len bytes of s are an XML NCName (ASCII only) */
+int is_ncname(const char *s, size_t len)
+{
+    size_t i;
+
+    if ((len == 0) || !(isalpha((unsigned char) s[0]) || (s[0] == '_')))
+        return 0;
+    for (i = 1; i < len; i++) {
+        if (!(isalnum((unsigned char) s[i]) || (s[i] == '_') || (s[i] == '-') || (s[i] == '.')))
+            return 0;
+    }
+    return 1;
+}
+
+int is_plain(const char *s, size_t max)
+{
+    size_t n;
+
+    if ((s == NULL) || !is_xml_chars(s))
+        return 0;
+    n = strlen(s);
+    if ((n == 0) || (n > max))
+        return 0;
+    for (; *s != '\0'; s++) {
+        unsigned char c = (unsigned char) *s;
+        if ((c <= ' ') || (c == 0x7f) || (strchr("%<>&\"'", c) != NULL))
+            return 0;
+    }
+    return 1;
+}
+
+int is_value(const char *s, size_t max)
+{
+    size_t n;
+
+    if ((s == NULL) || !is_xml_chars(s))
+        return 0;
+    n = strlen(s);
+    if (n > max)
+        return 0;
+    for (; *s != '\0'; s++) {
+        unsigned char c = (unsigned char) *s;
+        if ((c < ' ') || (c == 0x7f) || (c == '%'))
+            return 0;
+    }
+    return 1;
+}
+
+int is_qname_in(const char *qname, const char *prefix)
+{
+    const char *c;
+
+    if ((qname == NULL) || !is_plain(qname, MAX_DESC_NAME))
+        return 0;
+    c = strchr(qname, ':');
+    if ((c == NULL) || !is_ncname(qname, c - qname) || !is_ncname(c + 1, strlen(c + 1)))
+        return 0;
+    return ((size_t) (c - qname) == strlen(prefix)) && (strncmp(qname, prefix, c - qname) == 0);
+}
+
+/* Bigger than a value, so a value with a trailing newline or padding still fits */
+#define MAX_EVENT_FILE 1024
+
+int read_event_value(const char *path, char *value, size_t size)
+{
+    char *buf, *s, *d;
+    size_t len;
+
+    errno = 0;
+    buf = read_file(path, MAX_EVENT_FILE, &len);
+    if (buf == NULL) {
+        if (errno == ENOENT) {
+            value[0] = '\0';
+            return 0;
+        }
+        return -1;
+    }
+    if ((strlen(buf) != len) || !is_xml_chars(buf)) {
+        free(buf);
+        return -1;
+    }
+
+    // Collapse every run of whitespace into one space and trim both ends
+    for (s = buf, d = buf; *s != '\0'; s++) {
+        if ((*s == ' ') || (*s == '\t') || (*s == '\n') || (*s == '\r')) {
+            if ((d != buf) && (d[-1] != ' '))
+                *d++ = ' ';
+        } else {
+            *d++ = *s;
+        }
+    }
+    if ((d != buf) && (d[-1] == ' '))
+        d--;
+    *d = '\0';
+
+    if (!is_value(buf, size - 1)) {
+        free(buf);
+        return -1;
+    }
+    snprintf(value, size, "%s", buf);
+    free(buf);
+    return 0;
+}
+
+/* Copy a configured string into buf with XML special characters escaped. */
+const char *xml_text(char *buf, size_t size, const char *s)
+{
+    snprintf(buf, size, "%s", s != NULL ? s : "");
+    if (html_escape(buf, (int) size) < 0)
+        buf[0] = '\0';
+
+    return buf;
+}
+
+static int is_item_type(const char *type)
+{
+    return is_qname_in(type, "xsd") || is_qname_in(type, "tt");
+}
+
+static int check_source(const event_t *e, const char *name, const char *type, const char *value)
+{
+    size_t max = ((type != NULL) && (strcmp(type, "tt:ReferenceToken") == 0)) ? MAX_TOKEN_LEN : MAX_DESC_VALUE;
+
+    if (!is_plain(name, MAX_DESC_NAME) || !is_item_type(type) || !is_value(value, max)) {
+        log_error("Event %s: invalid source item %s", e->topic, name != NULL ? name : "(no name)");
+        return -1;
+    }
+    return 0;
+}
+
+int event_check(const event_t *e)
+{
+    const char *names[MAX_EVENT_SOURCES + 1];
+    int i, j, n = 0;
+
+    if (e->too_many_sources) {
+        log_error("Event %s: more than %d sources", e->topic != NULL ? e->topic : "(no topic)", MAX_EVENT_SOURCES);
+        return -1;
+    }
+    if (!EVENT_IS_DESCRIBED(e)) {
+        if ((e->data_type != NULL) || (e->extra_sources_num > 0) || e->non_property) {
+            log_error("Event %s: data_type, is_property=0 and more than one source need data_name and data_type",
+                    e->topic != NULL ? e->topic : "(no topic)");
+            return -1;
+        }
+        return 0;
+    }
+
+    if ((e->topic == NULL) || (e->input_file == NULL) || !is_plain(e->data_name, MAX_DESC_NAME) ||
+            !is_item_type(e->data_type)) {
+        log_error("Event %s: needs topic, input_file and a valid data_name and data_type",
+                e->topic != NULL ? e->topic : "(no topic)");
+        return -1;
+    }
+    if (check_source(e, e->source_name, e->source_type, e->source_value) != 0)
+        return -1;
+    names[n++] = e->source_name;
+    for (i = 0; i < e->extra_sources_num; i++) {
+        if (check_source(e, e->extra_sources[i].name, e->extra_sources[i].type, e->extra_sources[i].value) != 0)
+            return -1;
+        names[n++] = e->extra_sources[i].name;
+    }
+    names[n++] = e->data_name;
+    for (i = 0; i < n; i++) {
+        for (j = i + 1; j < n; j++) {
+            if (strcmp(names[i], names[j]) == 0) {
+                log_error("Event %s: item name %s is used twice", e->topic, names[i]);
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
+void get_event_description(const event_t *e, const char **source_type,
+        const char **data_name, const char **data_type)
+{
+    *source_type = (e->source_type != NULL) ? e->source_type : "tt:ReferenceToken";
+    if (EVENT_IS_DESCRIBED(e)) {
+        *data_name = e->data_name;
+        *data_type = e->data_type;
+    } else if ((e->topic != NULL) && (strcmp("tns1:Device/Trigger/Relay", e->topic) == 0)) {
+        *data_name = "LogicalState";
+        *data_type = "tt:RelayLogicalState";
+    } else {
+        *data_name = "State";
+        *data_type = "xsd:boolean";
+    }
+}
+
 /**
  * Hashes a given sequence of bytes using the SHA1 algorithm
  * @param output The hash

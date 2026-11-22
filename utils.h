@@ -60,9 +60,26 @@ typedef struct {
     uint32_t pull_notify; // Bit mask: 1 if the client must be notified
 } event_shm_t;
 
+#define MAX_EVENT_VALUE 128
+#define EVENT_QUEUE_LEN 8
+
+typedef struct {
+    time_t e_time;
+    char value[MAX_EVENT_VALUE];
+} event_entry_shm_t;
+
+// State of a described event
+typedef struct {
+    char value[MAX_EVENT_VALUE];
+    uint32_t seq; // Number of changes of a non-property event
+    event_entry_shm_t queue[EVENT_QUEUE_LEN]; // Its last changes, change n at n % EVENT_QUEUE_LEN
+    uint32_t pull_seq[MAX_SUBSCRIPTIONS]; // Last change sent to each pull subscription
+} event_value_shm_t;
+
 typedef struct {
     subscription_shm_t subscriptions[MAX_SUBSCRIPTIONS];
     event_shm_t events[MAX_EVENTS];
+    event_value_shm_t values[MAX_EVENTS];
 } shm_t;
 
 typedef struct {
@@ -98,6 +115,30 @@ int get_default_gateway(char *gw, size_t len);
 char *trim(char *s);
 char *trim_mf(char *s);
 int html_escape(char *url, int max_len);
+const char *xml_text(char *buf, size_t size, const char *s);
+int is_xml_chars(const char *s);
+int is_ncname(const char *s, size_t len);
+int is_reserved_namespace(const char *uri);
+
+/* Limits of configured names and values. They keep every substituted template
+ * line below MAX_CAT_LEN and every escaped value below MAX_LEN. */
+#define MAX_DESC_NAME  256
+#define MAX_DESC_VALUE 160
+#define MAX_TOKEN_LEN  64   // tt:ReferenceToken
+
+/* Name for an attribute or element: cat() rescans substituted text for
+ * placeholders, so no '%'; no markup and no whitespace either. */
+int is_plain(const char *s, size_t max);
+/* Like is_plain(), but spaces and markup are allowed; xml_text() escapes it. */
+int is_value(const char *s, size_t max);
+/* 1 if qname is "prefix:local" with both parts NCNames and the given prefix */
+int is_qname_in(const char *qname, const char *prefix);
+
+char *read_file(const char *path, size_t max, size_t *len);
+/* Value of a described event from its input file: whitespace runs become one
+ * space, ends are trimmed, a missing file is "". Returns 0, or -1 if the file
+ * cannot be read or its content is not a usable value. */
+int read_event_value(const char *path, char *value, size_t size);
 int hashSHA1(char* input, unsigned long inputSize, char *output, int output_size);
 void b64_decode(unsigned char *input, unsigned int input_size, unsigned char *output, unsigned long *output_size);
 void b64_encode(unsigned char *input, unsigned int input_size, unsigned char *output, unsigned long *output_size);

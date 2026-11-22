@@ -166,17 +166,15 @@ int media_get_video_source_configuration_options()
 {
     const char *configuration_token = get_element("ConfigurationToken", "Body");
     const char *profile_token = get_element("ProfileToken", "Body");
-    char token[23];
+    const char *token;
     char stmp_w[16], stmp_h[16];
 
-    memset(token, '\0', sizeof(token));
     if (profile_token != NULL) {
-        // Extract "Profile_x" from token Profile_x
-        strncpy(token, profile_token, 9);
+        token = profile_token;
     } else if (configuration_token != NULL) {
-        strncpy(token, configuration_token, 22);
+        token = configuration_token;
     } else {
-        strncpy(token, service_ctx.profiles[0].name, 9);
+        token = service_ctx.profiles[0].name;
     }
 
     if ((strcasecmp(service_ctx.profiles[0].name, token) == 0) ||
@@ -1126,16 +1124,14 @@ int media_get_audio_source_configuration_options()
 {
     const char *configuration_token = get_element("ConfigurationToken", "Body");
     const char *profile_token = get_element("ProfileToken", "Body");
-    char token[23];
+    const char *token;
 
-    memset(token, '\0', sizeof(token));
     if (profile_token != NULL) {
-        // Extract "Profile_x" from token Profile_x
-        strncpy(token, profile_token, 9);
+        token = profile_token;
     } else if (configuration_token != NULL) {
-        strncpy(token, configuration_token, 22);
+        token = configuration_token;
     } else {
-        strncpy(token, service_ctx.profiles[0].name, 9);
+        token = service_ctx.profiles[0].name;
     }
 
     if ((service_ctx.profiles[0].audio_encoder == AUDIO_NONE) &&
